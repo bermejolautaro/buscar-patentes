@@ -18,7 +18,7 @@ class AvisosTest {
     @Test
     fun `solo entran los pendientes del numero actual`() {
         val todos = listOf(reg(1, 313), reg(2, 314), reg(3, 312), reg(4, 313, compartida = true))
-        val elegidos = Avisos.aRegistrar(todos, numeroActual = 313)
+        val elegidos = Avisos.aRegistrar(todos, numeroActual = 313, Avisos.LIMITE_GEOFENCES)
         assertEquals(listOf(1L), elegidos.map { it.id })
     }
 
@@ -26,7 +26,7 @@ class AvisosTest {
     fun `los futuros no gastan ranura`() {
         // Es la razon por la que el limite de 100 nunca se alcanza con un archivo grande.
         val archivoGrande = (1..500).map { reg(it.toLong(), 400 + it) }
-        assertTrue(Avisos.aRegistrar(archivoGrande, numeroActual = 313).isEmpty())
+        assertTrue(Avisos.aRegistrar(archivoGrande, numeroActual = 313, Avisos.LIMITE_GEOFENCES).isEmpty())
     }
 
     /**
@@ -63,7 +63,7 @@ class AvisosTest {
     @Test
     fun `si hubiera mas de 100 se trunca de forma determinista, no falla`() {
         val muchos = (1..150).map { reg(it.toLong(), 313) }
-        val elegidos = Avisos.aRegistrar(muchos, numeroActual = 313)
+        val elegidos = Avisos.aRegistrar(muchos, numeroActual = 313, Avisos.LIMITE_GEOFENCES)
         assertEquals(Avisos.LIMITE_GEOFENCES, elegidos.size)
         assertEquals(1L, elegidos.first().id)
         assertEquals(100L, elegidos.last().id)
@@ -71,7 +71,29 @@ class AvisosTest {
 
     @Test
     fun `archivo vacio no rompe`() {
-        assertTrue(Avisos.aRegistrar(emptyList(), 313).isEmpty())
+        assertTrue(Avisos.aRegistrar(emptyList(), 313, Avisos.LIMITE_GEOFENCES).isEmpty())
+    }
+
+    @Test
+    fun `con el limite del iPhone se recorta igual, a las 20 de id mas bajo`() {
+        // D11 de la 006: el iPhone deja vigilar 20 regiones. El criterio es el mismo (FR-025).
+        val muchos = (25L downTo 1L).map { reg(it, 313) }
+        val elegidos = Avisos.aRegistrar(muchos, numeroActual = 313, limite = 20)
+        assertEquals((1L..20L).toList(), elegidos.map { it.id })
+    }
+
+    // --- Un aviso por salida (T057, FR-041) ---
+
+    @Test
+    fun `sin aviso previo no se avisó`() {
+        assertFalse(Avisos.yaAvisado(ahora = 1_000_000_000_000, ultimoAviso = 0))
+    }
+
+    @Test
+    fun `dentro de la ventana ya se avisó, y en el borde ya no`() {
+        val aviso = 1_000_000_000_000
+        assertTrue(Avisos.yaAvisado(aviso + Avisos.VENTANA_SALIDA_MS - 1, aviso))
+        assertFalse(Avisos.yaAvisado(aviso + Avisos.VENTANA_SALIDA_MS, aviso))
     }
 
     // --- Decisión de aviso (FR-028, FR-029, FR-041) ---

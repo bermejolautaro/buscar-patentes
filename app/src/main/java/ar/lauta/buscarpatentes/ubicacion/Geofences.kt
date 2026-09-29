@@ -77,7 +77,7 @@ class Geofences(private val context: Context) {
         }
 
         // T054: el truncado por límite de 100 lo decide el dominio, ya probado.
-        val deseados = Avisos.aRegistrar(candidatos, estado.numeroActual)
+        val deseados = Avisos.aRegistrar(candidatos, estado.numeroActual, Avisos.LIMITE_GEOFENCES)
         val previos = Avisos.previosSegunElSistema(activos, elSistemaLosOlvido)
         val plan = Avisos.reconciliar(previos, deseados)
 

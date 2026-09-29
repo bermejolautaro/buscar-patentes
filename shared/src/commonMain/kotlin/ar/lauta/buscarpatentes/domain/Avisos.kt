@@ -18,12 +18,20 @@ data class RegistroParaAviso(
 object Avisos {
 
     /**
-     * Límite del sistema: **100 geofences activos por aplicación**.
+     * Límite del Android: **100 geofences activos por aplicación**. El iPhone deja vigilar 20
+     * regiones (D11 de la 006), y por eso el límite llega a [aRegistrar] como parámetro.
      *
      * Por eso [aRegistrar] filtra por número actual en vez de registrar el archivo entero.
      * Con el juego en un número, lo normal es entre cero y unos pocos.
      */
     const val LIMITE_GEOFENCES = 100
+
+    /**
+     * Cuánto dura "una salida" a efectos de no repetir el aviso (FR-041).
+     *
+     * ponytail: 6 horas es una tarde entera. Calibrable si en uso real molesta.
+     */
+    const val VENTANA_SALIDA_MS = 6L * 60 * 60 * 1000
 
     /** Radio del aviso, en metros (FR-028). */
     const val RADIO_METROS = 150f
@@ -35,14 +43,26 @@ object Avisos {
      * números que todavía no llegaron ni por registros ya compartidos, así que esos no
      * necesitan geofence y no gastan una de las 100 ranuras.
      *
-     * Si alguna vez hubiera más de [LIMITE_GEOFENCES] candidatos, se trunca de forma
-     * determinista por id en lugar de fallar en silencio (C2).
+     * Si alguna vez hubiera más de [limite] candidatos, se trunca de forma determinista por id
+     * en lugar de fallar en silencio (C2). El mismo recorte en los dos teléfonos (FR-025).
      */
-    fun aRegistrar(registros: List<RegistroParaAviso>, numeroActual: Int): List<RegistroParaAviso> =
+    fun aRegistrar(
+        registros: List<RegistroParaAviso>,
+        numeroActual: Int,
+        limite: Int,
+    ): List<RegistroParaAviso> =
         registros
             .filter { !it.compartida && it.numero == numeroActual }
             .sortedBy { it.id }
-            .take(LIMITE_GEOFENCES)
+            .take(limite)
+
+    /**
+     * ¿Ya se avisó por este registro en la salida en curso? (T057, FR-041)
+     *
+     * Una salida es una ventana de [VENTANA_SALIDA_MS]: pasar cinco veces por la misma cuadra
+     * en una tarde da un solo aviso. [ultimoAviso] es 0 si nunca se avisó.
+     */
+    fun yaAvisado(ahora: Long, ultimoAviso: Long): Boolean = ahora - ultimoAviso < VENTANA_SALIDA_MS
 
     /**
      * ¿Corresponde notificar por este registro? (FR-028, FR-029, FR-041)

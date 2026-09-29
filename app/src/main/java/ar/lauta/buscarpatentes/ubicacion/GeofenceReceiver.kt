@@ -54,10 +54,8 @@ class GeofenceReceiver : BroadcastReceiver() {
         for (id in ids) {
             val registro = context.contenedor.registros.porId(id) ?: continue
 
-            val ultimoAviso = prefs.getLong(clave(id), 0L)
-            // T057: una salida es una ventana de VENTANA_SALIDA_MS. Pasar cinco veces por
-            // la misma cuadra en una tarde da un solo aviso (FR-041).
-            val yaAvisado = ahora - ultimoAviso < VENTANA_SALIDA_MS
+            // T057: un aviso por salida (FR-041). La regla vive en Avisos, y el iPhone usa la misma.
+            val yaAvisado = Avisos.yaAvisado(ahora, ultimoAviso = prefs.getLong(clave(id), 0L))
 
             val corresponde = Avisos.corresponde(
                 registro = RegistroParaAviso(
@@ -126,12 +124,5 @@ class GeofenceReceiver : BroadcastReceiver() {
     private companion object {
         const val PREFS = "avisos"
         const val CANAL = "patentes_cerca"
-
-        /**
-         * Cuánto dura "una salida" a efectos de no repetir el aviso (FR-041).
-         *
-         * ponytail: 6 horas es una tarde entera. Calibrable si en uso real molesta.
-         */
-        const val VENTANA_SALIDA_MS = 6L * 60 * 60 * 1000
     }
 }
