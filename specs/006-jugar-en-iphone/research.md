@@ -397,6 +397,20 @@ gratis:
 
 Así, lo que depende de Apple se sabe en un día y no después de portar 6.000 líneas.
 
+**Resultados (2026-09-29)**, con el `.ipa` de la corrida 36583702009 y Sideloadly:
+
+| Qué | Resultado |
+|---|---|
+| Se instala y abre | Sí, después de un arreglo: el primer `.ipa` se cerraba al abrir con `MissingResourceException`, porque el `.app` no llevaba los recursos de Compose que usa el mapa. Xcode pasó a compilar con `embedAndSignAppleFrameworkForXcode`, que los copia, y la nube falla si faltan |
+| Reinstalar encima conserva un archivo escrito antes | **Sí**: la marca escrita en Room sigue después de reinstalar con Sideloadly. La compuerta pasa |
+| El mapa de maplibre-compose | Dibuja el centro con el estilo de OpenFreeMap |
+| Ubicación con la app abierta | Llega. La primera vez "Vigilar acá" no tenía posición todavía; al rato, sí |
+| La versión de iOS | Pendiente |
+| La app lee su fecha de vencimiento | Pendiente |
+| Ubicación con la pantalla bloqueada | Pendiente |
+| El aviso de región con la app cerrada, y después de reiniciar | Pendiente |
+| El aviso después de cerrar la app deslizándola | Pendiente |
+
 ## D22 — Repositorio público, limpio (FR-005a, SC-011)
 
 **Decisión**:
