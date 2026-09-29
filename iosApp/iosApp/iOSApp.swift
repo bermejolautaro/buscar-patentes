@@ -11,7 +11,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
-        PilotoKt.iniciarPiloto()
+        MainViewControllerKt.iniciar()
         return true
     }
 }
