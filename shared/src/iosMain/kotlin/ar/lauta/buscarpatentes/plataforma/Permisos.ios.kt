@@ -22,7 +22,6 @@ actual fun tienePermiso(permiso: Permiso): Boolean = when (permiso) {
     Permiso.UBICACION -> Ubicacion.manager.authorizationStatus.let {
         it == kCLAuthorizationStatusAuthorizedWhenInUse || it == kCLAuthorizationStatusAuthorizedAlways
     }
-    Permiso.UBICACION_SIEMPRE -> Ubicacion.manager.authorizationStatus == kCLAuthorizationStatusAuthorizedAlways
     Permiso.CAMARA -> AVCaptureDevice.authorizationStatusForMediaType(AVMediaTypeVideo) == AVAuthorizationStatusAuthorized
     // iOS lo contesta solo de forma asincrónica. Pedirlo de nuevo no molesta: si ya se preguntó,
     // no muestra nada.
@@ -42,7 +41,6 @@ actual fun rememberPedirPermisos(alResponder: (Map<Permiso, Boolean>) -> Unit): 
 
 private suspend fun pedir(permiso: Permiso): Boolean = when (permiso) {
     Permiso.UBICACION -> Ubicacion.pedirMientrasSeUsa()
-    Permiso.UBICACION_SIEMPRE -> Ubicacion.pedirSiempre()
     // Si ya se preguntó, iOS contesta enseguida con lo que el jugador eligió aquella vez.
     Permiso.NOTIFICACIONES -> suspendCoroutine { respuesta ->
         UNUserNotificationCenter.currentNotificationCenter()

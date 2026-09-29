@@ -64,9 +64,8 @@ object Geo {
      * base, y acá se decide si lo que quedó está lo bastante cerca como para ser el mismo
      * auto y no otro con el mismo número a cinco cuadras.
      *
-     * Genérico y con [posicionDe] porque el dominio no conoce las entidades de la base —la
-     * misma razón por la que [Avisos] trabaja sobre [RegistroParaAviso]— y porque así se
-     * prueba con pares sueltos, sin Room de por medio.
+     * Genérico y con [posicionDe] porque el dominio no conoce las entidades de la base, y
+     * porque así se prueba con pares sueltos, sin Room de por medio.
      *
      * Devuelve el más cercano y no el primero que entra en el radio: si hay dos capturas
      * viejas cerca, la que corresponde confirmar es la de al lado, no la de la esquina.

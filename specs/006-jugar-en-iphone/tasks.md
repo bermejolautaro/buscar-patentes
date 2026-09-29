@@ -332,29 +332,31 @@ el recorrido abren Google Maps.
 
 ## Phase 7: User Story 5 - Avisos con la app cerrada (Priority: P2)
 
+**Descartada el 2026-09-29**: el jugador no usa los avisos, y se sacaron también del Android (`Geofences`, `GeofenceReceiver`, `BootReceiver`, `Avisos` y su prueba, el interruptor de ajustes y los permisos `ACCESS_BACKGROUND_LOCATION` y `RECEIVE_BOOT_COMPLETED`). La columna `avisosActivos` queda sin uso para no cambiar el esquema.
+
 **Goal**: con la app cerrada, y después de reiniciar, el iPhone avisa a 150 m de una patente del
 número actual sin compartir, y tocar el aviso abre el mapa en ella.
 
 **Independent Test**: el quickstart §6 con una patente real. **Si T012 marcó los avisos como "solo
 Android", esta fase se reduce a T066**, que solo actualiza ajustes.
 
-- [ ] T062 [P] [US5] Crear `ios/ubicacion/Vigilancia.ios.kt` con `actual object Vigilancia`:
+- [X] T062 **Descartada** (2026-09-29) con la US5: el jugador no usa los avisos. [P] [US5] Crear `ios/ubicacion/Vigilancia.ios.kt` con `actual object Vigilancia`:
   - **`limite = 20`**.
   - **`reconciliar(deseados)`**: los ids vigilados salen de `manager.monitoredRegions` (identificador `registro-<id>`). Qué quitar y qué agregar lo decide **`Avisos.reconciliar(...)`**, igual que en `Geofences` del Android: no se escribe otra comparación. Después, `stopMonitoringForRegion` para las que sobran, y `CLCircularRegion(center, radius = Avisos.RADIO_METROS, identifier)` con `notifyOnEntry = true` y `notifyOnExit = false` para las que faltan.
   - Los deseados salen de `Avisos.aRegistrar(…, limite)`.
   (D11, P4, FR-025)
-- [ ] T063 [US5] En el delegado de `ios/ubicacion/Ubicacion.ios.kt`, `locationManager(_:didEnterRegion:)`:
+- [X] T063 **Descartada** (2026-09-29) con la US5: el jugador no usa los avisos. [US5] En el delegado de `ios/ubicacion/Ubicacion.ios.kt`, `locationManager(_:didEnterRegion:)`:
   1. saca el id del identificador;
   2. lee el registro y el estado del juego de Room;
   3. aplica `Avisos.corresponde(...)`, con `yaAvisadoEnEstaSalida = Avisos.yaAvisado(ahora, ultimoAviso)` (T015). `ultimoAviso` se lee y se guarda en `NSUserDefaults` con las mismas claves que `GeofenceReceiver` (`ultimo_aviso_<id>`);
   4. si corresponde, publica una `UNNotificationRequest` con el mismo título y texto que el Android y `userInfo = ["registroId": id]`.
   Tiene que funcionar con la app lanzada en segundo plano por el sistema: el manager y el contenedor ya existen desde `iniciar()` (D11, FR-026)
-- [ ] T064 [US5] En `ios/MainViewController.kt`, sumar un `UNUserNotificationCenterDelegate`:
+- [X] T064 **Descartada** (2026-09-29) con la US5: el jugador no usa los avisos. [US5] En `ios/MainViewController.kt`, sumar un `UNUserNotificationCenterDelegate`:
   - al tocar una notificación con `registroId`, lo entrega a `AppBuscarPatentes(registroAAbrir = …)` (T027), que centra el mapa y abre la ficha, como en el Android;
   - con la app adelante, muestra la notificación igual (`willPresentNotification` con banner).
-- [ ] T065 [US5] Llamar a `Vigilancia.reconciliar` en los mismos momentos en que el Android llama a `Geofences.reconciliar`: al arrancar, al cambiar el número actual, al compartir, al activar o desactivar los avisos y después de restaurar. Los llamados que hoy están en `App.kt` y en la UI pasan por `Vigilancia` en código común, así el Android sigue igual
-- [ ] T066 [US5] En `common/ui/PantallaAjustes.kt`, si los avisos están activos y falta el permiso "siempre", mostrar "Los avisos no llegan con la app cerrada: falta el permiso de ubicación 'siempre'", con un botón a `abrirAjustesDelSistema()`. Al activar los avisos en el iPhone, pedir `requestAlwaysAuthorization` (D13, FR-027). Si T012 encontró que después de cerrar la app deslizándola no llegan, sumar debajo: "Si cerrás la app deslizándola, los avisos se cortan hasta que la abras." (D11)
-- [ ] T067 [US5] **Compilar iPhone** y correr el quickstart §6: app cerrada, después de reiniciar, tocar el aviso, un solo aviso por salida y permiso "mientras se usa". **Verificar Android**, y en el Android caminar hasta una patente con la app cerrada: el aviso tiene que llegar como antes
+- [X] T065 **Descartada** (2026-09-29) con la US5: el jugador no usa los avisos. [US5] Llamar a `Vigilancia.reconciliar` en los mismos momentos en que el Android llama a `Geofences.reconciliar`: al arrancar, al cambiar el número actual, al compartir, al activar o desactivar los avisos y después de restaurar. Los llamados que hoy están en `App.kt` y en la UI pasan por `Vigilancia` en código común, así el Android sigue igual
+- [X] T066 **Descartada** (2026-09-29) con la US5: el jugador no usa los avisos. [US5] En `common/ui/PantallaAjustes.kt`, si los avisos están activos y falta el permiso "siempre", mostrar "Los avisos no llegan con la app cerrada: falta el permiso de ubicación 'siempre'", con un botón a `abrirAjustesDelSistema()`. Al activar los avisos en el iPhone, pedir `requestAlwaysAuthorization` (D13, FR-027). Si T012 encontró que después de cerrar la app deslizándola no llegan, sumar debajo: "Si cerrás la app deslizándola, los avisos se cortan hasta que la abras." (D11)
+- [X] T067 **Descartada** (2026-09-29) con la US5: el jugador no usa los avisos. [US5] **Compilar iPhone** y correr el quickstart §6: app cerrada, después de reiniciar, tocar el aviso, un solo aviso por salida y permiso "mientras se usa". **Verificar Android**, y en el Android caminar hasta una patente con la app cerrada: el aviso tiene que llegar como antes
 
 ---
 

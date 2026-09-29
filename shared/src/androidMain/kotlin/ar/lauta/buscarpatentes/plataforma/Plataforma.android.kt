@@ -13,7 +13,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.core.content.FileProvider
-import ar.lauta.buscarpatentes.ubicacion.Geofences
 import ar.lauta.buscarpatentes.ubicacion.LectorUbicacion
 import ar.lauta.buscarpatentes.ubicacion.LecturaUbicacion
 import ar.lauta.buscarpatentes.ubicacion.ServicioRecorrido
@@ -50,12 +49,6 @@ actual object Grabacion {
     actual fun empezar() = ServicioRecorrido.empezar(contextoDeLaApp)
 
     actual fun terminar() = ServicioRecorrido.terminar(contextoDeLaApp)
-}
-
-actual object Vigilancia {
-    private val geofences by lazy { Geofences(contextoDeLaApp) }
-
-    actual suspend fun reconciliar(elSistemaLosOlvido: Boolean) = geofences.reconciliar(elSistemaLosOlvido)
 }
 
 /**

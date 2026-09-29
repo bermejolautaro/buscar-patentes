@@ -85,15 +85,6 @@ actual object Ubicacion {
         tienePermiso(Permiso.UBICACION)
     }
 
-    /**
-     * Pide "siempre". No se espera la respuesta: iOS puede postergar el cartel hasta que la app
-     * use la ubicación en segundo plano, y hasta entonces no contesta nada.
-     */
-    internal fun pedirSiempre(): Boolean {
-        manager.requestAlwaysAuthorization()
-        return tienePermiso(Permiso.UBICACION_SIEMPRE)
-    }
-
     private fun edadSegundos(posicion: CLLocation): Double = -posicion.timestamp.timeIntervalSinceNow
 
     private fun soltar(espera: CancellableContinuation<CLLocation?>) {

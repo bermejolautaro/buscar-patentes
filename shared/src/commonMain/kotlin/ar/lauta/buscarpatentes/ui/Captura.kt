@@ -8,7 +8,6 @@ import ar.lauta.buscarpatentes.domain.Patente
 import ar.lauta.buscarpatentes.domain.Probabilidad
 import ar.lauta.buscarpatentes.plataforma.Grabacion
 import ar.lauta.buscarpatentes.plataforma.Ubicacion
-import ar.lauta.buscarpatentes.plataforma.Vigilancia
 import ar.lauta.buscarpatentes.plataforma.ahora
 import ar.lauta.buscarpatentes.ubicacion.Lectura
 import ar.lauta.buscarpatentes.ubicacion.LecturaUbicacion
@@ -105,8 +104,6 @@ object Captura {
                     if (yaEstaba != null) return confirmar(yaEstaba, fotoRuta)
 
                     contenedor.registros.insertar(registro)
-                    // D4: guardar una patente del numero actual cambia el conjunto.
-                    Vigilancia.reconciliar()
                     val conFoto = if (fotoRuta != null) " con foto" else ""
                     val aviso = if (registro.precisionDegradada) {
                         " Ojo: precisión de ${l.precisionMetros.toInt()} m, poco exacta."
@@ -197,7 +194,6 @@ object Captura {
                 texto = patente.texto,
                 formato = patente.formato.name,
             )
-            Vigilancia.reconciliar()
             Resultado(true, "Corregida a ${patente.numero}.")
         } catch (e: Exception) {
             Resultado(false, "No se pudo corregir: ${e.message ?: e::class.simpleName}")
@@ -224,8 +220,6 @@ object Captura {
             contenedor.registros.borrar(registro.id)
             // Los votos son sobre un registro que ya no existe: se van con el.
             contenedor.votos.borrarDe(registro.id)
-            // El conjunto de geofences puede cambiar: quizá era el del número actual.
-            Vigilancia.reconciliar()
             Resultado(true, "Borrada la ${registro.numero}.")
         } catch (e: Exception) {
             Resultado(false, "No se pudo borrar: ${e.message ?: e::class.simpleName}")

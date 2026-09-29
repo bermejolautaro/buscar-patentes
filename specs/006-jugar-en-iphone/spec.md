@@ -190,6 +190,8 @@ abre con esas paradas.
 
 ### User Story 5 - Avisos con la app cerrada (Priority: P2)
 
+**Descartada el 2026-09-29**: el jugador no usa los avisos. Se sacaron también del Android, con sus permisos de ubicación "siempre" y de arranque del teléfono. Lo que sigue queda como registro.
+
 El juego está en 318 y el jugador tiene una 318 anotada a tres cuadras. Camina con el iPhone en el
 bolsillo y la app cerrada. Al pasar a 150 metros o menos, el iPhone le avisa. Tocar el aviso abre
 el mapa en esa patente. El aviso funciona igual después de reiniciar el iPhone.
@@ -343,13 +345,14 @@ y ver el camino dibujado y ajustado.
 - **FR-024**: Si la ubicación exacta está apagada, la app MUST guardar la precisión que reporta el
   teléfono, marcar el registro como degradado si corresponde, y avisar que la ubicación exacta está
   apagada.
-- **FR-025**: Los avisos MUST vigilar las mismas patentes que en el Android: las del número actual
+- **FR-025** *(descartado con la US5)*: Los avisos MUST vigilar las mismas patentes que en el Android: las del número actual
   que no se compartieron. Si son más de las que el iPhone deja vigilar, MUST aplicarse el mismo
   recorte que en el Android, con el límite del iPhone.
-- **FR-026**: Los avisos MUST llegar con la app cerrada y después de reiniciar el iPhone. La única
+- **FR-026** *(descartado con la US5)*: Los avisos MUST llegar con la app cerrada y después de reiniciar el iPhone. La única
   excepción es la instalación vencida.
-- **FR-027**: Si el jugador no dio el permiso de ubicación que los avisos y las salidas necesitan
-  con la app cerrada, la app MUST decirle qué no va a funcionar y cómo arreglarlo.
+- **FR-027** *(descartado con la US5)*: Si el jugador no dio el permiso de ubicación que los
+  avisos y las salidas necesitan con la app cerrada, la app MUST decirle qué no va a funcionar y
+  cómo arreglarlo. Las salidas no lo necesitan: arrancan con la app adelante.
 - **FR-028**: Si una salida se corta, porque el jugador cerró la app, porque la cortó el sistema o
   porque venció la instalación, lo grabado MUST conservarse, y al volver a abrir la app MUST decir
   que la salida se cortó. El mensaje es del iPhone: en el Android la grabación no se corta al cerrar
@@ -388,7 +391,7 @@ y ver el camino dibujado y ajustado.
   igual que en el Android.
 - **SC-005**: Puestos lado a lado con los mismos datos, los dos teléfonos muestran la misma barra,
   la misma lista en el mismo orden y los mismos grupos al mismo zoom.
-- **SC-006**: Con la app cerrada, también después de reiniciar el iPhone, el aviso llega a 150
+- **SC-006** *(descartado con la US5)*: Con la app cerrada, también después de reiniciar el iPhone, el aviso llega a 150
   metros o menos de la patente que toca.
 - **SC-007**: Una salida de 2 horas queda grabada entera y no consume más del 30% de la batería,
   con la pantalla bloqueada casi todo el tiempo y mirando el mapa de vez en cuando.

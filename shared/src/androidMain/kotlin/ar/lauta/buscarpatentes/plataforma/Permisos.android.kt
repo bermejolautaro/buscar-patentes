@@ -13,15 +13,12 @@ import androidx.core.content.ContextCompat
 
 /**
  * Qué permisos del sistema hay detrás de cada [Permiso]. Los que el Android de este teléfono no
- * tiene —segundo plano antes de Android 10, notificaciones antes de 13— no se piden: se dan por
+ * tiene —notificaciones antes de Android 13— no se piden: se dan por
  * concedidos, que es lo que el sistema hace.
  */
 private fun manifiesto(permiso: Permiso): List<String> = when (permiso) {
     // Fina y gruesa juntas: lo que se pedía antes de habilitar la captura (FR-014).
     Permiso.UBICACION -> listOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
-    Permiso.UBICACION_SIEMPRE ->
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) listOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-        else emptyList()
     Permiso.NOTIFICACIONES ->
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) listOf(Manifest.permission.POST_NOTIFICATIONS)
         else emptyList()
@@ -34,9 +31,6 @@ private fun concedido(permiso: String): Boolean =
 actual fun tienePermiso(permiso: Permiso): Boolean = when (permiso) {
     // La captura necesita la fina: con la gruesa sola la patente quedaría a cuadras.
     Permiso.UBICACION -> concedido(Manifest.permission.ACCESS_FINE_LOCATION)
-    // Antes de Android 10 no existía el permiso aparte: alcanza con el de ubicación.
-    Permiso.UBICACION_SIEMPRE ->
-        manifiesto(permiso).all(::concedido) && tienePermiso(Permiso.UBICACION)
     else -> manifiesto(permiso).all(::concedido)
 }
 

@@ -26,8 +26,8 @@ import platform.UIKit.UIViewController
 
 /**
  * El arranque del iPhone. Lo llama el `AppDelegate` en `didFinishLaunching`, antes que cualquier
- * pantalla: iOS relanza la app en segundo plano al entrar a una región vigilada, sin mostrar nada,
- * y lo que atienda ese evento tiene que existir ya (D11 de la 006).
+ * pantalla: el caché del mapa se configura antes del primer mapa, y la salida cortada se cierra
+ * antes de que el jugador pueda empezar otra.
  */
 fun iniciar() {
     // Sin Mac no hay consola: el último fallo de Kotlin queda en Archivos, en `fallo.txt`.

@@ -267,20 +267,6 @@ fun PantallaPrincipal(
     // no se ve, y FR-023 pide que se vea. Se pide recién al empezar el primero, no al abrir.
     val pedirNotificaciones = rememberPedirPermisos { }
 
-    // T086 / FR-030: el permiso de segundo plano se pide antes de habilitar el recorrido.
-    // Negarlo no lo impide —el foreground service graba igual— pero sí apaga los avisos, y
-    // el jugador tiene que enterarse de eso acá y no cuando el aviso no llegue.
-    val pedirSegundoPlano = rememberPedirPermisos { concedidos ->
-        if (concedidos[Permiso.UBICACION_SIEMPRE] != true) {
-            alcance.launch {
-                snackbar.mostrar(
-                    "El recorrido graba igual. Sin ubicación en segundo plano lo que no " +
-                        "llega es el aviso al pasar cerca de una patente: se activa en Ajustes.",
-                )
-            }
-        }
-    }
-
     // La app abre con el mapa a la vista y el teclado guardado (FR-017 de la 002, que
     // reemplaza al FR-016 de la 001). El teclado sube cuando el jugador toca el campo.
     //
@@ -737,13 +723,9 @@ fun PantallaPrincipal(
                                             pedirNotificaciones(listOf(Permiso.NOTIFICACIONES))
                                         }
 
-                                        // FR-030 pide el permiso de segundo plano antes de
-                                        // habilitar los avisos **o los recorridos**.
-                                        // Tecnicamente el foreground service graba sin el; la
-                                        // spec lo pide igual. Negarlo no bloquea nada.
-                                        if (!concedido(Permiso.UBICACION_SIEMPRE)) {
-                                            pedirSegundoPlano(listOf(Permiso.UBICACION_SIEMPRE))
-                                        }
+                                        // Sin el permiso "siempre": el servicio del Android y la
+                                        // grabación del iPhone arrancan con la app adelante, y
+                                        // así graban con la pantalla apagada sin él.
                                         Grabacion.empezar()
                                         alcance.launch {
                                             snackbar.mostrar(

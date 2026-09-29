@@ -55,18 +55,6 @@ expect object Grabacion {
  */
 val salidaCortada = MutableStateFlow(false)
 
-/** P4: los avisos al pasar cerca de la que toca. */
-expect object Vigilancia {
-    /**
-     * Deja vigiladas exactamente las patentes que el estado del juego dicta. Sin el permiso
-     * "siempre" no vigila nada, y no rompe.
-     *
-     * [elSistemaLosOlvido] va en true cuando el proceso viene de arrancar: el sistema puede no
-     * conservar lo que se había registrado.
-     */
-    suspend fun reconciliar(elSistemaLosOlvido: Boolean = false)
-}
-
 /** P6: abre un punto en la app de mapas. False si no hay ninguna que lo reciba. */
 expect fun abrirPunto(latitud: Double, longitud: Double, etiqueta: String): Boolean
 

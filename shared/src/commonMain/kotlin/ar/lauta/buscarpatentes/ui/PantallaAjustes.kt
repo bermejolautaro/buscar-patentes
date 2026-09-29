@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
@@ -20,7 +19,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,13 +42,8 @@ import ar.lauta.buscarpatentes.data.EstadoDelJuego
 import ar.lauta.buscarpatentes.mapa.CacheDeMapa
 import ar.lauta.buscarpatentes.mapa.ConfigMapa
 import ar.lauta.buscarpatentes.plataforma.Grabacion
-import ar.lauta.buscarpatentes.plataforma.Permiso
-import ar.lauta.buscarpatentes.plataforma.Vigilancia
-import ar.lauta.buscarpatentes.plataforma.abrirAjustesDelSistema
 import ar.lauta.buscarpatentes.plataforma.mandarRespaldo
 import ar.lauta.buscarpatentes.plataforma.rememberElegirRespaldo
-import ar.lauta.buscarpatentes.plataforma.rememberPedirPermisos
-import ar.lauta.buscarpatentes.plataforma.tienePermiso
 import ar.lauta.buscarpatentes.plataforma.versionInstalada
 import ar.lauta.buscarpatentes.respaldo.Respaldo
 import ar.lauta.buscarpatentes.respaldo.Vencimiento
@@ -68,12 +61,10 @@ fun PantallaAjustes(onVolver: () -> Unit) {
     val alcance = rememberCoroutineScope()
 
     var numero by remember { mutableStateOf("") }
-    var avisos by remember { mutableStateOf(true) }
     var espacioMapa by remember { mutableStateOf<Long?>(null) }
     var espacioFotos by remember { mutableStateOf(0L) }
     var fotosPasadasDeTecho by remember { mutableStateOf(false) }
 
-    var faltaPermiso by remember { mutableStateOf(false) }
 
     // Respaldo (US2 y US3 de la 006). `vuelta` recarga todo después de restaurar: la base es otra.
     var vuelta by remember { mutableStateOf(0) }
@@ -128,24 +119,11 @@ fun PantallaAjustes(onVolver: () -> Unit) {
         versionInstalada().let { (version, en) -> version to (en?.let(::fechaSinAnio) ?: "?") }
     }
 
-    val pedirPermisos = rememberPedirPermisos {
-        // T061: negar degrada la funcion, no rompe la app. El resto sigue andando igual.
-        faltaPermiso = !tienePermiso(Permiso.UBICACION_SIEMPRE)
-    }
-
-    // T060: los permisos caros se piden recien al activar los avisos, no al arrancar.
-    fun pedirPermisosDeAviso() {
-        val faltantes = listOf(Permiso.UBICACION_SIEMPRE, Permiso.NOTIFICACIONES).filterNot(::tienePermiso)
-        if (faltantes.isNotEmpty()) pedirPermisos(faltantes)
-    }
-
     LaunchedEffect(vuelta) {
         ultimoRespaldo = Respaldo.ultimo()
-        faltaPermiso = !tienePermiso(Permiso.UBICACION_SIEMPRE)
         val estado = contenedor.estadoDelJuego.leer()
             ?: EstadoDelJuego().also { contenedor.estadoDelJuego.guardar(it) }
         numero = estado.numeroActual.toString()
-        avisos = estado.avisosActivos
         espacioMapa = CacheDeMapa.espacioOcupado()
         espacioFotos = contenedor.fotos.espacioOcupado()
         fotosPasadasDeTecho = contenedor.fotos.superoElTecho()
@@ -180,13 +158,8 @@ fun PantallaAjustes(onVolver: () -> Unit) {
                     if (nuevo.length <= 3 && nuevo.all { it.isDigit() }) {
                         numero = nuevo
                         // US3 escenario 4: cambiar el contador recalcula qué está cubierto.
-                        // Con la User Story 4, este mismo punto reconcilia los geofences (D4).
                         nuevo.toIntOrNull()?.let { n ->
-                            alcance.launch {
-                                contenedor.estadoDelJuego.fijarNumero(n)
-                                // D4: es el momento en que el conjunto de geofences cambia.
-                                Vigilancia.reconciliar()
-                            }
+                            alcance.launch { contenedor.estadoDelJuego.fijarNumero(n) }
                         }
                     }
                 },
@@ -194,50 +167,6 @@ fun PantallaAjustes(onVolver: () -> Unit) {
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             )
-
-            HorizontalDivider(Modifier.padding(vertical = 20.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(Modifier.weight(1f)) {
-                    Text("Avisarme al pasar cerca", fontWeight = FontWeight.Bold)
-                    Text(
-                        "Llega con la User Story 4. El interruptor ya guarda tu preferencia.",
-                        fontSize = 13.sp,
-                    )
-                }
-                Switch(
-                    checked = avisos,
-                    onCheckedChange = { activo ->
-                        avisos = activo
-                        alcance.launch {
-                            contenedor.estadoDelJuego.fijarAvisos(activo)
-                            Vigilancia.reconciliar()
-                        }
-                        if (activo) pedirPermisosDeAviso()
-                    },
-                )
-            }
-
-            if (avisos && faltaPermiso) {
-                // T061 / C4: se explica y se ofrece ajustes. El resto de la app no se toca.
-                Text(
-                    "Android no da el permiso de ubicación en segundo plano desde acá. Hay que " +
-                        "abrirlo en los ajustes del sistema y elegir \"Permitir todo el tiempo\". " +
-                        "Sin eso los avisos no llegan, pero todo lo demás sigue funcionando.",
-                    fontSize = 13.sp,
-                    modifier = Modifier.padding(top = 8.dp),
-                )
-                Button(
-                    onClick = { abrirAjustesDelSistema() },
-                    modifier = Modifier.padding(top = 8.dp),
-                ) {
-                    Text("Abrir ajustes del sistema")
-                }
-            }
 
             HorizontalDivider(Modifier.padding(vertical = 20.dp))
 

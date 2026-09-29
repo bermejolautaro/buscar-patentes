@@ -96,8 +96,6 @@ interface EstadoDelJuegoDao {
     @Query("UPDATE estado_del_juego SET numeroActual = :numero WHERE id = :id")
     suspend fun fijarNumero(numero: Int, id: Int = EstadoDelJuego.ID_UNICO)
 
-    @Query("UPDATE estado_del_juego SET avisosActivos = :activos WHERE id = :id")
-    suspend fun fijarAvisos(activos: Boolean, id: Int = EstadoDelJuego.ID_UNICO)
 
     /**
      * FR-003 de la 004: el modo del mapa se recuerda entre aperturas.

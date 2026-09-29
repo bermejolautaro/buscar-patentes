@@ -13,7 +13,6 @@ enum class Permiso {
     UBICACION,
 
     /** Ubicación siempre: la piden los avisos con la app cerrada (FR-027 de la 006). */
-    UBICACION_SIEMPRE,
 
     NOTIFICACIONES,
     CAMARA,

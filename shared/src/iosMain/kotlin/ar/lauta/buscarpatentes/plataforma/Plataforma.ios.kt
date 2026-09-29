@@ -38,15 +38,7 @@ import platform.UserNotifications.UNTimeIntervalNotificationTrigger
 import platform.UserNotifications.UNUserNotificationCenter
 import platform.darwin.NSObject
 
-/*
- * La costura del iPhone (contrato P de la 006). Lo que todavía no existe no hace nada: son los
- * avisos, que las pantallas llaman solas sin que el jugador lo pida.
- */
-
-actual object Vigilancia {
-    // Se llama después de cada captura: sin avisos todavía, no vigila nada (US5, T062).
-    actual suspend fun reconciliar(elSistemaLosOlvido: Boolean) {}
-}
+// La costura del iPhone (contrato P de la 006).
 
 /**
  * Un link de Google Maps, que abre la app si está instalada y si no Safari (D14). El iPhone no

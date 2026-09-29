@@ -4,7 +4,6 @@ import android.app.Application
 import ar.lauta.buscarpatentes.data.AlmacenFotos
 import ar.lauta.buscarpatentes.data.construirBase
 import ar.lauta.buscarpatentes.plataforma.Carpetas
-import ar.lauta.buscarpatentes.plataforma.Vigilancia
 import ar.lauta.buscarpatentes.plataforma.iniciarPlataforma
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -23,12 +22,6 @@ class App : Application() {
             // crear. Se cierra como TERMINADO conservando los puntos que alcanzo a juntar,
             // que es exactamente lo que FR-033 pide: nada de descartar el tramo.
             contenedor.recorridos.cerrarLosAbiertos(System.currentTimeMillis())
-
-            // T058 / C2: Android borra los geofences al reiniciar el telefono y al apagar la
-            // ubicacion. Reconciliar en cada arranque es la red de seguridad del BootReceiver,
-            // y por eso da todo de alta de nuevo en vez de confiar en lo que quedo anotado:
-            // si el proceso recien arranca, lo anotado puede ser de antes del reinicio.
-            Vigilancia.reconciliar(elSistemaLosOlvido = true)
         }
     }
 }

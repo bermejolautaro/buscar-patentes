@@ -139,13 +139,7 @@ enum class ModoMapa {
     }
 }
 
-/**
- * En qué número va el grupo (FR-020). Una sola fila, [ID_UNICO].
- *
- * Escribir [numeroActual] **dispara reconciliación de geofences** (D4): es el único
- * momento en que cambia el conjunto de registros que merecen aviso. Esa consecuencia
- * llega con la User Story 4.
- */
+/** En qué número va el grupo (FR-020). Una sola fila, [ID_UNICO]. */
 @Entity(tableName = "estado_del_juego")
 data class EstadoDelJuego(
     @PrimaryKey val id: Int = ID_UNICO,
@@ -153,14 +147,17 @@ data class EstadoDelJuego(
     /** 0 a 999. Lo mantiene el jugador a mano: el grupo de WhatsApp es la fuente de verdad. */
     val numeroActual: Int = 313,
 
-    /** FR-040: el jugador puede apagar los avisos sin perder el resto de la app. */
+    /**
+     * Sin uso desde la 006: los avisos al pasar cerca se sacaron de la app. La columna queda
+     * porque sacarla cambia el esquema, y con él la compatibilidad de los respaldos.
+     */
     val avisosActivos: Boolean = true,
 
     /**
      * Cuál de las tres preguntas está contestando el mapa (FR-003 de la 004).
      *
-     * Vive acá y no en un almacén aparte porque es una preferencia del jugador de la misma
-     * naturaleza que [avisosActivos], y esta tabla ya se lee en el mismo efecto de la
+     * Vive acá y no en un almacén aparte porque es una preferencia del jugador, y esta tabla ya
+     * se lee en el mismo efecto de la
      * pantalla principal. Un segundo mecanismo de persistencia para un solo valor sería
      * exactamente lo que el Principio IV prohíbe.
      */

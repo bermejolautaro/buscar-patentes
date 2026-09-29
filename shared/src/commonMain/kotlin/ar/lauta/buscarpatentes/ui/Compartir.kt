@@ -2,7 +2,6 @@ package ar.lauta.buscarpatentes.ui
 
 import ar.lauta.buscarpatentes.contenedor
 import ar.lauta.buscarpatentes.data.RegistroDeCaptura
-import ar.lauta.buscarpatentes.plataforma.Vigilancia
 import ar.lauta.buscarpatentes.plataforma.compartir
 
 /**
@@ -27,9 +26,7 @@ object Compartir {
             ?.takeIf { contenedor.fotos.existe(it) }
         compartir(texto, foto)
 
-        // FR-015: queda archivada como usada, no se borra. Y deja de generar avisos (FR-029).
+        // FR-015: queda archivada como usada, no se borra.
         contenedor.registros.marcarCompartida(registro.id)
-        // FR-029: una compartida deja de avisar, asi que sale del conjunto de geofences.
-        Vigilancia.reconciliar()
     }
 }

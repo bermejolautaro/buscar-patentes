@@ -9,7 +9,6 @@ import ar.lauta.buscarpatentes.contenedor
 import ar.lauta.buscarpatentes.data.AlmacenFotos
 import ar.lauta.buscarpatentes.data.BaseDeDatos
 import ar.lauta.buscarpatentes.plataforma.Carpetas
-import ar.lauta.buscarpatentes.plataforma.Vigilancia
 import ar.lauta.buscarpatentes.plataforma.ahora
 import ar.lauta.buscarpatentes.plataforma.sistema
 import ar.lauta.buscarpatentes.reabrirContenedor
@@ -273,7 +272,6 @@ object Respaldo {
             }
             cambio.confirmar()
             borrarTodo(preparado)
-            Vigilancia.reconciliar(elSistemaLosOlvido = true)
         }
 
     /** R6 paso 2: la base y las fotos listas en [carpeta], sin tocar nada del teléfono. */
