@@ -27,7 +27,7 @@ class PrioridadTest {
     private fun ids(lista: List<Candidato>) = lista.map { it.id }
 
     @Test
-    fun `con la misma confianza, primero la mas cercana`() {
+    fun `con la misma confianza primero la mas cercana`() {
         val lejos = aMetros(1, 600.0)
         val cerca = aMetros(2, 100.0)
         assertEquals(listOf(2L, 1L), ids(Prioridad.paraRevisar(listOf(lejos, cerca), aca)))
@@ -65,7 +65,7 @@ class PrioridadTest {
     }
 
     @Test
-    fun `a igualdad, primero la capturada mas recientemente`() {
+    fun `a igualdad primero la capturada mas recientemente`() {
         val vieja = aMetros(1, 100.0, capturadoEn = 1_000)
         val nueva = aMetros(2, 100.0, capturadoEn = 2_000)
         assertEquals(listOf(2L, 1L), ids(Prioridad.paraRevisar(listOf(vieja, nueva), aca)))
@@ -86,7 +86,7 @@ class PrioridadTest {
     }
 
     @Test
-    fun `el orden de paradas sigue desde la ultima, no desde el jugador`() {
+    fun `el orden de paradas sigue desde la ultima no desde el jugador`() {
         // Desde el jugador, la más cercana es la de 300 m al norte (la del sur está a 350). Desde
         // ahí, la de 500 m al norte queda a 200 y la del sur a 650: se sigue para el norte y se
         // vuelve al sur al final, en vez de ir y volver dos veces.

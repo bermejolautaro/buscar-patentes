@@ -29,7 +29,7 @@ class AcomodoTest {
     }
 
     @Test
-    fun `dos pines cercanos se separan a zoom de calle, sin irse de la cuadra`() {
+    fun `dos pines cercanos se separan a zoom de calle sin irse de la cuadra`() {
         val a = pin(1)
         val b = pin(2, 10.0)
         val dibujos = Acomodo.para(listOf(a, b), 17, ancho)
@@ -49,7 +49,7 @@ class AcomodoTest {
     }
 
     @Test
-    fun `los mismos dos se agrupan de lejos, donde no entran sin irse de la cuadra`() {
+    fun `los mismos dos se agrupan de lejos donde no entran sin irse de la cuadra`() {
         val dibujos = Acomodo.para(listOf(pin(1), pin(2, 10.0)), 13, ancho)
         assertEquals(1, dibujos.size)
         assertEquals(2, (dibujos.single() as Dibujo.Grupo).cuenta)

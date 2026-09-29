@@ -46,7 +46,7 @@ class PatenteTest {
     }
 
     @Test
-    fun `el numero sale del medio en mercosur, no del principio`() {
+    fun `el numero sale del medio en mercosur no del principio`() {
         // AB 313 CD: si alguien tomara los primeros digitos que encuentra daria otra cosa.
         val p = Patente.parsear("AA313ZZ")!!
         assertEquals(313, p.numero)

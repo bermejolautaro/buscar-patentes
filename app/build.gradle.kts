@@ -46,8 +46,6 @@ dependencies {
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.lifecycle.runtime.compose)
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
@@ -61,7 +59,6 @@ dependencies {
     ksp(libs.room.compiler)
 
     implementation(libs.play.services.location)
-    implementation(libs.maplibre.android.sdk)
 
     testImplementation(libs.junit)
 

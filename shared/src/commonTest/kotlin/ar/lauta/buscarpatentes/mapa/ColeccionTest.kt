@@ -3,11 +3,21 @@ package ar.lauta.buscarpatentes.mapa
 import ar.lauta.buscarpatentes.domain.Dibujo
 import ar.lauta.buscarpatentes.domain.Escalon
 import ar.lauta.buscarpatentes.domain.Probabilidad
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
-import org.junit.Test
-import org.maplibre.geojson.LineString
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
+import org.maplibre.spatialk.geojson.Feature
+import org.maplibre.spatialk.geojson.Geometry
+import org.maplibre.spatialk.geojson.LineString
+import org.maplibre.spatialk.geojson.Point
+
+private fun Feature<Geometry, JsonObject>.texto(clave: String) = properties[clave]!!.jsonPrimitive.content
+private fun Feature<Geometry, JsonObject>.entero(clave: String) = properties[clave]!!.jsonPrimitive.int
+private fun Feature<Geometry, JsonObject>.largo(clave: String) = properties[clave]!!.jsonPrimitive.long
 
 /**
  * El GeoJSON que se le entrega a MapLibre para dibujar los marcadores.
@@ -27,27 +37,26 @@ class ColeccionTest {
 
     @Test
     fun `arma un feature por marcador`() {
-        val json = coleccion(muestra).toJson()
-        println("GEOJSON: $json")
-
-        assertEquals(2, coleccion(muestra).features()?.size)
+        assertEquals(2, coleccion(muestra).features.size)
     }
 
     @Test
     fun `cada feature conserva coordenadas y numero`() {
-        val features = coleccion(muestra).features()!!
+        val features = coleccion(muestra).features
 
         val primero = features[0]
-        assertEquals("313", primero.getStringProperty("numero"))
-        assertEquals(1L, primero.getNumberProperty("id")?.toLong())
+        assertEquals("313", primero.texto("numero"))
+        assertEquals(1L, primero.largo("id"))
 
         // Orden GeoJSON: longitud primero. Invertirlo pondría las patentes en el mar.
-        assertTrue(primero.toJson().contains("-58.3811085"))
+        val punto = (primero.geometry as Point).coordinates
+        assertEquals(-58.3811085, punto.longitude)
+        assertEquals(-34.6039991, punto.latitude)
 
         // Si toca ya no viaja en el feature: desde la 005 decide la fuente, no la pintura.
-        assertFalse(primero.hasProperty("toca"))
+        assertFalse("toca" in primero.properties)
         // Con ceros a la izquierda, como en la lista y en el aviso de proximidad.
-        assertEquals("007", features[1].getStringProperty("numero"))
+        assertEquals("007", features[1].texto("numero"))
     }
 
     /**
@@ -58,8 +67,8 @@ class ColeccionTest {
     fun `la que toca va sola a su propia coleccion`() {
         val (resto, tocan) = coleccionesPatentes(muestra, zoom = 17)
 
-        assertEquals(listOf(2L), resto.features()!!.map { it.getNumberProperty("id").toLong() })
-        assertEquals(listOf(1L), tocan.features()!!.map { it.getNumberProperty("id").toLong() })
+        assertEquals(listOf(2L), resto.features.map { it.largo("id") })
+        assertEquals(listOf(1L), tocan.features.map { it.largo("id") })
     }
 
     /**
@@ -67,33 +76,33 @@ class ColeccionTest {
      * una cuenta, sin número que mostrar ni ficha que abrir.
      */
     @Test
-    fun `lo acomodado lleva la posicion de dibujo, y el grupo solo su cuenta`() {
+    fun `lo acomodado lleva la posicion de dibujo y el grupo solo su cuenta`() {
         val dibujos = listOf(
             Dibujo.Suelto(id = 2, latitud = -34.6041, longitud = -58.3812),
             Dibujo.Grupo(latitud = -34.5932, longitud = -58.3728, cuenta = 3),
         )
-        val (suelto, grupo) = coleccionAcomodada(muestra, dibujos).features()!!
+        val (suelto, grupo) = coleccionAcomodada(muestra, dibujos).features
 
-        val punto = suelto.geometry() as org.maplibre.geojson.Point
-        assertEquals(-58.3812, punto.longitude(), 1e-9)
-        assertEquals(-34.6041, punto.latitude(), 1e-9)
-        assertEquals("007", suelto.getStringProperty("numero"))
-        assertEquals(Probabilidad.INICIAL, suelto.getNumberProperty("probabilidad")?.toInt())
-        assertFalse(suelto.hasProperty("cuenta"))
+        val punto = (suelto.geometry as Point).coordinates
+        assertEquals(-58.3812, punto.longitude, 1e-9)
+        assertEquals(-34.6041, punto.latitude, 1e-9)
+        assertEquals("007", suelto.texto("numero"))
+        assertEquals(Probabilidad.INICIAL, suelto.entero("probabilidad"))
+        assertFalse("cuenta" in suelto.properties)
 
-        assertEquals(3, grupo.getNumberProperty("cuenta")?.toInt())
-        assertFalse(grupo.hasProperty("numero"))
-        assertFalse(grupo.hasProperty("id"))
+        assertEquals(3, grupo.entero("cuenta"))
+        assertFalse("numero" in grupo.properties)
+        assertFalse("id" in grupo.properties)
     }
 
     @Test
-    fun `la probabilidad viaja en el feature, y sin votos es la inicial`() {
-        val features = coleccion(muestra).features()!!
+    fun `la probabilidad viaja en el feature y sin votos es la inicial`() {
+        val features = coleccion(muestra).features
 
-        assertEquals(9, features[0].getNumberProperty("probabilidad")?.toInt())
+        assertEquals(9, features[0].entero("probabilidad"))
         // El segundo marcador no la declara: viaja la inicial, no un null que deje al
         // anillo sin imagen.
-        assertEquals(Probabilidad.INICIAL, features[1].getNumberProperty("probabilidad")?.toInt())
+        assertEquals(Probabilidad.INICIAL, features[1].entero("probabilidad"))
     }
 }
 
@@ -123,28 +132,28 @@ class ColeccionTrazosTest {
         -34.6137 to -58.3728,
     )
 
-    private fun coordenadas(coleccion: org.maplibre.geojson.FeatureCollection, i: Int) =
-        (coleccion.features()!![i].geometry() as LineString).coordinates()
+    private fun coordenadas(coleccion: Coleccion, i: Int) =
+        (coleccion.features[i].geometry as LineString).coordinates
 
     @Test
-    fun `un LineString por recorrido, no uno solo con todos los puntos`() {
+    fun `un LineString por recorrido no uno solo con todos los puntos`() {
         val trazos = listOf(
             Trazo(recorridoId = 1, puntos = caminata, escalon = Escalon.RECIENTE),
             Trazo(recorridoId = 2, puntos = caminata, escalon = Escalon.VIEJO),
         )
 
         // Uno solo cosería el final de una salida con el principio de la siguiente.
-        assertEquals(2, coleccionTrazos(trazos).features()?.size)
+        assertEquals(2, coleccionTrazos(trazos).features.size)
     }
 
     @Test
-    fun `orden GeoJSON, longitud primero`() {
-        val features = coordenadas(coleccionTrazos(listOf(Trazo(1, caminata, escalon = Escalon.VIEJO))), 0)
+    fun `orden GeoJSON longitud primero`() {
+        val puntos = coordenadas(coleccionTrazos(listOf(Trazo(1, caminata, escalon = Escalon.VIEJO))), 0)
 
         // Invertirlo pondría el recorrido en el mar, que es exactamente el bug que este
         // archivo existe para atajar.
-        assertEquals(-58.3728, features[0].longitude(), 0.00001)
-        assertEquals(-34.6032, features[0].latitude(), 0.00001)
+        assertEquals(-58.3728, puntos[0].longitude, 0.00001)
+        assertEquals(-34.6032, puntos[0].latitude, 0.00001)
     }
 
     @Test
@@ -153,38 +162,34 @@ class ColeccionTrazosTest {
             Trazo(1, caminata, escalon = Escalon.RECIENTE),
             Trazo(2, caminata, escalon = Escalon.VIEJO),
         )
-        val features = coleccionTrazos(trazos).features()!!
+        val features = coleccionTrazos(trazos).features
 
-        assertEquals("RECIENTE", features[0].getStringProperty("escalon"))
-        assertEquals("VIEJO", features[1].getStringProperty("escalon"))
+        assertEquals("RECIENTE", features[0].texto("escalon"))
+        assertEquals("VIEJO", features[1].texto("escalon"))
     }
 
     @Test
     fun `la coleccion conserva el orden de entrada`() {
         // D5: el orden **es** el mecanismo. Los trazos llegan de la salida más vieja a la más
         // nueva, y MapLibre dibuja en ese orden, así que la reciente queda encima donde se
-        // superponen (FR-013). Si esta colección reordenara, la calle compartida por dos
-        // salidas mostraría la antigüedad equivocada y nada más se rompería a la vista.
+        // superponen (FR-013).
         val trazos = listOf(
             Trazo(1, caminata, escalon = Escalon.VIEJO),
             Trazo(2, caminata, escalon = Escalon.MEDIO),
             Trazo(3, caminata, escalon = Escalon.RECIENTE),
         )
-        val features = coleccionTrazos(trazos).features()!!
+        val features = coleccionTrazos(trazos).features
 
-        assertEquals(
-            listOf("VIEJO", "MEDIO", "RECIENTE"),
-            features.map { it.getStringProperty("escalon") },
-        )
+        assertEquals(listOf("VIEJO", "MEDIO", "RECIENTE"), features.map { it.texto("escalon") })
     }
 
     @Test
     fun `un corte parte el recorrido en dos features y deja un hueco`() {
         val trazos = listOf(Trazo(1, conCorte, escalon = Escalon.RECIENTE))
 
-        assertEquals(2, coleccionTrazos(trazos).features()?.size)
+        assertEquals(2, coleccionTrazos(trazos).features.size)
         assertEquals(2, coordenadas(coleccionTrazos(trazos), 0).size)
-        assertEquals(1, coleccionHuecos(trazos).features()?.size)
+        assertEquals(1, coleccionHuecos(trazos).features.size)
     }
 
     @Test
@@ -192,26 +197,26 @@ class ColeccionTrazosTest {
         val hueco = coordenadas(coleccionHuecos(listOf(Trazo(1, conCorte, escalon = Escalon.VIEJO))), 0)
 
         assertEquals(2, hueco.size)
-        assertEquals(-34.6037, hueco[0].latitude(), 0.00001)
-        assertEquals(-34.6132, hueco[1].latitude(), 0.00001)
+        assertEquals(-34.6037, hueco[0].latitude, 0.00001)
+        assertEquals(-34.6132, hueco[1].latitude, 0.00001)
     }
 
     @Test
     fun `un recorrido continuo no deja ningun hueco`() {
-        assertEquals(0, coleccionHuecos(listOf(Trazo(1, caminata, escalon = Escalon.VIEJO))).features()?.size)
+        assertEquals(0, coleccionHuecos(listOf(Trazo(1, caminata, escalon = Escalon.VIEJO))).features.size)
     }
 
     @Test
-    fun `un tramo de un solo punto se saltea, porque no hay linea que dibujar`() {
+    fun `un tramo de un solo punto se saltea porque no hay linea que dibujar`() {
         // Empezó y terminó sin moverse: un punto, ninguna línea (edge case de la spec).
         val solo = listOf(Trazo(1, listOf(-34.6032 to -58.3728), escalon = Escalon.VIEJO))
-        assertEquals(0, coleccionTrazos(solo).features()?.size)
+        assertEquals(0, coleccionTrazos(solo).features.size)
 
         // Y el punto suelto que queda después de un corte tampoco se dibuja, pero el hueco
         // hasta él sí: es la desconexión, y existió.
         val cortadoAlFinal = listOf(Trazo(1, conCorte.dropLast(1), escalon = Escalon.VIEJO))
-        assertEquals(1, coleccionTrazos(cortadoAlFinal).features()?.size)
-        assertEquals(1, coleccionHuecos(cortadoAlFinal).features()?.size)
+        assertEquals(1, coleccionTrazos(cortadoAlFinal).features.size)
+        assertEquals(1, coleccionHuecos(cortadoAlFinal).features.size)
     }
 
     @Test
@@ -220,8 +225,8 @@ class ColeccionTrazosTest {
         // calles. Cortarlo ahí puntearía un tramo que sí se conoce.
         val ajustado = listOf(Trazo(1, conCorte, escalon = Escalon.RECIENTE, ajustado = true))
 
-        assertEquals(1, coleccionTrazos(ajustado).features()?.size)
+        assertEquals(1, coleccionTrazos(ajustado).features.size)
         assertEquals(4, coordenadas(coleccionTrazos(ajustado), 0).size)
-        assertEquals(0, coleccionHuecos(ajustado).features()?.size)
+        assertEquals(0, coleccionHuecos(ajustado).features.size)
     }
 }

@@ -61,7 +61,7 @@ class AvisosTest {
     }
 
     @Test
-    fun `si hubiera mas de 100 se trunca de forma determinista, no falla`() {
+    fun `si hubiera mas de 100 se trunca de forma determinista no falla`() {
         val muchos = (1..150).map { reg(it.toLong(), 313) }
         val elegidos = Avisos.aRegistrar(muchos, numeroActual = 313, Avisos.LIMITE_GEOFENCES)
         assertEquals(Avisos.LIMITE_GEOFENCES, elegidos.size)
@@ -75,7 +75,7 @@ class AvisosTest {
     }
 
     @Test
-    fun `con el limite del iPhone se recorta igual, a las 20 de id mas bajo`() {
+    fun `con el limite del iPhone se recorta igual a las 20 de id mas bajo`() {
         // D11 de la 006: el iPhone deja vigilar 20 regiones. El criterio es el mismo (FR-025).
         val muchos = (25L downTo 1L).map { reg(it, 313) }
         val elegidos = Avisos.aRegistrar(muchos, numeroActual = 313, limite = 20)
@@ -90,7 +90,7 @@ class AvisosTest {
     }
 
     @Test
-    fun `dentro de la ventana ya se avisó, y en el borde ya no`() {
+    fun `dentro de la ventana ya se avisó y en el borde ya no`() {
         val aviso = 1_000_000_000_000
         assertTrue(Avisos.yaAvisado(aviso + Avisos.VENTANA_SALIDA_MS - 1, aviso))
         assertFalse(Avisos.yaAvisado(aviso + Avisos.VENTANA_SALIDA_MS, aviso))

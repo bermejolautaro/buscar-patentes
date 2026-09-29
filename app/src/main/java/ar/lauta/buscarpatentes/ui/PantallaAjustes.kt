@@ -104,7 +104,7 @@ fun PantallaAjustes(onVolver: () -> Unit) {
             ?: EstadoDelJuego().also { context.contenedor.estadoDelJuego.guardar(it) }
         numero = estado.numeroActual.toString()
         avisos = estado.avisosActivos
-        espacioMapa = CacheDeMapa(context).espacioOcupado()
+        espacioMapa = CacheDeMapa.espacioOcupado()
         espacioFotos = context.contenedor.fotos.espacioOcupado()
         fotosPasadasDeTecho = context.contenedor.fotos.superoElTecho()
     }
@@ -230,8 +230,9 @@ fun PantallaAjustes(onVolver: () -> Unit) {
             )
             Button(
                 onClick = {
-                    CacheDeMapa(context).borrar {
-                        espacioMapa = CacheDeMapa(context).espacioOcupado()
+                    alcance.launch {
+                        CacheDeMapa.borrar()
+                        espacioMapa = CacheDeMapa.espacioOcupado()
                     }
                 },
                 modifier = Modifier.padding(top = 8.dp),

@@ -56,6 +56,9 @@ kotlin {
         }
         androidMain.dependencies {
             implementation(libs.maplibre.compose.opengl.android)
+            implementation(libs.androidx.core.ktx)
+            implementation(libs.androidx.activity.compose)
+            implementation(libs.play.services.location)
         }
     }
 }

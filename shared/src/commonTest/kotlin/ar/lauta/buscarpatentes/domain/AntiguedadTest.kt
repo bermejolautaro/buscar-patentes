@@ -56,7 +56,7 @@ class AntiguedadTest {
     }
 
     @Test
-    fun `una salida en curso no tiene fin, y su antiguedad es cero`() {
+    fun `una salida en curso no tiene fin y su antiguedad es cero`() {
         // El caso borde de la spec: `finalizadoEn` nulo cae en `iniciadoEn`, que es hoy.
         val enCurso = Antiguedad.escalon(
             finalizadoEn = null,
@@ -87,7 +87,7 @@ class AntiguedadTest {
     }
 
     @Test
-    fun `pasado el mes cambia de unidad, porque los dias dejan de significar algo`() {
+    fun `pasado el mes cambia de unidad porque los dias dejan de significar algo`() {
         assertEquals("hace un mes", Antiguedad.hace(haceDias(45), ahora))
         assertEquals("hace 2 meses", Antiguedad.hace(haceDias(75), ahora))
         assertEquals("hace un año", Antiguedad.hace(haceDias(400), ahora))

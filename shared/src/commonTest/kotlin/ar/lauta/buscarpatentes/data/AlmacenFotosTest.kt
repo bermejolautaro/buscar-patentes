@@ -40,7 +40,7 @@ class AlmacenFotosTest {
     }
 
     @Test
-    fun `la foto existe si su nombre esta en la carpeta, venga de donde venga la ruta`() {
+    fun `la foto existe si su nombre esta en la carpeta venga de donde venga la ruta`() {
         escribir("123.jpg")
         assertTrue(almacen.existe("/otra/carpeta/de/otro/telefono/123.jpg"))
         assertFalse(almacen.existe("/otra/carpeta/de/otro/telefono/456.jpg"))

@@ -209,7 +209,7 @@ class GeoTest {
     // El texto del FR-003, que la ficha y cada resultado de búsqueda muestran igual.
 
     @Test
-    fun `sin posicion actual dice que no se sabe, y no da ningun numero`() {
+    fun `sin posicion actual dice que no se sabe y no da ningun numero`() {
         // FR-003a: la rama que no puede salir mal. Un número inventado acá sería la misma
         // clase de mentira que el Principio II prohíbe en la evidencia.
         val texto = Geo.distanciaYRumbo(null, -34.6221, -58.3591)
@@ -239,7 +239,7 @@ class GeoTest {
     }
 
     @Test
-    fun `a unas cuadras es otra patente, aunque tenga el mismo numero`() {
+    fun `a unas cuadras es otra patente aunque tenga el mismo numero`() {
         // B está a ~650 m: dos autos distintos con el mismo número, no uno solo.
         val candidatos = listOf("lejana" to (latB to lonB))
 

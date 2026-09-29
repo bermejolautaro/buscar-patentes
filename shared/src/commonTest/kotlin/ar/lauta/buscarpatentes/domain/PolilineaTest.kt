@@ -85,7 +85,7 @@ class PolilineaTest {
     }
 
     @Test
-    fun `dos piernas separadas dan los puntos de las dos, cada una en su lugar`() {
+    fun `dos piernas separadas dan los puntos de las dos cada una en su lugar`() {
         // El bug que esto cierra: pegar las dos **cadenas** y decodificar de corrido suma
         // las coordenadas de la segunda a donde terminó la primera, y el camino se va del
         // planeta. Separadas, cada pierna se decodifica desde su propio origen.
