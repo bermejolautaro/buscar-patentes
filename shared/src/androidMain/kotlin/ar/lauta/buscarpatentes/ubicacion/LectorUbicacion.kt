@@ -34,7 +34,7 @@ class LectorUbicacion(private val context: Context) {
 
         val pedido = CurrentLocationRequest.Builder()
             .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
-            .setDurationMillis(PRESUPUESTO_MS)
+            .setDurationMillis(Lectura.PRESUPUESTO_MS)
             .setMaxUpdateAgeMillis(0) // nada cacheado: la lectura es de ahora
             .build()
 
@@ -61,16 +61,5 @@ class LectorUbicacion(private val context: Context) {
                 }
                 .addOnFailureListener { cont.resume(LecturaUbicacion.SinLectura) }
         }
-    }
-
-    companion object {
-        /**
-         * Cuánto se espera una lectura antes de rendirse.
-         *
-         * SC-001 da 10 segundos para todo el flujo de carga rápida, incluido lo que
-         * tarda el jugador en tipear. 5 segundos para el GPS deja margen.
-         * ponytail: calibrable contra uso real en la calle.
-         */
-        const val PRESUPUESTO_MS = 5_000L
     }
 }

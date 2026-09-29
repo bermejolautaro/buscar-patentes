@@ -19,6 +19,15 @@ data class Lectura(
 
     companion object {
         /**
+         * Cuánto se espera una lectura antes de rendirse.
+         *
+         * SC-001 da 10 segundos para todo el flujo de carga rápida, incluido lo que
+         * tarda el jugador en tipear. 5 segundos para el GPS deja margen.
+         * ponytail: calibrable contra uso real en la calle.
+         */
+        const val PRESUPUESTO_MS = 5_000L
+
+        /**
          * Cuánto puede envejecer una lectura precalentada y seguir siendo "de ahora".
          *
          * El precalentado pide la posición cuando el jugador tipea el primer dígito, no

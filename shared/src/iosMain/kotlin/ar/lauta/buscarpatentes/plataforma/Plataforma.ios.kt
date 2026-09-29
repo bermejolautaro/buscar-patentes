@@ -1,21 +1,19 @@
 package ar.lauta.buscarpatentes.plataforma
 
 import androidx.compose.runtime.Composable
-import ar.lauta.buscarpatentes.ubicacion.LecturaUbicacion
 import ar.lauta.buscarpatentes.ui.Ir
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import platform.Foundation.NSBundle
+import platform.Foundation.NSURL
+import platform.UIKit.UIApplication
+import platform.UIKit.UIApplicationOpenSettingsURLString
 
 /*
  * La costura del iPhone (contrato P de la 006). Lo que todavía no existe tira NotImplementedError
  * con la story que lo implementa. Lo que las pantallas llaman solas, sin que el jugador lo pida,
  * no tira: no hace nada, así la app abre igual.
  */
-
-actual object Ubicacion {
-    actual suspend fun leerAhora(): LecturaUbicacion = throw NotImplementedError("US1 (T038): leer la ubicación")
-}
 
 actual object Grabacion {
     actual val enCurso: StateFlow<Long?> = MutableStateFlow(null)
@@ -37,7 +35,10 @@ actual fun abrirPunto(latitud: Double, longitud: Double, etiqueta: String): Bool
 actual fun abrirRecorrido(url: String, paradas: Int): Ir.ResultadoRecorrido =
     throw NotImplementedError("US4 (T060): abrir el recorrido en Maps")
 
-actual fun abrirAjustesDelSistema(): Unit = throw NotImplementedError("US1 (T040): abrir los ajustes")
+actual fun abrirAjustesDelSistema() {
+    val ajustes = NSURL.URLWithString(UIApplicationOpenSettingsURLString) ?: return
+    UIApplication.sharedApplication.openURL(ajustes, emptyMap<Any?, Any>(), null)
+}
 
 actual fun compartir(texto: String, foto: String?): Unit = throw NotImplementedError("US4 (T059): compartir")
 

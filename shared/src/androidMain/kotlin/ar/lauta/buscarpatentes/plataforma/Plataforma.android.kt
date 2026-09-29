@@ -39,6 +39,8 @@ actual object Ubicacion {
     actual suspend fun leerAhora(): LecturaUbicacion = lector.leerAhora()
 }
 
+actual fun ubicacionExacta(): Boolean = true
+
 actual object Grabacion {
     actual val enCurso: StateFlow<Long?> get() = ServicioRecorrido.enCurso
     actual val puntosGuardados: StateFlow<Int> get() = ServicioRecorrido.puntosGuardados

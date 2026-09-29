@@ -65,10 +65,12 @@ import ar.lauta.buscarpatentes.mapa.Trazo
 import ar.lauta.buscarpatentes.plataforma.Grabacion
 import ar.lauta.buscarpatentes.plataforma.Permiso
 import ar.lauta.buscarpatentes.plataforma.Ubicacion
+import ar.lauta.buscarpatentes.plataforma.abrirAjustesDelSistema
 import ar.lauta.buscarpatentes.plataforma.ahora
 import ar.lauta.buscarpatentes.plataforma.rememberPedirPermisos
 import ar.lauta.buscarpatentes.plataforma.rememberSacarFoto
 import ar.lauta.buscarpatentes.plataforma.tienePermiso as concedido
+import ar.lauta.buscarpatentes.plataforma.ubicacionExacta
 import ar.lauta.buscarpatentes.recursos.Res
 import ar.lauta.buscarpatentes.recursos.ic_ajustes
 import ar.lauta.buscarpatentes.recursos.ic_antiguedad
@@ -536,6 +538,24 @@ fun PantallaPrincipal(
                 // un icono suelto se pierde entre las calles según por dónde ande el jugador.
                 // FR-004: la línea que dice qué está mostrando el mapa. Va acá arriba y no
                 // pegada al botón porque lo que describe es el mapa, no el control.
+                // FR-024: el iPhone deja apagar la ubicación exacta por app. Se avisa acá, fuera del
+                // camino de carga: la captura igual se guarda, y queda degradada por el umbral de
+                // siempre. En el Android nunca aparece.
+                if (!ubicacionExacta()) {
+                    Surface(
+                        onClick = { abrirAjustesDelSistema() },
+                        shape = RoundedCornerShape(8.dp),
+                        tonalElevation = 3.dp,
+                        modifier = Modifier.padding(start = 16.dp, bottom = 4.dp),
+                    ) {
+                        Text(
+                            "La ubicación exacta está apagada",
+                            fontSize = 13.sp,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        )
+                    }
+                }
+
                 LeyendaDelMapa(
                     modo = modoMapa,
                     patentesVisibles = patentesVisibles,

@@ -24,6 +24,12 @@ expect object Ubicacion {
     suspend fun leerAhora(): LecturaUbicacion
 }
 
+/**
+ * P2: false solo si el jugador apagó la ubicación exacta, que el iPhone deja apagar por app
+ * (FR-024). El Android no tiene ese interruptor.
+ */
+expect fun ubicacionExacta(): Boolean
+
 /** P3: la salida que se graba con la pantalla apagada. */
 expect object Grabacion {
     /**
