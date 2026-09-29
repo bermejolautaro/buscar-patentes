@@ -30,7 +30,7 @@ class VencimientoTest {
     }
 
     @Test
-    fun `sin perfil, sin la clave o con la fecha rota da null`() {
+    fun `sin perfil sin la clave o con la fecha rota da null`() {
         assertNull(Vencimiento.leer(null))
         assertNull(Vencimiento.leer(perfil(plist.replace("ExpirationDate", "OtraClave"))))
         assertNull(Vencimiento.leer(perfil(plist.replace("2026-10-06T12:00:00Z", "el martes"))))

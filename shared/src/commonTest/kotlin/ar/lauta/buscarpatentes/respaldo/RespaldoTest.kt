@@ -46,7 +46,7 @@ class RespaldoTest {
     // --- Sacar ---
 
     @Test
-    fun `sacar cuenta todo, deja la version y no toca la base`() {
+    fun `sacar cuenta todo deja la version y no toca la base`() {
         val origen = baseDeOrigen()
         val antes = volcado(origen)
 
@@ -70,7 +70,7 @@ class RespaldoTest {
     // --- Ida y vuelta ---
 
     @Test
-    fun `lo restaurado es identico bit por bit, con la foto por su nombre`() {
+    fun `lo restaurado es identico bit por bit con la foto por su nombre`() {
         val origen = baseDeOrigen()
         val respaldo = respaldoDe(origen)
         val (base, fotos) = destinoConOtrosDatos()
@@ -121,7 +121,7 @@ class RespaldoTest {
     // --- Fallas ---
 
     @Test
-    fun `si el cambio falla a mitad, el telefono queda como estaba`() {
+    fun `si el cambio falla a mitad el telefono queda como estaba`() {
         val respaldo = respaldoDe(baseDeOrigen())
         val (base, fotos) = destinoConOtrosDatos()
         val antes = volcado(base)
@@ -138,7 +138,7 @@ class RespaldoTest {
     }
 
     @Test
-    fun `si la base nueva no abre, deshacer devuelve la vieja y borra lo que dejo la nueva`() {
+    fun `si la base nueva no abre deshacer devuelve la vieja y borra lo que dejo la nueva`() {
         val respaldo = respaldoDe(baseDeOrigen())
         val (base, fotos) = destinoConOtrosDatos()
         val antes = volcado(base)
