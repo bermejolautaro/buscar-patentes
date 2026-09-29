@@ -10,6 +10,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.core.content.FileProvider
 import ar.lauta.buscarpatentes.ubicacion.Geofences
@@ -22,6 +23,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 // Lo que se abre desde acá sale del contexto de la app y no de una actividad, así que va en una
@@ -149,6 +151,45 @@ actual suspend fun postear(url: String, cuerpo: String): String? = withContext(D
 }
 
 private const val ESPERA_MS = 20_000
+
+actual val sistema: String = "android"
+
+actual fun perfilDeAprovisionamiento(): ByteArray? = null
+
+actual fun programarAvisoDeVencimiento(vence: Long) {}
+
+actual fun mandarRespaldo(ruta: String) {
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "application/octet-stream"
+        putExtra(Intent.EXTRA_STREAM, FileProvider.getUriForFile(contextoDeLaApp, autoridadDeFotos, File(ruta)))
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    abrir(Intent.createChooser(intent, "Mandar el respaldo"))
+}
+
+/** El archivo elegido se copia a la caché: el `content://` que devuelve el sistema no es una ruta. */
+@Composable
+actual fun rememberElegirRespaldo(alElegir: (String?) -> Unit): () -> Unit {
+    val elegir by rememberUpdatedState(alElegir)
+    val alcance = rememberCoroutineScope()
+    val lanzador = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri == null) {
+            elegir(null)
+        } else {
+            alcance.launch {
+                val copia = withContext(Dispatchers.IO) {
+                    val destino = File(Carpetas.temporal, "elegido.respaldo")
+                    contextoDeLaApp.contentResolver.openInputStream(uri)?.use { entrada ->
+                        destino.outputStream().use { entrada.copyTo(it) }
+                    }
+                    destino.absolutePath
+                }
+                elegir(copia)
+            }
+        }
+    }
+    return { lanzador.launch(arrayOf("*/*")) }
+}
 
 actual fun versionInstalada(): Pair<String, Long?> {
     val info = contextoDeLaApp.packageManager.getPackageInfo(contextoDeLaApp.packageName, 0)

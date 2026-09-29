@@ -15,7 +15,7 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         iniciarPlataforma(this)
-        iniciarContenedor(construirBase(this), AlmacenFotos(Carpetas.fotos))
+        iniciarContenedor({ construirBase(this) }, AlmacenFotos(Carpetas.fotos))
 
         CoroutineScope(Dispatchers.IO).launch {
             // T073 / FR-033: un recorrido EN_CURSO cuando el proceso recien arranca es de un

@@ -1,6 +1,7 @@
 package ar.lauta.buscarpatentes.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -10,6 +11,8 @@ import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.Dp
+import ar.lauta.buscarpatentes.plataforma.programarAvisoDeVencimiento
+import ar.lauta.buscarpatentes.respaldo.Vencimiento
 
 /**
  * Navegacion a mano entre tres pantallas, la misma en los dos teléfonos (D9 de la 006).
@@ -28,6 +31,9 @@ private enum class Destino { PRINCIPAL, RECORRIDOS, AJUSTES }
 fun AppBuscarPatentes() {
     TemaBuscarPatentes {
         var destino by remember { mutableStateOf(Destino.PRINCIPAL) }
+
+        // FR-012: el aviso de "vence mañana", programado de nuevo en cada arranque.
+        LaunchedEffect(Unit) { Vencimiento.deEstaInstalacion?.let(::programarAvisoDeVencimiento) }
 
         // FR-004: el gesto de retroceso del sistema vuelve a la pantalla principal.
         // La navegacion es a mano, asi que sin esto el gesto cerraba la app desde

@@ -26,6 +26,20 @@ class Contenedor(val baseDeDatos: BaseDeDatos, val fotos: AlmacenFotos) {
 lateinit var contenedor: Contenedor
     private set
 
-fun iniciarContenedor(baseDeDatos: BaseDeDatos, fotos: AlmacenFotos) {
-    contenedor = Contenedor(baseDeDatos, fotos)
+private lateinit var abrirBase: () -> BaseDeDatos
+
+/** [abrir] construye la base de este sistema. Se guarda para [reabrirContenedor]. */
+fun iniciarContenedor(abrir: () -> BaseDeDatos, fotos: AlmacenFotos) {
+    abrirBase = abrir
+    contenedor = Contenedor(abrir(), fotos)
+}
+
+/**
+ * Otra base sobre el mismo archivo, después de que restaurar lo reemplazó (R6 de la 006).
+ *
+ * Alcanza con cambiar el global: restaurar se hace desde Ajustes, y las pantallas que miran los
+ * datos arrancan de cero al volver. Lo que corre sin pantalla toma el nuevo en su próximo uso.
+ */
+fun reabrirContenedor() {
+    contenedor = Contenedor(abrirBase(), contenedor.fotos)
 }

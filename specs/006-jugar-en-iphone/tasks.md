@@ -223,7 +223,7 @@ el mapa y en la lista, abrir una ficha y votar (quickstart §2).
 **Independent Test**: con datos, reinstalar el mismo `.ipa` y uno nuevo, y comparar. Mirar el
 vencimiento en ajustes. Sacar un respaldo y verlo en Archivos y en iTunes (quickstart §3).
 
-- [ ] T043 [P] [US2] Crear `common/respaldo/Vencimiento.kt` y `commonTest/respaldo/VencimientoTest.kt`:
+- [X] T043 **Hecha**. Las fechas van en epoch millis, como el resto de la app, y `Vencimiento.deEstaInstalacion` lee el perfil una sola vez. [P] [US2] Crear `common/respaldo/Vencimiento.kt` y `commonTest/respaldo/VencimientoTest.kt`:
   - **`fun leer(perfil: ByteArray?): Instant?`**: busca `<key>ExpirationDate</key>` seguido de `<date>…</date>` en el texto ISO-8859-1 del perfil y lo parsea como ISO 8601.
   - **`fun mostrarAviso(ahora: Instant, vence: Instant?): Boolean`**: da `true` si `vence != null` y `vence - ahora <= 48.hours`.
   - **Pruebas**:
@@ -231,30 +231,30 @@ vencimiento en ajustes. Sacar un respaldo y verlo en Archivos y en iTunes (quick
     - `null`, un perfil sin la clave y una fecha rota;
     - los bordes exactos de 48 horas, 47:59 y 48:01, y una fecha ya pasada.
   (D15, P7)
-- [ ] T044 [P] [US2] En `ios/plataforma/Plataforma.ios.kt`:
+- [X] T044 **Hecha**, con dos cambios: el disparo es `UNTimeIntervalNotificationTrigger`, que da lo mismo sin armar componentes de calendario, y el permiso de notificaciones se pide ahí la primera vez, porque el aviso tiene que llegar aunque los avisos de patentes estén apagados. [P] [US2] En `ios/plataforma/Plataforma.ios.kt`:
   - **`perfilDeAprovisionamiento()`**: lee `NSBundle.mainBundle.pathForResource("embedded", "mobileprovision")`.
   - **`programarAvisoDeVencimiento(en)`**: una `UNNotificationRequest` con identificador fijo `vencimiento`, trigger `UNCalendarNotificationTrigger` en `en - 24h`, y el texto "La app vence mañana a las HH:MM. Reinstalala desde la PC.". Si `en - 24h` ya pasó, no programa nada.
   (D15, FR-012)
-- [ ] T045 [US2] En la UI común:
+- [X] T045 **Hecha**. [US2] En la UI común:
   - **`PantallaAjustes.kt`**: una fila "La instalación vence el …", con `Fechas`, visible solo si `Vencimiento.leer(perfilDeAprovisionamiento())` no es `null` (FR-010).
   - **`PantallaPrincipal.kt`**: una línea que no se toca, "Vence el …", cuando `mostrarAviso` da `true` (FR-011). No agrega pasos a la carga (Principio I).
   - **Al arrancar**: `AppBuscarPatentes` llama a `programarAvisoDeVencimiento(vence)` (FR-012).
-- [ ] T046 [US2] Crear `common/respaldo/Respaldo.kt` con `suspend fun sacar(…): Resultado`, según R3:
+- [X] T046 **Hecha**, sin `Preferencias`: la fecha del último respaldo sale del nombre de los archivos de `Carpetas.respaldos`, que ya la dice. Si el jugador los borra desde Archivos, vuelve a decir "nunca". El paso 2 pasa la copia a `journal_mode = DELETE` para que viaje un solo archivo. [US2] Crear `common/respaldo/Respaldo.kt` con `suspend fun sacar(…): Resultado`, según R3:
   1. `VACUUM INTO` sobre la conexión de escritura de Room (`useWriterConnection`, fuera de transacción) en `Carpetas.temporal`.
   2. Abrir la copia con `BundledSQLiteDriver`, crear `respaldo_info` y `respaldo_foto` y llenarlas (R2).
   3. Mover la copia a `Carpetas.respaldos` como `buscar-patentes-AAAAMMDD-HHMM.respaldo`.
   4. Guardar `ultimoRespaldoEn` en `Preferencias`.
   Si algo falla, borrar el temporal y devolver el error. Nunca escribe la base (R3)
-- [ ] T047 [P] [US2] Crear `commonTest/respaldo/RespaldoTest.kt`, que corre en la JVM y cubre la parte de sacar:
+- [X] T047 **Hecha**, en `commonTest`. Corre en la JVM de la PC con la biblioteca nativa de escritorio de `sqlite-bundled`, que la tarea `nativoDeSqlite` de `shared/build.gradle.kts` extrae y le pasa a la JVM, y en el simulador del iPhone en la nube. El `VACUUM INTO` se hace a mano sobre una base con el esquema de Room. [P] [US2] Crear `commonTest/respaldo/RespaldoTest.kt`, que corre en la JVM y cubre la parte de sacar:
   - una base con registros, fotos (algunas faltantes), salidas y votos da `respaldo_info` con las cuentas correctas (`patentes`, `salidas`, `fotos`, `fotosFaltantes`, `ultimaCaptura`) y `user_version` 7;
   - la base de origen queda sin cambios.
   Si `useWriterConnection` no se puede probar en la JVM, se prueba el paso 2 en adelante sobre una copia hecha a mano (R8)
-- [ ] T048 [US2] En `common/ui/PantallaAjustes.kt`, sumar la sección **Respaldo**:
+- [X] T048 **Hecha**, sin mirar la API del Android: con menos de 30, `VACUUM INTO` falla y la pantalla muestra el error, sin cerrar nada. Todos los teléfonos del juego tienen más. [US2] En `common/ui/PantallaAjustes.kt`, sumar la sección **Respaldo**:
   - el botón "Sacar respaldo" llama a `Respaldo.sacar` y después a `rememberGuardarRespaldo()` con la ruta;
   - debajo, "Último respaldo: …" o "Nunca" (FR-013, FR-020);
   - **en el Android**, la sección solo aparece con API 30 o más (D8).
   Es el único cambio visible en el Android (FR-031)
-- [ ] T049 [P] [US2] Implementar `rememberGuardarRespaldo`:
+- [X] T049 **Hecha** como función común `mandarRespaldo(ruta)`, igual que `compartir` (T025): no necesita estado de Compose. [P] [US2] Implementar `rememberGuardarRespaldo`:
   - **Android**, en `android/plataforma/Pantallas.android.kt`: `ACTION_SEND` con `FileProvider` y el tipo `application/octet-stream`; sumar `<files-path name="respaldos" path="respaldos/" />` a `app/src/main/res/xml/file_paths.xml`. La carpeta es `filesDir/respaldos`, no la caché: ahí queda también el respaldo automático previo a restaurar, y el sistema no la vacía (P1).
   - **iPhone**, en `ios/plataforma/Pantallas.ios.kt`: `UIActivityViewController` con la URL del archivo, presentado desde el controlador raíz.
   (P5)
@@ -271,32 +271,32 @@ vencimiento en ajustes. Sacar un respaldo y verlo en Archivos y en iTunes (quick
 **Independent Test**: restaurar un respaldo real del Android en el iPhone y comparar cuentas y cinco
 registros campo por campo. Rechazar un archivo inválido (quickstart §4).
 
-- [ ] T051 [US3] En `common/respaldo/Respaldo.kt`, sumar `suspend fun validar(archivo): Validacion`, según R4. Abre **una copia** con `BundledSQLiteDriver` y devuelve `Valido(cuentas)` o `Rechazado(motivo)` con los textos exactos de R4
-- [ ] T052 [US3] En `common/respaldo/Respaldo.kt`, sumar `suspend fun restaurar(archivo, conRespaldoPrevio: Boolean): Resultado`, según R6:
+- [X] T051 **Hecha**. Antes de abrir mira la cabecera `SQLite format 3`: un archivo que la tiene y después no se lee es un respaldo dañado, no "otra cosa". [US3] En `common/respaldo/Respaldo.kt`, sumar `suspend fun validar(archivo): Validacion`, según R4. Abre **una copia** con `BundledSQLiteDriver` y devuelve `Valido(cuentas)` o `Rechazado(motivo)` con los textos exactos de R4
+- [X] T052 **Hecha**. Los archivos de al lado de la base (`-wal`, `-shm`, `-journal`) se apartan con `.anterior` junto con la base, en vez de borrarse: si hay que deshacer, vuelven. `cambiar` deshace solo lo que alcanzó a mover. [US3] En `common/respaldo/Respaldo.kt`, sumar `suspend fun restaurar(archivo, conRespaldoPrevio: Boolean): Resultado`, según R6:
   1. el respaldo automático si corresponde; si falla, no se sigue;
   2. preparar en `Carpetas.temporal/preparado/`: extraer las fotos, borrar las dos tablas y hacer `VACUUM`;
   3. el cambio de nombres (base y fotos a `.anterior`, los nuevos a su lugar, borrar `-wal` y `-shm`), deshaciéndolo si algo falla;
   4. se devuelve la base nueva para reabrir;
   5. se borran los `.anterior`.
   El resultado lleva las cuentas y las fotos faltantes (R6.7). **Nunca** fusiona (FR-017)
-- [ ] T053 [P] [US3] Completar `commonTest/respaldo/RespaldoTest.kt` con R8:
+- [X] T053 **Hecha**, junto con T047. Suma un caso: deshacer después de que la base nueva no abrió, con el `-wal` que habría dejado Room. [P] [US3] Completar `commonTest/respaldo/RespaldoTest.kt` con R8:
   - **ida y vuelta**: `latitud`, `longitud`, `precisionMetros` y `capturadoEn` comparados con `toRawBits()` en cada fila;
   - **rechazos**: texto, SQLite sin `respaldo_info`, `formato` 2, `user_version` 99 y archivo truncado, y la base de destino intacta en cada caso;
   - **foto faltante**: el registro llega igual;
   - **falla a mitad**: simular un error después de preparar y antes del cambio de nombres, y comprobar que nada cambió.
-- [ ] T054 [US3] Hacer reabrible el contenedor:
+- [X] T054 **Hecha** con `reabrirContenedor()`: `iniciarContenedor` recibe cómo construir la base y la guarda. El `construirBase` del Android dejó de guardar su instancia. Alcanza con cambiar el global porque se restaura desde Ajustes y las pantallas con datos arrancan de cero al volver. [US3] Hacer reabrible el contenedor:
   - en `common/Contenedor.kt`, un `mutableStateOf<Contenedor>` en la raíz de `AppBuscarPatentes`, o un `Contenedor.reabrir()` que cierra Room y construye uno nuevo;
   - la UI que depende de los datos se recompone desde cero;
   - después se llama a `Vigilancia.reconciliar(...)` (R6.6).
   El Android usa el mismo camino, y la `App` de Android conserva la referencia nueva
-- [ ] T055 [US3] En `common/ui/PantallaAjustes.kt`, sección Respaldo, el botón "Restaurar respaldo":
+- [X] T055 **Hecha**. El indicador es un diálogo que no se cierra ni con el gesto de volver: con la base cerrada, cualquier toque que escriba cerraría la app. No deja restaurar con una salida grabando. [US3] En `common/ui/PantallaAjustes.kt`, sección Respaldo, el botón "Restaurar respaldo":
   - llama a `rememberElegirRespaldo` y después a `validar`;
   - si `Rechazado`, muestra el motivo;
   - si el teléfono tiene patentes, muestra el diálogo de R5 con las dos cuentas y las dos fechas;
   - si no, o al confirmar, llama a `restaurar`;
   - después reabre (T054) y muestra el resultado de R6.7.
   Mientras dura, un indicador que no deja volver a tocar (FR-016, FR-018, FR-019)
-- [ ] T056 [P] [US3] Implementar `rememberElegirRespaldo`:
+- [X] T056 **Hecha**. [P] [US3] Implementar `rememberElegirRespaldo`:
   - **Android**, en `android/plataforma/Pantallas.android.kt`: `ActivityResultContracts.OpenDocument()` con `arrayOf("*/*")`, y copiar el `Uri` a `Carpetas.temporal`.
   - **iPhone**, en `ios/plataforma/Pantallas.ios.kt`: `UIDocumentPickerViewController(forOpeningContentTypes = [UTTypeData], asCopy = true)` y entregar la URL copiada.
   (P5)

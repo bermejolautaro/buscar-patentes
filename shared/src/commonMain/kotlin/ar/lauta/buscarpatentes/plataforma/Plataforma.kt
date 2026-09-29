@@ -81,6 +81,28 @@ expect fun hayConexion(): Boolean
  */
 expect suspend fun postear(url: String, cuerpo: String): String?
 
+/** De qué sistema sale un respaldo (R2): `android` o `ios`. */
+expect val sistema: String
+
+/** P6: los bytes de `embedded.mobileprovision`, que dicen cuándo vence la app. En el Android, null. */
+expect fun perfilDeAprovisionamiento(): ByteArray?
+
+/**
+ * P6: la notificación de "vence mañana", 24 horas antes de [vence] (epoch ms). Reemplaza la
+ * anterior, y si ese momento ya pasó no programa nada (FR-012). En el Android, nada.
+ */
+expect fun programarAvisoDeVencimiento(vence: Long)
+
+/** P5: la hoja de compartir del sistema con el archivo de un respaldo, para sacarlo del teléfono. */
+expect fun mandarRespaldo(ruta: String)
+
+/**
+ * P5: devuelve la función que deja elegir un archivo. Cuando se elige, llama a [alElegir] con la
+ * ruta de una copia local; si se cancela, con null.
+ */
+@Composable
+expect fun rememberElegirRespaldo(alElegir: (String?) -> Unit): () -> Unit
+
 /** La versión instalada y cuándo se instaló, en milisegundos, para el pie de Ajustes. */
 expect fun versionInstalada(): Pair<String, Long?>
 

@@ -14,7 +14,7 @@ import ar.lauta.buscarpatentes.domain.Probabilidad
  * Las migraciones 1→7 usan `SupportSQLiteDatabase`, que solo existe acá. El iPhone no las
  * necesita: su base nace en la 7, o le llega por respaldo desde un Android que ya está en la 7.
  */
-fun construirBase(context: Context): BaseDeDatos = Migraciones.obtener(context)
+fun construirBase(context: Context): BaseDeDatos = Migraciones.construir(context)
 
 private object Migraciones {
 
@@ -162,25 +162,20 @@ private object Migraciones {
             }
         }
 
-        @Volatile
-        private var instancia: BaseDeDatos? = null
-
-        fun obtener(context: Context): BaseDeDatos =
-            instancia ?: synchronized(this) {
-                instancia ?: Room.databaseBuilder(
-                    context.applicationContext,
-                    BaseDeDatos::class.java,
-                    BaseDeDatos.ARCHIVO,
+        // Sin instancia guardada: la guarda el contenedor, que la cambia al restaurar un respaldo.
+        fun construir(context: Context): BaseDeDatos =
+            Room.databaseBuilder(
+                context.applicationContext,
+                BaseDeDatos::class.java,
+                BaseDeDatos.ARCHIVO,
+            )
+                .addMigrations(
+                    MIGRACION_1_2,
+                    MIGRACION_2_3,
+                    MIGRACION_3_4,
+                    MIGRACION_4_5,
+                    MIGRACION_5_6,
+                    MIGRACION_6_7,
                 )
-                    .addMigrations(
-                        MIGRACION_1_2,
-                        MIGRACION_2_3,
-                        MIGRACION_3_4,
-                        MIGRACION_4_5,
-                        MIGRACION_5_6,
-                        MIGRACION_6_7,
-                    )
-                    .build()
-                    .also { instancia = it }
-            }
+                .build()
 }

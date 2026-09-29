@@ -72,6 +72,7 @@ import ar.lauta.buscarpatentes.plataforma.rememberSacarFoto
 import ar.lauta.buscarpatentes.plataforma.tienePermiso as concedido
 import ar.lauta.buscarpatentes.plataforma.ubicacionExacta
 import ar.lauta.buscarpatentes.recursos.Res
+import ar.lauta.buscarpatentes.respaldo.Vencimiento
 import ar.lauta.buscarpatentes.recursos.ic_ajustes
 import ar.lauta.buscarpatentes.recursos.ic_antiguedad
 import ar.lauta.buscarpatentes.recursos.ic_cobertura
@@ -550,6 +551,23 @@ fun PantallaPrincipal(
                     ) {
                         Text(
                             "La ubicación exacta está apagada",
+                            fontSize = 13.sp,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        )
+                    }
+                }
+
+                // FR-011: faltan 48 horas o menos para que la app deje de abrir. Solo se lee: no
+                // hay nada que tocar, lo que falta es reinstalar desde la PC.
+                val vence = Vencimiento.deEstaInstalacion
+                if (Vencimiento.mostrarAviso(ahora(), vence)) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        tonalElevation = 3.dp,
+                        modifier = Modifier.padding(start = 16.dp, bottom = 4.dp),
+                    ) {
+                        Text(
+                            "Vence el ${fechaSinAnio(vence!!)}: reinstalala desde la PC",
                             fontSize = 13.sp,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                         )

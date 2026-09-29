@@ -71,9 +71,38 @@ compose.resources {
     packageOfResClass = "ar.lauta.buscarpatentes.recursos"
 }
 
+// Las pruebas comunes también corren en la JVM de la PC, y el respaldo abre archivos con el SQLite
+// incluido. El del Android trae la biblioteca nativa del teléfono, que la PC no carga: se toma la
+// de escritorio del mismo release y se le indica a la JVM dónde está.
+val sqliteDeEscritorio: Configuration by configurations.creating
+
 // Room genera el código de la base para cada target (D6).
 dependencies {
     add("kspAndroid", libs.room.compiler)
     add("kspIosArm64", libs.room.compiler)
     add("kspIosSimulatorArm64", libs.room.compiler)
+    sqliteDeEscritorio("androidx.sqlite:sqlite-bundled-jvm:${libs.versions.sqliteBundled.get()}") {
+        isTransitive = false
+    }
+}
+
+val nativoDeSqlite = tasks.register<Sync>("nativoDeSqlite") {
+    val so = System.getProperty("os.name").lowercase()
+    val arm = System.getProperty("os.arch") == "aarch64"
+    val carpeta = when {
+        "win" in so -> "windows_x64"
+        "mac" in so -> if (arm) "osx_arm64" else "osx_x64"
+        else -> if (arm) "linux_arm64" else "linux_x64"
+    }
+    from({ zipTree(sqliteDeEscritorio.singleFile) }) {
+        include("natives/$carpeta/*")
+        eachFile { path = name }
+        includeEmptyDirs = false
+    }
+    into(layout.buildDirectory.dir("sqlite-nativo"))
+}
+
+tasks.withType<Test>().configureEach {
+    dependsOn(nativoDeSqlite)
+    systemProperty("java.library.path", layout.buildDirectory.dir("sqlite-nativo").get().asFile.path)
 }

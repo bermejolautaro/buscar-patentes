@@ -41,7 +41,7 @@ fun iniciar() {
         ),
     )
 
-    iniciarContenedor(construirBase(), AlmacenFotos(Carpetas.fotos))
+    iniciarContenedor(::construirBase, AlmacenFotos(Carpetas.fotos))
 
     // Core Location entrega lo que mide en el hilo donde se creó el manager: este, el principal.
     Ubicacion.manager

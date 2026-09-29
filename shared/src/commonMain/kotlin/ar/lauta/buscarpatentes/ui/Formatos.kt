@@ -33,6 +33,11 @@ private fun fecha(millis: Long, zona: TimeZone, conAnio: Boolean): String {
     else "${f.day} ${MESES[f.month.ordinal]} $hora"
 }
 
+/** "09:07". */
+@OptIn(ExperimentalTime::class)
+fun hora(millis: Long, zona: TimeZone = TimeZone.currentSystemDefault()): String =
+    Instant.fromEpochMilliseconds(millis).toLocalDateTime(zona).let { "${dosCifras(it.hour)}:${dosCifras(it.minute)}" }
+
 private fun dosCifras(n: Int) = n.toString().padStart(2, '0')
 
 /**
