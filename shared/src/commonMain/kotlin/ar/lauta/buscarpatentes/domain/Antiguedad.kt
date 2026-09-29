@@ -1,6 +1,5 @@
 package ar.lauta.buscarpatentes.domain
 
-import java.util.concurrent.TimeUnit
 
 /**
  * Hace cuánto se caminó una calle, en tres escalones (FR-011 a FR-016 de la 004).
