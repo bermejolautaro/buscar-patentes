@@ -165,9 +165,9 @@ además se **verifica el Android** en el teléfono: T031 y T036.
 
 ### Mapa compartido (D5)
 
-- [ ] T032 Mover a `common/mapa/Colecciones.kt` las funciones puras de GeoJSON de `app/…/mapa/Mapa.kt`, reescritas sobre los tipos GeoJSON de maplibre-compose: `coleccion`, `featureDe`, `coleccionAcomodada`, `coleccionesPatentes`, las de trazos y sus constantes `PROP_*`. `ColeccionTest` va a `commonTest/mapa/`, con las mismas afirmaciones sobre los tipos nuevos (D5, D17)
-- [ ] T033 Crear `common/mapa/Pines.kt`, que dibuja los pines con Compose (`Painter` o `ImageBitmap`) con el mismo tamaño, el borde por confianza, el relleno blanco o `ColoresDeMapa.TOCA` y el texto que hoy sale de `bitmapDePin` con `android.graphics.Canvas`. Los nombres de imagen (`PIN_*`, `PIN_TOCA_*`) no cambian
-- [ ] T034 Crear `common/mapa/MapaDeFondo.kt` con maplibre-compose, con la misma API de composable que tiene hoy `MapaDeFondo`. Tiene que reproducir `Mapa.kt`:
+- [X] T032 **Hecha, antes que T019–T031**: se reordenó para validar el mapa nuevo en el Android con la UI de siempre, en vez de armar un `expect` provisorio del mapa viejo. Mover a `common/mapa/Colecciones.kt` las funciones puras de GeoJSON de `app/…/mapa/Mapa.kt`, reescritas sobre los tipos GeoJSON de maplibre-compose: `coleccion`, `featureDe`, `coleccionAcomodada`, `coleccionesPatentes`, las de trazos y sus constantes `PROP_*`. `ColeccionTest` va a `commonTest/mapa/`, con las mismas afirmaciones sobre los tipos nuevos (D5, D17)
+- [X] T033 Crear `common/mapa/Pines.kt`, que dibuja los pines con Compose (`Painter` o `ImageBitmap`) con el mismo tamaño, el borde por confianza, el relleno blanco o `ColoresDeMapa.TOCA` y el texto que hoy sale de `bitmapDePin` con `android.graphics.Canvas`. Los nombres de imagen (`PIN_*`, `PIN_TOCA_*`) no cambian
+- [X] T034 **Hecha**: el punto azul es `LocationIndicatorLayer` con `rememberLocationState`, y el seguimiento `LocationTrackingEffect`. El caché va a `Carpetas.base/maplibre-cache.db` (el de la caché del sistema lo podía borrar Android) y el viejo `mbgl-offline.db` se borra: las zonas vistas sin conexión se vuelven a guardar al pasar. Sin brújula ni escala. Crear `common/mapa/MapaDeFondo.kt` con maplibre-compose, con la misma API de composable que tiene hoy `MapaDeFondo`. Tiene que reproducir `Mapa.kt`:
   - **Estilo y fuentes**: el estilo `ConfigMapa.ESTILO_URL`, las fuentes `FUENTE` y `FUENTE_TOCA` y la de trazos, con las mismas capas en el mismo orden (C2 de la 004).
   - **Acomodo**: recalcula `coleccionesPatentes` solo cuando cambia el zoom entero, al quedar quieta la cámara (FR-023c de la 005).
   - **Toques**: el clic consulta `CAPA` y `CAPA_TOCA` y abre la ficha.
@@ -175,7 +175,7 @@ además se **verifica el Android** en el teléfono: T031 y T036.
   - **Caché de teselas**: se fija con el `OfflineManager` de la biblioteca, igual que hoy (SC-013 de la 001).
   - **Motor en el Android**: el runtime OpenGL.
   Si algo de la API de hoy no tiene equivalente, anotarlo en el commit y en `research.md` (D5)
-- [ ] T035 Apuntar la UI común a `common/mapa/MapaDeFondo.kt` y mover `app/…/mapa/Mapa.kt` a `android/mapa/MapaViejo.kt`, sin borrarlo todavía. Sacar `org.maplibre.gl:android-sdk` de `:app` solo si nada lo usa
+- [X] T035 **Hecha**, sin `MapaViejo`: el `Mapa.kt` viejo salió del todo (queda en el historial para la línea de corte), y con él `android-sdk` y `androidx.lifecycle`. Apuntar la UI común a `common/mapa/MapaDeFondo.kt` y mover `app/…/mapa/Mapa.kt` a `android/mapa/MapaViejo.kt`, sin borrarlo todavía. Sacar `org.maplibre.gl:android-sdk` de `:app` solo si nada lo usa
 - [ ] T036 **Verificar Android** con los quickstart **enteros** de la [004](../004-planear-recorridos/quickstart.md) y la [005](../005-buscar-la-que-toca/quickstart.md) en el teléfono: modos del mapa, pines, la que toca en verde, grupos y pines que se hacen lugar, trazos por antigüedad, punto azul con rumbo y el mapa sin conexión en una zona ya vista.
   - **Si pasa**: borrar `android/mapa/MapaViejo.kt` y las dependencias `android-sdk`, `lifecycle-runtime-ktx` y `lifecycle-runtime-compose` de `:app`. Solo las usaba el mapa viejo.
   - **Si no pasa y no se arregla**: aplicar la línea de corte de D5 (`expect fun MapaDeFondo` con `MapaViejo` en el Android), anotarlo en `research.md` y seguir.
