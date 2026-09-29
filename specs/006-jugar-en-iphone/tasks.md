@@ -194,18 +194,18 @@ la barra, la lista y la ficha como en el Android.
 **Independent Test**: compilar iPhone e instalar. Anotar tres patentes, una en modo avión. Verlas en
 el mapa y en la lista, abrir una ficha y votar (quickstart §2).
 
-- [ ] T037 [P] [US1] En `ios/plataforma/Plataforma.ios.kt`, implementar `Carpetas`:
+- [X] T037 **Hecha** con T018 (`Carpetas.ios.kt`). `Preferencias` queda para la story que la use: la vigilancia del iPhone lee las regiones del sistema y no necesita anotarlas. [P] [US1] En `ios/plataforma/Plataforma.ios.kt`, implementar `Carpetas`:
   - `base` y `fotos` en `NSApplicationSupportDirectory`, `respaldos` en `NSDocumentDirectory/respaldos` y `temporal` en `NSTemporaryDirectory()`;
   - crear las carpetas al primer uso;
   - `Preferencias` sobre `NSUserDefaults.standardUserDefaults`.
   (P1, P6)
-- [ ] T038 [P] [US1] Crear `ios/ubicacion/Ubicacion.ios.kt`:
+- [X] T038 **Hecha** en `ios/plataforma/Ubicacion.ios.kt`, con un cambio: en vez de `requestLocation()`, `startUpdatingLocation()` hasta que llega una posición de ahora (edad de 15 s o menos), y corta. `requestLocation()` puede entregar una guardada. Tiene su propio `CLLocationManager`, así apagarlo no toca la salida ni los avisos. [P] [US1] Crear `ios/ubicacion/Ubicacion.ios.kt`:
   - **El manager**: el único `CLLocationManager` de la app, con su delegado, creado en `Plataforma.iniciar()`.
   - **`leerUbicacion()`**: `requestLocation()` con `kCLLocationAccuracyBest`, el mismo tiempo de espera que `LectorUbicacion`, y `horizontalAccuracy` a `precisionMetros`. Devuelve `null` si vence la espera.
   - **`ubicacionExacta()`**: `accuracyAuthorization == CLAccuracyAuthorizationFullAccuracy`.
   (D10, P2)
-- [ ] T039 [P] [US1] En `ios/plataforma/Pantallas.ios.kt`, implementar `rememberPedirPermisos` para ubicación "mientras se usa" (`requestWhenInUseAuthorization`) y notificaciones (`UNUserNotificationCenter.requestAuthorization`), y `abrirAjustesDelSistema()` con `UIApplicationOpenSettingsURLString` (D13, P5, P6)
-- [ ] T040 [US1] En `common/ui/PantallaPrincipal.kt`, si `ubicacionExacta()` da `false`, mostrar una línea que se puede tocar, "La ubicación exacta está apagada", que llama a `abrirAjustesDelSistema()`. No entra en el camino de carga, y en el Android nunca aparece. La captura se guarda con la precisión que llegó, y queda degradada por el umbral de siempre (FR-024, Principio II)
+- [X] T039 **Hecha**, también para la cámara. "Siempre" se pide sin esperar la respuesta: iOS puede postergar el cartel. `abrirAjustesDelSistema` quedó en `Plataforma.ios.kt`. [P] [US1] En `ios/plataforma/Pantallas.ios.kt`, implementar `rememberPedirPermisos` para ubicación "mientras se usa" (`requestWhenInUseAuthorization`) y notificaciones (`UNUserNotificationCenter.requestAuthorization`), y `abrirAjustesDelSistema()` con `UIApplicationOpenSettingsURLString` (D13, P5, P6)
+- [X] T040 **Hecha**. [US1] En `common/ui/PantallaPrincipal.kt`, si `ubicacionExacta()` da `false`, mostrar una línea que se puede tocar, "La ubicación exacta está apagada", que llama a `abrirAjustesDelSistema()`. No entra en el camino de carga, y en el Android nunca aparece. La captura se guarda con la precisión que llegó, y queda degradada por el umbral de siempre (FR-024, Principio II)
 - [ ] T041 [US1] Crear `ios/MainViewController.kt` con `fun MainViewController() = ComposeUIViewController { CompositionLocalProvider(LocalContenedor provides …) { AppBuscarPatentes(…) } }` y `fun iniciar()`, que llama a `Plataforma.iniciar()` y arma el `Contenedor` con `construirBase()` de iOS. En `iosApp/iosApp/iOSApp.swift`, `didFinishLaunching` llama a `MainViewControllerKt.iniciar()`. Borrar `ios/piloto/` (T009)
 - [ ] T042 [US1] **Compilar iPhone** y correr el quickstart §2: carga en 4 toques y 10 segundos o menos, modo avión, ubicación exacta apagada, ficha sin edición y volver desde cada pantalla. Anotar los tiempos en esta tarea. **Verificar Android** (solo pruebas y APK: esta story no toca el Android)
 
