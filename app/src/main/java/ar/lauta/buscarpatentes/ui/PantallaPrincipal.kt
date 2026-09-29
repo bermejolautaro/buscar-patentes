@@ -807,7 +807,7 @@ private fun abrirCamara(
     lanzar: (android.net.Uri) -> Unit,
     recordarArchivo: (File) -> Unit,
 ) {
-    val archivo = context.contenedor.fotos.archivoNuevo(System.currentTimeMillis())
+    val archivo = java.io.File(context.contenedor.fotos.archivoNuevo(System.currentTimeMillis()))
     recordarArchivo(archivo)
     val uri = FileProvider.getUriForFile(
         context,

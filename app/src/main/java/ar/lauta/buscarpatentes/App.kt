@@ -4,6 +4,9 @@ import android.app.Application
 import android.content.Context
 import ar.lauta.buscarpatentes.data.AlmacenFotos
 import ar.lauta.buscarpatentes.data.BaseDeDatos
+import ar.lauta.buscarpatentes.data.construirBase
+import ar.lauta.buscarpatentes.plataforma.Carpetas
+import ar.lauta.buscarpatentes.plataforma.iniciarPlataforma
 import ar.lauta.buscarpatentes.ubicacion.Geofences
 import ar.lauta.buscarpatentes.ubicacion.LectorUbicacion
 import kotlinx.coroutines.CoroutineScope
@@ -21,13 +24,13 @@ import kotlinx.coroutines.launch
 class Contenedor(context: Context) {
     private val app = context.applicationContext
 
-    val baseDeDatos: BaseDeDatos by lazy { BaseDeDatos.obtener(app) }
+    val baseDeDatos: BaseDeDatos by lazy { construirBase(app) }
     val registros by lazy { baseDeDatos.registros() }
     val estadoDelJuego by lazy { baseDeDatos.estadoDelJuego() }
     val recorridos by lazy { baseDeDatos.recorridos() }
     val puntos by lazy { baseDeDatos.puntos() }
     val votos by lazy { baseDeDatos.votos() }
-    val fotos: AlmacenFotos by lazy { AlmacenFotos(app) }
+    val fotos: AlmacenFotos by lazy { AlmacenFotos(Carpetas.fotos) }
     val ubicacion: LectorUbicacion by lazy { LectorUbicacion(app) }
     val geofences: Geofences by lazy { Geofences(app) }
 }
@@ -39,6 +42,7 @@ class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        iniciarPlataforma(this)
         contenedor = Contenedor(this)
 
         CoroutineScope(Dispatchers.IO).launch {

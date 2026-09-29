@@ -1,35 +1,22 @@
 package ar.lauta.buscarpatentes.data
 
 import android.content.Context
-import androidx.room.Database
 import androidx.room.Room
-import androidx.room.RoomDatabase
-import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import ar.lauta.buscarpatentes.domain.Probabilidad
 
-@Database(
-    entities = [
-        RegistroDeCaptura::class,
-        EstadoDelJuego::class,
-        Recorrido::class,
-        PuntoDeTrayecto::class,
-        Voto::class,
-    ],
-    version = 7,
-    exportSchema = false,
-)
-@TypeConverters(Convertidores::class)
-abstract class BaseDeDatos : RoomDatabase() {
+/**
+ * La base del Android: el mismo archivo, el mismo modo de Room y las mismas migraciones que
+ * antes de la 006 (D6, FR-030). Pasar a esta versión es una actualización, no una
+ * reinstalación.
+ *
+ * Las migraciones 1→7 usan `SupportSQLiteDatabase`, que solo existe acá. El iPhone no las
+ * necesita: su base nace en la 7, o le llega por respaldo desde un Android que ya está en la 7.
+ */
+fun construirBase(context: Context): BaseDeDatos = Migraciones.obtener(context)
 
-    abstract fun registros(): RegistroDao
-    abstract fun estadoDelJuego(): EstadoDelJuegoDao
-    abstract fun recorridos(): RecorridoDao
-    abstract fun puntos(): PuntoDeTrayectoDao
-    abstract fun votos(): VotoDao
-
-    companion object {
+private object Migraciones {
 
         /**
          * v1 → v2: aparece la tabla del estado del juego (User Story 3).
@@ -183,7 +170,7 @@ abstract class BaseDeDatos : RoomDatabase() {
                 instancia ?: Room.databaseBuilder(
                     context.applicationContext,
                     BaseDeDatos::class.java,
-                    "buscar-patentes.db",
+                    BaseDeDatos.ARCHIVO,
                 )
                     .addMigrations(
                         MIGRACION_1_2,
@@ -196,5 +183,4 @@ abstract class BaseDeDatos : RoomDatabase() {
                     .build()
                     .also { instancia = it }
             }
-    }
 }

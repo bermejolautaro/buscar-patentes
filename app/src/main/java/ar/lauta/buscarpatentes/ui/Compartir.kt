@@ -29,7 +29,7 @@ object Compartir {
         val intent = Intent(Intent.ACTION_SEND).apply {
             putExtra(Intent.EXTRA_TEXT, texto)
 
-            val foto = registro.fotoRuta?.let { File(it) }
+            val foto = registro.fotoRuta?.let { File(context.contenedor.fotos.archivo(it)) }
             if (foto != null && foto.exists()) {
                 type = "image/jpeg"
                 val uri = FileProvider.getUriForFile(

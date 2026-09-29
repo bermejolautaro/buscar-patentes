@@ -30,7 +30,7 @@ class InmutabilidadTest {
 
     @Before
     fun leerFuenteDelDao() {
-        val archivo = File("src/main/java/ar/lauta/buscarpatentes/data/Daos.kt")
+        val archivo = File("../shared/src/commonMain/kotlin/ar/lauta/buscarpatentes/data/Daos.kt")
         assertTrue(
             "No se encontró el fuente del DAO en ${archivo.absolutePath}. Si se movió, hay " +
                 "que actualizar este test: sin el fuente no verifica nada.",

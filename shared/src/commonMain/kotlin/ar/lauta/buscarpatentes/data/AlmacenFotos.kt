@@ -1,7 +1,7 @@
 package ar.lauta.buscarpatentes.data
 
-import android.content.Context
-import java.io.File
+import kotlinx.io.files.Path
+import kotlinx.io.files.SystemFileSystem
 
 /**
  * Fotos como archivos en almacenamiento privado de la app (D5).
@@ -9,26 +9,37 @@ import java.io.File
  * No van a la galería del sistema a propósito: una foto en la galería la puede editar o
  * borrar cualquier otra app, y eso rompería el Principio II. Tampoco van como BLOB en la
  * base: varios MB por fila degradan toda consulta que toque la tabla.
+ *
+ * [carpeta] es `Carpetas.fotos` en la app, y una carpeta temporal en las pruebas.
  */
-class AlmacenFotos(private val context: Context) {
+class AlmacenFotos(private val carpeta: String) {
 
-    private val directorio: File
-        get() = File(context.filesDir, CARPETA).apply { if (!exists()) mkdirs() }
+    /** Ruta destino para una captura nueva. El nombre lo fija el momento. */
+    fun archivoNuevo(capturadoEn: Long): String = Path(carpeta, "$capturadoEn.jpg").toString()
 
-    /** Archivo destino para una captura nueva. El nombre lo fija el momento. */
-    fun archivoNuevo(capturadoEn: Long): File = File(directorio, "$capturadoEn.jpg")
+    /**
+     * Dónde está, en este teléfono, la foto que un registro nombra (D7 de la 006).
+     *
+     * `fotoRuta` guarda la ruta absoluta del teléfono donde se sacó. En el iPhone esa ruta no
+     * existe, y la del propio iPhone puede cambiar al reinstalar. El nombre del archivo, en
+     * cambio, es el mismo en todos lados: se busca por nombre dentro de la carpeta de fotos, y
+     * el dato guardado no se reescribe.
+     */
+    fun archivo(ruta: String): String =
+        Path(carpeta, ruta.substringAfterLast('/').substringAfterLast('\\')).toString()
 
-    fun archivo(ruta: String): File = File(ruta)
-
-    fun existe(ruta: String?): Boolean = ruta != null && File(ruta).exists()
+    fun existe(ruta: String?): Boolean = ruta != null && SystemFileSystem.exists(Path(archivo(ruta)))
 
     fun borrar(ruta: String?) {
-        if (ruta != null) File(ruta).delete()
+        if (ruta != null) SystemFileSystem.delete(Path(archivo(ruta)), mustExist = false)
     }
 
     /** Bytes que ocupan todas las fotos juntas. Alimenta SC-014. */
-    fun espacioOcupado(): Long =
-        directorio.listFiles()?.sumOf { it.length() } ?: 0L
+    fun espacioOcupado(): Long {
+        val directorio = Path(carpeta)
+        if (!SystemFileSystem.exists(directorio)) return 0L
+        return SystemFileSystem.list(directorio).sumOf { SystemFileSystem.metadataOrNull(it)?.size ?: 0L }
+    }
 
     /** SC-014: ¿las fotos ya pasaron el techo declarado? */
     fun superoElTecho(): Boolean = espacioOcupado() > TECHO_BYTES

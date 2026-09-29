@@ -319,7 +319,7 @@ fun FichaConectada(
     }
 
     fun abrirCamara() {
-        val archivo = context.contenedor.fotos.archivoNuevo(System.currentTimeMillis())
+        val archivo = java.io.File(context.contenedor.fotos.archivoNuevo(System.currentTimeMillis()))
         archivoPendiente = archivo
         sacarFoto.launch(
             FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", archivo),
