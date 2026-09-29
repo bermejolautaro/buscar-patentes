@@ -14,13 +14,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import platform.CoreLocation.CLAccuracyAuthorizationFullAccuracy
+import platform.CoreLocation.CLAccuracyAuthorization
 import platform.CoreLocation.CLLocation
 import platform.CoreLocation.CLLocationManager
 import platform.CoreLocation.CLLocationManagerDelegateProtocol
 import platform.CoreLocation.kCLAuthorizationStatusNotDetermined
 import platform.CoreLocation.kCLLocationAccuracyBest
 import platform.Foundation.NSError
+import platform.Foundation.timeIntervalSinceNow
 import platform.darwin.NSObject
 
 /**
@@ -130,4 +131,4 @@ actual object Ubicacion {
 }
 
 actual fun ubicacionExacta(): Boolean =
-    Ubicacion.manager.accuracyAuthorization == CLAccuracyAuthorizationFullAccuracy
+    Ubicacion.manager.accuracyAuthorization == CLAccuracyAuthorization.CLAccuracyAuthorizationFullAccuracy
