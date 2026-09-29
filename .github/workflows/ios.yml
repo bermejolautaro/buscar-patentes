@@ -23,11 +23,15 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      # Linkear el framework de Kotlin/Native con Compose y el mapa no entra en 2 GB. Las
+      # propiedades del usuario pisan las del proyecto, así la PC sigue con las suyas.
+      - name: Memoria para Kotlin/Native
+        run: |
+          mkdir -p ~/.gradle
+          echo "org.gradle.jvmargs=-Xmx5g -XX:+UseParallelGC -Dfile.encoding=UTF-8" >> ~/.gradle/gradle.properties
+
       - name: Pruebas comunes en el motor del iPhone (D17)
         run: ./gradlew :shared:iosSimulatorArm64Test --console=plain
-
-      - name: Framework de Kotlin para el iPhone
-        run: ./gradlew :shared:linkReleaseFrameworkIosArm64 --console=plain
 
       - name: Proyecto de Xcode
         run: |
@@ -50,6 +54,9 @@ jobs:
         run: |
           mkdir -p Payload
           cp -R build/xcode/Build/Products/Release-iphoneos/BuscarPatentes.app Payload/
+          # Sin los recursos de Compose la app se cierra al abrir: mejor que falle acá.
+          test -d Payload/BuscarPatentes.app/compose-resources
+          find Payload/BuscarPatentes.app/compose-resources -maxdepth 2
           zip -qry buscar-patentes.ipa Payload
 
       - uses: actions/upload-artifact@v4

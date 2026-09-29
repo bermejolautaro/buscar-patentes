@@ -1,0 +1,64 @@
+@file:OptIn(ExperimentalNativeApi::class)
+
+package ar.lauta.buscarpatentes
+
+import androidx.compose.ui.window.ComposeUIViewController
+import ar.lauta.buscarpatentes.data.AlmacenFotos
+import ar.lauta.buscarpatentes.data.construirBase
+import ar.lauta.buscarpatentes.mapa.ConfigMapa
+import ar.lauta.buscarpatentes.plataforma.Carpetas
+import ar.lauta.buscarpatentes.plataforma.Ubicacion
+import ar.lauta.buscarpatentes.plataforma.ahora
+import ar.lauta.buscarpatentes.plataforma.salidaCortada
+import ar.lauta.buscarpatentes.ui.AppBuscarPatentes
+import kotlin.experimental.ExperimentalNativeApi
+import kotlinx.coroutines.runBlocking
+import kotlinx.io.buffered
+import kotlinx.io.files.Path
+import kotlinx.io.files.SystemFileSystem
+import kotlinx.io.writeString
+import org.maplibre.compose.map.DefaultMapRuntime
+import org.maplibre.compose.map.MapRuntimeOptions
+import platform.Foundation.NSDocumentDirectory
+import platform.Foundation.NSSearchPathForDirectoriesInDomains
+import platform.Foundation.NSUserDomainMask
+import platform.UIKit.UIViewController
+
+/**
+ * El arranque del iPhone. Lo llama el `AppDelegate` en `didFinishLaunching`, antes que cualquier
+ * pantalla: el caché del mapa se configura antes del primer mapa, y la salida cortada se cierra
+ * antes de que el jugador pueda empezar otra.
+ */
+fun iniciar() {
+    // Sin Mac no hay consola: el último fallo de Kotlin queda en Archivos, en `fallo.txt`.
+    setUnhandledExceptionHook { error ->
+        SystemFileSystem.sink(archivoDeFallo()).buffered().use { it.writeString(error.stackTraceToString()) }
+    }
+
+    // El caché de teselas, en la carpeta de la base y con su techo (FR-044), como en el Android.
+    // Tiene que ir antes del primer mapa: después el motor ya existe.
+    DefaultMapRuntime.configure(
+        MapRuntimeOptions(
+            cacheFile = Path(ConfigMapa.rutaCache),
+            maximumCacheSizeBytes = ConfigMapa.CACHE_MAXIMO_BYTES,
+        ),
+    )
+
+    iniciarContenedor(::construirBase, AlmacenFotos(Carpetas.fotos))
+
+    // FR-028: una salida abierta al arrancar es de una app que murió grabando. Se cierra con lo
+    // que alcanzó a guardar. Antes de la primera pantalla, para que no cierre una salida nueva.
+    runBlocking {
+        if (contenedor.recorridos.cerrarLosAbiertos(ahora()) > 0) salidaCortada.value = true
+    }
+
+    // Core Location entrega lo que mide en el hilo donde se creó el manager: este, el principal.
+    Ubicacion.manager
+}
+
+fun MainViewController(): UIViewController = ComposeUIViewController { AppBuscarPatentes() }
+
+private fun archivoDeFallo(): Path = Path(
+    NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true).first() as String,
+    "fallo.txt",
+)

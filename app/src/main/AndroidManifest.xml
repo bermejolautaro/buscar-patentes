@@ -4,10 +4,12 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- AjustarACalles pregunta si hay red antes de salir a buscarla. Hasta la 006 este permiso
+         llegaba prestado del manifiesto del MapLibre Android SDK, y al irse la biblioteca la app
+         se cerraba al abrir. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
 
@@ -55,21 +57,6 @@
             android:name=".ubicacion.ServicioRecorrido"
             android:exported="false"
             android:foregroundServiceType="location" />
-
-        <!-- Declarados en el manifiesto, no en codigo: un receiver registrado en codigo
-             muere con el proceso y FR-039 exige que el aviso llegue con la app cerrada. -->
-        <receiver
-            android:name=".ubicacion.GeofenceReceiver"
-            android:exported="false" />
-
-        <receiver
-            android:name=".ubicacion.BootReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-            </intent-filter>
-        </receiver>
 
     </application>
 

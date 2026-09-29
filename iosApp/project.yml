@@ -13,6 +13,15 @@ targets:
     platform: iOS
     sources: [iosApp]
     scheme: {}
+    # La integración oficial de Kotlin: además de compilar el framework, copia al .app los
+    # recursos de Compose (`compose-resources`). Sin ellos, el primer ícono del mapa cierra la
+    # app al abrir, que es lo que pasó con el primer piloto.
+    preBuildScripts:
+      - name: Framework de Kotlin
+        basedOnDependencyAnalysis: false
+        script: |
+          cd "$SRCROOT/.."
+          ./gradlew :shared:embedAndSignAppleFrameworkForXcode --console=plain
     info:
       path: iosApp/Info.plist
       properties:
@@ -24,9 +33,10 @@ targets:
         CADisableMinimumFrameDurationOnPhone: true
         UIBackgroundModes: [location]
         NSLocationWhenInUseUsageDescription: Para guardar dónde viste cada patente.
-        NSLocationAlwaysAndWhenInUseUsageDescription: Para avisarte cuando pasás cerca de la patente que toca, y para grabar la salida con la pantalla apagada.
         NSCameraUsageDescription: Para sacarle foto a la patente.
         UIFileSharingEnabled: true
+        # Para saber si está la app de Google Maps antes de mandarle un recorrido largo.
+        LSApplicationQueriesSchemes: [comgooglemaps]
         LSSupportsOpeningDocumentsInPlace: true
     settings:
       base:
@@ -36,7 +46,9 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         TARGETED_DEVICE_FAMILY: "1"
         SWIFT_VERSION: "5.0"
-        FRAMEWORK_SEARCH_PATHS: "$(SRCROOT)/../shared/build/bin/iosArm64/releaseFramework"
+        FRAMEWORK_SEARCH_PATHS: "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)"
+        # Gradle escribe fuera del proyecto de Xcode, cosa que el sandbox de los scripts no deja.
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
         # El framework de Kotlin es estático: se linkea acá, con lo que pide maplibre-compose.
         OTHER_LDFLAGS:
           - "-framework"

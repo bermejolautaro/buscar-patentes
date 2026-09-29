@@ -5,4 +5,8 @@
     <files-path
         name="fotos"
         path="fotos/" />
+    <!-- Los respaldos salen del teléfono por la hoja de compartir (R3 de la 006). -->
+    <files-path
+        name="respaldos"
+        path="respaldos/" />
 </paths>
