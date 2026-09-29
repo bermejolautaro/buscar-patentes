@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
+@file:OptIn(ExperimentalForeignApi::class, BetaInteropApi::class, ExperimentalNativeApi::class)
 
 package ar.lauta.buscarpatentes.piloto
 
@@ -43,6 +43,11 @@ import kotlinx.cinterop.useContents
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
+import kotlinx.io.buffered
+import kotlinx.io.files.Path
+import kotlinx.io.files.SystemFileSystem
+import kotlinx.io.readString
+import kotlinx.io.writeString
 import org.maplibre.compose.camera.CameraPosition
 import org.maplibre.compose.map.MaplibreMap
 import org.maplibre.compose.map.rememberMapState
@@ -57,6 +62,7 @@ import platform.CoreLocation.kCLLocationAccuracyBest
 import platform.Foundation.NSBundle
 import platform.Foundation.NSData
 import platform.Foundation.NSDate
+import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSError
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSISOLatin1StringEncoding
@@ -75,6 +81,7 @@ import platform.UserNotifications.UNMutableNotificationContent
 import platform.UserNotifications.UNNotificationRequest
 import platform.UserNotifications.UNUserNotificationCenter
 import platform.darwin.NSObject
+import kotlin.experimental.ExperimentalNativeApi
 
 /**
  * Prueba piloto de la 006 (D21). **Temporal**: se borra en la T041.
@@ -156,8 +163,21 @@ private class Delegado : NSObject(), CLLocationManagerDelegateProtocol {
 private val delegado = Delegado()
 private lateinit var manager: CLLocationManager
 
+// --- Fallos: sin Mac no hay consola, así que el último queda en Archivos ---
+
+private val archivoDeFallo: Path by lazy {
+    Path(NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true).first() as String, "fallo.txt")
+}
+
+private fun ultimoFallo(): String =
+    if (!SystemFileSystem.exists(archivoDeFallo)) "ninguno"
+    else SystemFileSystem.source(archivoDeFallo).buffered().use { it.readString() }.lineSequence().take(3).joinToString(" / ")
+
 /** La llama el AppDelegate, antes que cualquier pantalla (D11). */
 fun iniciarPiloto() {
+    setUnhandledExceptionHook { error ->
+        SystemFileSystem.sink(archivoDeFallo).buffered().use { it.writeString(error.stackTraceToString()) }
+    }
     manager = CLLocationManager().apply {
         delegate = delegado
         desiredAccuracy = kCLLocationAccuracyBest
@@ -223,6 +243,7 @@ private fun vencimiento(): String {
 private fun PantallaPiloto() {
     val alcance = rememberCoroutineScope()
     var marcas by remember { mutableStateOf("…") }
+    var verMapa by remember { mutableStateOf(false) }
 
     suspend fun leerMarcas() {
         val todas = base.marcas().todas()
@@ -239,6 +260,7 @@ private fun PantallaPiloto() {
                 Text("Prueba piloto — buscar patentes", style = MaterialTheme.typography.titleLarge)
                 Text("iOS ${UIDevice.currentDevice.systemVersion}")
                 Text("Vence: ${vencimiento()}")
+                Text("Último fallo: ${ultimoFallo()}")
                 Text("Marcas en Room: $marcas")
                 Button(onClick = {
                     alcance.launch {
@@ -251,7 +273,9 @@ private fun PantallaPiloto() {
                 Text("Puntos grabados: ${Estado.puntos}")
                 Text("Última posición: ${Estado.ultimo}")
                 Button(onClick = { grabar() }) { Text("Grabar") }
-                Box(Modifier.fillMaxWidth().height(260.dp)) {
+                // Detrás de un botón: si el mapa cierra la app, lo demás del piloto se sigue probando.
+                Button(onClick = { verMapa = true }) { Text("Mostrar mapa") }
+                if (verMapa) Box(Modifier.fillMaxWidth().height(260.dp)) {
                     MaplibreMap(
                         state = rememberMapState(
                             baseStyle = BaseStyle.Uri("https://tiles.openfreemap.org/styles/liberty"),
