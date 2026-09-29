@@ -8,8 +8,11 @@ import ar.lauta.buscarpatentes.data.construirBase
 import ar.lauta.buscarpatentes.mapa.ConfigMapa
 import ar.lauta.buscarpatentes.plataforma.Carpetas
 import ar.lauta.buscarpatentes.plataforma.Ubicacion
+import ar.lauta.buscarpatentes.plataforma.ahora
+import ar.lauta.buscarpatentes.plataforma.salidaCortada
 import ar.lauta.buscarpatentes.ui.AppBuscarPatentes
 import kotlin.experimental.ExperimentalNativeApi
+import kotlinx.coroutines.runBlocking
 import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
@@ -42,6 +45,12 @@ fun iniciar() {
     )
 
     iniciarContenedor(::construirBase, AlmacenFotos(Carpetas.fotos))
+
+    // FR-028: una salida abierta al arrancar es de una app que murió grabando. Se cierra con lo
+    // que alcanzó a guardar. Antes de la primera pantalla, para que no cierre una salida nueva.
+    runBlocking {
+        if (contenedor.recorridos.cerrarLosAbiertos(ahora()) > 0) salidaCortada.value = true
+    }
 
     // Core Location entrega lo que mide en el hilo donde se creó el manager: este, el principal.
     Ubicacion.manager

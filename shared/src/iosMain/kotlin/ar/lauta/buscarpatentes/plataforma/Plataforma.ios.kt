@@ -6,13 +6,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import ar.lauta.buscarpatentes.ui.Ir
 import ar.lauta.buscarpatentes.ui.hora
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
 import kotlinx.io.readByteArray
 import platform.Foundation.NSBundle
+// Con comodín: el POST usa métodos de categorías de Foundation, que Kotlin ve como extensiones.
+import platform.Foundation.*
 import platform.Foundation.NSURL
 import platform.UIKit.UIActivityViewController
 import platform.UIKit.UIApplication
@@ -35,15 +38,6 @@ import platform.darwin.NSObject
  * no tira: no hace nada, así la app abre igual.
  */
 
-actual object Grabacion {
-    actual val enCurso: StateFlow<Long?> = MutableStateFlow(null)
-    actual val puntosGuardados: StateFlow<Int> = MutableStateFlow(0)
-
-    actual fun empezar(): Unit = throw NotImplementedError("US6 (T068): grabar la salida")
-
-    actual fun terminar(): Unit = throw NotImplementedError("US6 (T068): grabar la salida")
-}
-
 actual object Vigilancia {
     // Se llama después de cada captura: sin avisos todavía, no vigila nada (US5, T062).
     actual suspend fun reconciliar(elSistemaLosOlvido: Boolean) {}
@@ -62,10 +56,32 @@ actual fun abrirAjustesDelSistema() {
 
 actual fun compartir(texto: String, foto: String?): Unit = throw NotImplementedError("US4 (T059): compartir")
 
-// Sin `postear` no hay a quién preguntarle: el ajuste a calles queda pendiente, como sin red (US6, T070).
-actual fun hayConexion(): Boolean = false
+/**
+ * Sin preguntarle al sistema: saberlo en el iPhone es asíncrono, y sin red `postear` falla en el
+ * acto, sin gastar la espera. El ajuste a calles ya trata un error como "queda para después".
+ */
+actual fun hayConexion(): Boolean = true
 
-actual suspend fun postear(url: String, cuerpo: String): String? = throw NotImplementedError("US6 (T070): postear")
+@Suppress("CAST_NEVER_SUCCEEDS")
+actual suspend fun postear(url: String, cuerpo: String): String? = suspendCancellableCoroutine { sigue ->
+    val pedido = NSMutableURLRequest.requestWithURL(NSURL.URLWithString(url)!!).apply {
+        setHTTPMethod("POST")
+        setValue("application/json", forHTTPHeaderField = "Content-Type")
+        setHTTPBody((cuerpo as NSString).dataUsingEncoding(NSUTF8StringEncoding))
+        setTimeoutInterval(ESPERA_S)
+    }
+    val tarea = NSURLSession.sharedSession.dataTaskWithRequest(pedido) { datos, respuesta, error ->
+        when {
+            error != null -> sigue.resumeWithException(Exception(error.localizedDescription))
+            (respuesta as? NSHTTPURLResponse)?.statusCode != 200L -> sigue.resume(null)
+            else -> sigue.resume(datos?.let { NSString.create(data = it, encoding = NSUTF8StringEncoding)?.toString() })
+        }
+    }
+    sigue.invokeOnCancellation { tarea.cancel() }
+    tarea.resume()
+}
+
+private const val ESPERA_S = 20.0
 
 actual val sistema: String = "ios"
 

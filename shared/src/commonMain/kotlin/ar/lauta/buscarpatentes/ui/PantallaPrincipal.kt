@@ -69,6 +69,7 @@ import ar.lauta.buscarpatentes.plataforma.abrirAjustesDelSistema
 import ar.lauta.buscarpatentes.plataforma.ahora
 import ar.lauta.buscarpatentes.plataforma.rememberPedirPermisos
 import ar.lauta.buscarpatentes.plataforma.rememberSacarFoto
+import ar.lauta.buscarpatentes.plataforma.salidaCortada
 import ar.lauta.buscarpatentes.plataforma.tienePermiso as concedido
 import ar.lauta.buscarpatentes.plataforma.ubicacionExacta
 import ar.lauta.buscarpatentes.recursos.Res
@@ -392,6 +393,14 @@ fun PantallaPrincipal(
     // cuando ajustó algo pide la relectura. Sin conexión no hace nada y no cuesta nada.
     LaunchedEffect(Unit) {
         if (AjustarACalles.pendientes() > 0) recarga++
+    }
+
+    val cortada by salidaCortada.collectAsState()
+    LaunchedEffect(cortada) {
+        if (cortada) {
+            salidaCortada.value = false
+            snackbar.mostrar("La salida se cortó. Lo grabado hasta ahí quedó guardado.")
+        }
     }
 
     // FR-008 exige que un fallo se vea. Sin `imePadding` el cartel sale abajo del teclado,

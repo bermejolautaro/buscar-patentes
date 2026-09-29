@@ -5,6 +5,7 @@ import ar.lauta.buscarpatentes.ubicacion.LecturaUbicacion
 import ar.lauta.buscarpatentes.ui.Ir
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 /**
@@ -47,6 +48,12 @@ expect object Grabacion {
 
     fun terminar()
 }
+
+/**
+ * FR-028: al abrir la app había una salida que ningún proceso grababa, y se cerró. La pantalla
+ * principal lo dice una vez. Solo lo prende el iPhone: en el Android el servicio sobrevive.
+ */
+val salidaCortada = MutableStateFlow(false)
 
 /** P4: los avisos al pasar cerca de la que toca. */
 expect object Vigilancia {

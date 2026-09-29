@@ -300,7 +300,7 @@ registros campo por campo. Rechazar un archivo inválido (quickstart §4).
   - **Android**, en `android/plataforma/Pantallas.android.kt`: `ActivityResultContracts.OpenDocument()` con `arrayOf("*/*")`, y copiar el `Uri` a `Carpetas.temporal`.
   - **iPhone**, en `ios/plataforma/Pantallas.ios.kt`: `UIDocumentPickerViewController(forOpeningContentTypes = [UTTypeData], asCopy = true)` y entregar la URL copiada.
   (P5)
-- [ ] T057 [US3] Mudanza de prueba, **sin reemplazar todavía el Android**, con el quickstart §4 entero:
+- [ ] T057 Parcial (2026-09-29): el usuario sacó el respaldo en el Android y lo restauró en el iPhone, y dijo que funcionó perfecto. Faltan los rechazos, la vuelta al Android y la comparación campo por campo. [US3] Mudanza de prueba, **sin reemplazar todavía el Android**, con el quickstart §4 entero:
   1. respaldo del Android;
   2. PC por cable, iTunes y restaurar en el iPhone;
   3. cuentas y cinco registros comparados campo por campo contra las fichas del Android;
@@ -366,14 +366,14 @@ antigüedad. Si se corta, se conserva y la app lo dice.
 **Independent Test**: el quickstart §7. **Si T012 marcó la grabación como "solo Android", esta fase
 se reduce a ocultar el botón de salida en el iPhone**, con una línea en ajustes que lo explique.
 
-- [ ] T068 [P] [US6] Crear `ios/ubicacion/Grabacion.ios.kt` con `actual object Grabacion`:
+- [X] T068 **Hecha** en `ios/plataforma/Grabacion.ios.kt`, sin `activityType` (con las pausas automáticas apagadas no cambia nada) y sin pedir "siempre" adentro: ya lo pide la pantalla principal antes de empezar, igual que en el Android. Con "mientras se usa" alcanza, porque la grabación arranca con la app adelante. Los puntos llevan la hora del GPS y descartan precisión peor que 30 m, como el Android. [P] [US6] Crear `ios/ubicacion/Grabacion.ios.kt` con `actual object Grabacion`:
   - **`iniciar(recorridoId)`**: pide "siempre" si falta, y configura el manager con `allowsBackgroundLocationUpdates = true`, `pausesLocationUpdatesAutomatically = false`, `showsBackgroundLocationIndicator = true`, `distanceFilter = 10.0`, `desiredAccuracy = kCLLocationAccuracyBest` y `activityType = CLActivityTypeFitness`. Después, `startUpdatingLocation`.
   - **`didUpdateLocations`**: inserta cada punto en `punto_de_trayecto`, con precisión y hora del proveedor.
   - **`terminar()`**: `stopUpdatingLocation`.
   - **`activa`**: `true` solo mientras grabe este proceso.
   (D12, P3)
-- [ ] T069 [US6] En `ios/MainViewController.kt` `iniciar()`, si hay un recorrido `EN_CURSO` y `Grabacion.activa` es `false`, llamar a `cerrarLosAbiertos(ahora)` y guardar una marca, y que `AppBuscarPatentes` muestre una vez "La salida se cortó. Lo grabado hasta ahí quedó guardado.". Solo en el iPhone: en el Android el servicio sobrevive (D12, FR-028)
-- [ ] T070 [P] [US6] En `ios/plataforma/Plataforma.ios.kt`, implementar `postear(url, cuerpo)` con `NSURLSession.sharedSession.dataTaskWithRequest`: POST, `Content-Type: application/json`, 20 s de espera y el cuerpo en UTF-8. Devuelve el texto de la respuesta o lanza una excepción con el código HTTP. El ajuste a calles corre desde el código común (D16, P6)
+- [X] T069 **Hecha**. `iniciar()` cierra las salidas abiertas antes de la primera pantalla (con `runBlocking`, para no cerrar una salida que el jugador empiece enseguida) y prende `salidaCortada`, que la pantalla principal muestra una vez. [US6] En `ios/MainViewController.kt` `iniciar()`, si hay un recorrido `EN_CURSO` y `Grabacion.activa` es `false`, llamar a `cerrarLosAbiertos(ahora)` y guardar una marca, y que `AppBuscarPatentes` muestre una vez "La salida se cortó. Lo grabado hasta ahí quedó guardado.". Solo en el iPhone: en el Android el servicio sobrevive (D12, FR-028)
+- [X] T070 **Hecha**. `hayConexion()` da siempre `true` en el iPhone: saberlo es asíncrono, y sin red `postear` falla en el acto sin gastar la espera. [P] [US6] En `ios/plataforma/Plataforma.ios.kt`, implementar `postear(url, cuerpo)` con `NSURLSession.sharedSession.dataTaskWithRequest`: POST, `Content-Type: application/json`, 20 s de espera y el cuerpo en UTF-8. Devuelve el texto de la respuesta o lanza una excepción con el código HTTP. El ajuste a calles corre desde el código común (D16, P6)
 - [ ] T071 [US6] **Compilar iPhone** y correr el quickstart §7: salida de 2 horas bloqueada con la batería anotada (SC-007), salida cortada deslizando la app, ajuste a calles y modo antigüedad. Anotar el consumo de batería acá. **Verificar Android**, con una salida corta: graba como antes
 
 **Checkpoint**: el iPhone hace todo lo que hace el Android. Es el momento de la mudanza real, que la
