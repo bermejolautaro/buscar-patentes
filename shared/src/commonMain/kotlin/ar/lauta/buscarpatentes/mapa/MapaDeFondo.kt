@@ -420,8 +420,10 @@ private fun CapasDeAvenidas() {
     )
 }
 
-private const val AVENIDA_OSCURO = "#A88A45"
-private const val AUTOPISTA_OSCURO = "#C9864F"
+// Apagados a pedido del jugador: con el dorado pleno la vista se iba a las avenidas y no a los
+// pines. Son el primer intento mezclado a la mitad con el gris de las calles del estilo.
+private const val AVENIDA_OSCURO = "#6F654C"
+private const val AUTOPISTA_OSCURO = "#836353"
 
 private class Pines(
     val baja: PinPainter,
