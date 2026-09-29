@@ -77,7 +77,7 @@ SQLite ([contracts/respaldo.md](./contracts/respaldo.md)).
 - El mapa se desplaza sin tirones.
 - El acomodo corre solo al cambiar de zoom entero.
 - La carga rápida en 10 segundos o menos.
-- Una salida de 2 horas gasta 5% de batería o menos, en los dos teléfonos (SC-007).
+- Una salida de 2 horas gasta 30% de batería o menos, mirando el mapa de vez en cuando (SC-007, revisado).
 
 **Constraints**:
 - **Sin Mac**: una compilación de iPhone tarda de 10 a 15 minutos en la nube. Por eso el código

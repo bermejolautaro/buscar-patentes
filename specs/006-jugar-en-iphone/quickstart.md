@@ -131,7 +131,7 @@ Igual que en la prueba piloto, pero con una patente real del número actual sin 
 ## 7. Salidas (US6 — SC-007)
 
 - Batería anotada. Empezar una salida, bloquear, **2 horas** de caminata. Terminar: el camino está
-  entero, y la batería bajó **5% o menos**.
+  entero, y la batería bajó **30% o menos** (SC-007, revisado).
 - Empezar otra, cerrar la app deslizándola, abrirla: dice "La salida se cortó", y lo grabado está.
 - Con conexión, la salida se ajusta a las calles. En el modo antigüedad, los mismos escalones que en
   el Android.

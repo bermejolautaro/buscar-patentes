@@ -390,8 +390,12 @@ y ver el camino dibujado y ajustado.
   la misma lista en el mismo orden y los mismos grupos al mismo zoom.
 - **SC-006**: Con la app cerrada, también después de reiniciar el iPhone, el aviso llega a 150
   metros o menos de la patente que toca.
-- **SC-007**: Una salida de 2 horas con la pantalla bloqueada queda grabada entera y no consume más
-  del 5% de la batería, igual que se le pide al Android (SC-010 de la 001).
+- **SC-007**: Una salida de 2 horas queda grabada entera y no consume más del 30% de la batería,
+  con la pantalla bloqueada casi todo el tiempo y mirando el mapa de vez en cuando.
+  *Revisado el 2026-09-29*: decía 5%, copiado del SC-010 de la 001 y nunca medido. Grabar con el
+  GPS en su máxima precisión (FR-036) no entra en ese número en ningún teléfono. La primera
+  salida real del iPhone gastó 14% en 1 h 05 min, mirando el mapa por ratos, y el jugador lo
+  considera aceptable.
 - **SC-008**: El jugador nunca descubre el vencimiento en la calle: se entera por lo menos dos días
   antes.
 - **SC-009**: En el Android, todas las pruebas automáticas pasan, y actualizar la app conserva el
