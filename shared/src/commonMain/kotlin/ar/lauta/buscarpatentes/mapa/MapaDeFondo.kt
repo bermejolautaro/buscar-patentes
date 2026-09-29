@@ -37,14 +37,18 @@ import org.maplibre.compose.expressions.dsl.asString
 import org.maplibre.compose.expressions.dsl.case
 import org.maplibre.compose.expressions.dsl.const
 import org.maplibre.compose.expressions.dsl.convertToString
+import org.maplibre.compose.expressions.dsl.exponential
 import org.maplibre.compose.expressions.dsl.feature
 import org.maplibre.compose.expressions.dsl.format
 import org.maplibre.compose.expressions.dsl.image
+import org.maplibre.compose.expressions.dsl.interpolate
 import org.maplibre.compose.expressions.dsl.not
 import org.maplibre.compose.expressions.dsl.span
 import org.maplibre.compose.expressions.dsl.step
 import org.maplibre.compose.expressions.dsl.switch
 import org.maplibre.compose.expressions.dsl.textOffset
+import org.maplibre.compose.expressions.dsl.zoom
+import org.maplibre.compose.expressions.value.BooleanValue
 import org.maplibre.compose.expressions.value.ColorValue
 import org.maplibre.compose.expressions.value.LineCap
 import org.maplibre.compose.expressions.value.LineJoin
@@ -68,6 +72,8 @@ import org.maplibre.compose.map.MaplibreMap
 import org.maplibre.compose.map.rememberMapState
 import org.maplibre.compose.sources.GeoJsonData
 import org.maplibre.compose.sources.GeoJsonSource
+import org.maplibre.compose.sources.VectorSource
+import org.maplibre.compose.sources.getBaseSource
 import org.maplibre.compose.sources.rememberGeoJsonSource
 import org.maplibre.compose.style.BaseStyle
 import org.maplibre.compose.util.DpPadding
@@ -288,6 +294,10 @@ fun MapaDeFondo(
             )
         }
 
+        // El fondo oscuro dibuja las avenidas casi igual que las calles, y el jugador se orienta
+        // por ellas. Encima de las calles del estilo y debajo de las vías y los nombres.
+        if (oscuro) Anchor.Above("highway_motorway_subtle") { CapasDeAvenidas() }
+
         Anchor.Top {
             CapasDeTrazos(
                 trazos = rememberGeoJsonSource(GeoJsonData.Features(coleccionTrazos)),
@@ -363,6 +373,55 @@ fun MapaDeFondo(
         overlay = {},
     )
 }
+
+/**
+ * Las avenidas y las autopistas resaltadas sobre `fiord`, como las dibuja `liberty` de día pero
+ * en tonos apagados: de noche un amarillo pleno encandila.
+ *
+ * Usa las mismas teselas que el estilo, así que no descarga nada más y anda sin conexión donde el
+ * fondo ande. Las clases y los anchos son los del estilo: el color tapa el relleno de la calle y
+ * deja su borde. Sin túneles, que van por abajo.
+ * ponytail: los dos colores se calibran mirando el teléfono de noche.
+ */
+@Composable
+private fun CapasDeAvenidas() {
+    // Null mientras el estilo no cargó, o si algún día deja de llamarse así: sin resaltado, nada más.
+    val teselas = getBaseSource<VectorSource>("openmaptiles") ?: return
+
+    fun deClase(vararg clases: String): Expression<BooleanValue> = switch(
+        input = feature["brunnel"].convertToString(),
+        case("tunnel", const(false)),
+        fallback = switch(
+            input = feature["class"].convertToString(),
+            *clases.map { case(it, const(true)) }.toTypedArray(),
+            fallback = const(false),
+        ),
+    )
+
+    LineLayer(
+        id = "avenidas",
+        source = teselas,
+        sourceLayer = "transportation",
+        filter = deClase("primary", "trunk", "secondary", "tertiary"),
+        color = const(colorDe(AVENIDA_OSCURO)),
+        width = interpolate(exponential(1.3f), zoom(), 10 to const(2.dp), 20 to const(20.dp)),
+        cap = const(LineCap.Round),
+        join = const(LineJoin.Round),
+    )
+    LineLayer(
+        id = "autopistas",
+        source = teselas,
+        sourceLayer = "transportation",
+        filter = deClase("motorway"),
+        color = const(colorDe(AUTOPISTA_OSCURO)),
+        width = interpolate(exponential(1.4f), zoom(), 6 to const(1.3.dp), 20 to const(30.dp)),
+        cap = const(LineCap.Round),
+        join = const(LineJoin.Round),
+    )
+}
+
+private const val AVENIDA_OSCURO = "#A88A45"
+private const val AUTOPISTA_OSCURO = "#C9864F"
 
 private class Pines(
     val baja: PinPainter,
