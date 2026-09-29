@@ -23,6 +23,13 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      # Linkear el framework de Kotlin/Native con Compose y el mapa no entra en 2 GB. Las
+      # propiedades del usuario pisan las del proyecto, así la PC sigue con las suyas.
+      - name: Memoria para Kotlin/Native
+        run: |
+          mkdir -p ~/.gradle
+          echo "org.gradle.jvmargs=-Xmx5g -XX:+UseParallelGC -Dfile.encoding=UTF-8" >> ~/.gradle/gradle.properties
+
       - name: Pruebas comunes en el motor del iPhone (D17)
         run: ./gradlew :shared:iosSimulatorArm64Test --console=plain
 
