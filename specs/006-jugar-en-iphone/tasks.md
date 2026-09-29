@@ -107,7 +107,7 @@ Tres raíces, todas con el paquete `ar/lauta/buscarpatentes`:
   - Es temporal: se borra en T041 (D21)
 - [X] T010 [P] Crear `iosApp/project.yml` (XcodeGen), `iosApp/iosApp/iOSApp.swift` (`@main` con `@UIApplicationDelegateAdaptor`, cuyo `didFinishLaunching` llama a `PilotoKt.iniciarPiloto()`) e `iosApp/iosApp/ContentView.swift` (un `UIViewControllerRepresentable` que muestra `MainViewController()`). Bundle id, deployment target, flags de linker, framework e `Info.plist`, exactamente como en C2
 - [X] T011 [P] **Hecha**: el workflow entra en la `main` pública desde el primer commit, porque T006 se corrió después de T011. Crear `.github/workflows/ios.yml` según C1: `workflow_dispatch` y `push` a `main`, `macos-latest`, sin secretos, los pasos 1 a 7 y el artefacto `buscar-patentes-ipa` con retención de 14 días. Mergear a `main` y hacer push: `workflow_dispatch` solo aparece si el workflow está en la rama por defecto
-- [ ] T012 **Compilar iPhone** hasta que salga el `.ipa`, arreglando lo que falle en el workflow o en `project.yml`. El usuario instala y corre el bloque 0 del quickstart. Anotar en `research.md`, en la tabla de D21, el resultado de cada fila, la versión de iOS y la fecha:
+- [X] T012 **Hecha** (2026-09-29): la compuerta pasó (reinstalar conserva) y el resto se contestó con la app completa; ver la tabla de D21. **Compilar iPhone** hasta que salga el `.ipa`, arreglando lo que falle en el workflow o en `project.yml`. El usuario instala y corre el bloque 0 del quickstart. Anotar en `research.md`, en la tabla de D21, el resultado de cada fila, la versión de iOS y la fecha:
   - **Si falla "reinstalar conserva la marca"**: se para la feature y se habla con el usuario.
   - **Si fallan los avisos o la grabación**: marcar la US5 o la US6 como "solo Android" y seguir.
 
@@ -385,16 +385,16 @@ decide el usuario: quickstart §4 con los datos de ese día.
 
 ## Phase 9: Polish & Cross-Cutting Concerns
 
-- [ ] T072 [P] `README.md`:
+- [X] T072 **Hecha**. [P] `README.md`:
   - la primera línea deja de decir "App Android": ahora es Android y iPhone;
   - sección **iPhone**: requisitos (iTunes de la web, Sideloadly, modo de desarrollador, mismo Apple ID), compilar (`gh workflow run`), bajar e instalar, reinstalación semanal y vencimiento;
   - sección **Respaldo** junto a la de `respaldo.ps1`: el de la app sirve en los dos teléfonos, y el script queda para el Android de desarrollo;
   - comandos de prueba: `.\gradlew.bat :shared:testAndroidHostTest`;
   - tabla de pruebas: `RespaldoTest`, `VencimientoTest`, `AlmacenFotosTest` y `FechasTest`, y dónde corren (JVM y simulador);
   - enlace a la spec y al quickstart de la 006.
-- [ ] T073 [P] En `specs/006-jugar-en-iphone/research.md`, completar D21 con los resultados de T012, y D5 con cómo terminó el mapa (compartido o con línea de corte)
-- [ ] T074 Correr el quickstart §8 (SC-010, SC-011) sobre todo lo que se va a subir. Revisar en GitHub que **Secrets** esté vacío
-- [ ] T075 Revisar las `NotImplementedError` que queden en `ios/`: solo pueden quedar las de stories marcadas "solo Android" en T012, y cada una tiene que tener detrás un camino de UI que no la llame
+- [X] T073 **Hecha**. [P] En `specs/006-jugar-en-iphone/research.md`, completar D21 con los resultados de T012, y D5 con cómo terminó el mapa (compartido o con línea de corte)
+- [X] T074 **Hecha** (2026-09-29): sin coordenadas de la zona, sin imágenes ni bases ni respaldos en el repositorio, solo el email `noreply` en los commits, sin nombres de calles ni de barrios, y GitHub sin secretos ni variables. Correr el quickstart §8 (SC-010, SC-011) sobre todo lo que se va a subir. Revisar en GitHub que **Secrets** esté vacío
+- [X] T075 **Hecha**: no queda ninguna `NotImplementedError` en `ios/`. La US5 se descartó en los dos teléfonos, así que tampoco hay caminos de UI que esquivar. Revisar las `NotImplementedError` que queden en `ios/`: solo pueden quedar las de stories marcadas "solo Android" en T012, y cada una tiene que tener detrás un camino de UI que no la llame
 - [ ] T076 Pasada final del quickstart entero en los dos teléfonos (§1 a §7). Marcar SC-001 a SC-011 en `spec.md` con lo medido
 
 ---

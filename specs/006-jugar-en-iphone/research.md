@@ -121,6 +121,13 @@ menores. Se fija la versión exacta.
 `expect fun MapaDeFondo(...)`, y solo el iPhone usa el compartido. Se pierde el mapa único, no la
 feature.
 
+**Cómo terminó (2026-09-29)**: sin línea de corte. El Android usa el mapa compartido desde el paso
+del mapa (D20), sin `Mapa.kt`, y el jugador lo vio "perfecto a simple vista"; la pasada en la calle
+con los quickstart de la 004 y la 005 queda en T036. En el iPhone el mismo mapa anduvo desde el
+primer piloto, una vez que el `.app` llevó los recursos de Compose (D21). Encima de `fiord` se
+sumaron dos capas propias, con las avenidas y las autopistas en tonos apagados, sobre las mismas
+teselas del estilo: el oscuro las dibujaba casi igual que las calles.
+
 **Descartado**:
 - **Un mapa por sistema, con el MapLibre iOS SDK por `cinterop`**: solo compila en una Mac, y
   duplica 1.160 líneas.
@@ -405,11 +412,15 @@ Así, lo que depende de Apple se sabe en un día y no después de portar 6.000 l
 | Reinstalar encima conserva un archivo escrito antes | **Sí**: la marca escrita en Room sigue después de reinstalar con Sideloadly. La compuerta pasa |
 | El mapa de maplibre-compose | Dibuja el centro con el estilo de OpenFreeMap |
 | Ubicación con la app abierta | Llega. La primera vez "Vigilar acá" no tenía posición todavía; al rato, sí |
-| La versión de iOS | Pendiente |
-| La app lee su fecha de vencimiento | Pendiente |
-| Ubicación con la pantalla bloqueada | Pendiente |
-| El aviso de región con la app cerrada, y después de reiniciar | Pendiente |
-| El aviso después de cerrar la app deslizándola | Pendiente |
+| La versión de iOS | 15.5 o más: la app completa, que la necesita por maplibre-compose, se instala y corre |
+| La app lee su fecha de vencimiento | Implementado con la app completa (T043 a T045). Se confirma en la semana real (T050) |
+| Ubicación con la pantalla bloqueada | **Sí**, con la app completa y no con el piloto: una salida de 1 h 05 min con el iPhone bloqueado quedó grabada entera (T071) |
+| El aviso de región con la app cerrada, y después de reiniciar | No se probó: la US5 se descartó el 2026-09-29, en los dos teléfonos |
+| El aviso después de cerrar la app deslizándola | Ídem |
+
+El jugador instaló la app completa antes de caminar el piloto, así que las filas de ubicación se
+contestaron con ella. Cerrar la app deslizándola durante una salida corta la grabación, y al volver
+a abrirla la salida se cierra con lo grabado y se avisa (FR-028).
 
 ## D22 — Repositorio público, limpio (FR-005a, SC-011)
 
