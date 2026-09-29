@@ -1,0 +1,60 @@
+# Proyecto del iPhone para XcodeGen (contrato C2 de la 006).
+#
+# El .xcodeproj no se guarda: lo genera `xcodegen` en la nube, porque sin Mac no hay forma de
+# editarlo. Lo que no puede cambiar entre compilaciones es el identificador (FR-004): con otro,
+# el iPhone la trata como otra app y reinstalar no conserva los datos.
+name: BuscarPatentes
+options:
+  deploymentTarget:
+    iOS: "15.5"
+targets:
+  BuscarPatentes:
+    type: application
+    platform: iOS
+    sources: [iosApp]
+    scheme: {}
+    info:
+      path: iosApp/Info.plist
+      properties:
+        CFBundleDisplayName: Buscar patentes
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        CADisableMinimumFrameDurationOnPhone: true
+        UIBackgroundModes: [location]
+        NSLocationWhenInUseUsageDescription: Para guardar dónde viste cada patente.
+        NSLocationAlwaysAndWhenInUseUsageDescription: Para avisarte cuando pasás cerca de la patente que toca, y para grabar la salida con la pantalla apagada.
+        NSCameraUsageDescription: Para sacarle foto a la patente.
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ar.lauta.buscarpatentes
+        PRODUCT_NAME: BuscarPatentes
+        MARKETING_VERSION: "0.1"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "5.0"
+        FRAMEWORK_SEARCH_PATHS: "$(SRCROOT)/../shared/build/bin/iosArm64/releaseFramework"
+        # El framework de Kotlin es estático: se linkea acá, con lo que pide maplibre-compose.
+        OTHER_LDFLAGS:
+          - "-framework"
+          - "Shared"
+          - "-lc++"
+          - "-lz"
+          - "-lsqlite3"
+          - "-framework"
+          - "CoreFoundation"
+          - "-framework"
+          - "CoreGraphics"
+          - "-framework"
+          - "CoreText"
+          - "-framework"
+          - "Foundation"
+          - "-framework"
+          - "ImageIO"
+          - "-framework"
+          - "Metal"
+          - "-framework"
+          - "QuartzCore"

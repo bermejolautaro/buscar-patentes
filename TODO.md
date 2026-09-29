@@ -1,0 +1,13 @@
+- ~~Boton de esconder patentes~~ (hecho en la 004, US5)
+- ~~El filtro de buscar estaria bueno que si yo busco por ejemplo "318", me muestre en el mapa solo las 318. Con esos dicho creo que el filtro deberia funcionar a nivel home en vez de otra pantalla, o dividir la funcionalidad.~~ (hecho en la 005)
+- ~~Los grupos son muy sensibles, estaria bueno que haya un treshold donde las patentes puedan empujarse entre si un poco para mostrarse sin agruparse y despues de ese treshold ya agruparse. Mientras la patente quede sobre la misma cuadra ya es suficiente para entender donde esta~~ (hecho en la 005)
+- En los caminos siguen apareciendo ciertas diagonales que no matchean con la calle y se ven medio glitch. Hoy en dia el dibujo a partir de los puntos de GPS se dibujar perfecto sobre el camino, asi que es raro estos glitches
+- En la pantalla de recorrido, estaria bueno un toggle entre el mapa dibujado con los puntos reales y el mapa dibujado con AjustarACalles.
+- ~~En la pantalla de patentes no se muestra la confianza~~ (hecho en la 005)
+- ~~En la pantalla de patentes, al buscar por una patente no se ordenan de mas cercana a mas lejana (y tambien habria que darle prioridad a mas confianza menos confianza, ahi deberia ser mas o menos weighted porque capaz una tiene confianza maso pero esta tan cerca que vale la pena chequearla)~~ (hecho en la 005)
+- ~~La app dice "6 numeros sguidos cubiertos" y no tengo idea que significa. A mi me interesaria saber cuantas instancias hay de la patente que estoy buscando "Ninguna descubierta", "2 descubiertas", etc~~ (hecho en la 005)
+- ~~Ahora en el mapa veo que hay 318, me gustaria una forma facil de armar un recorrido que pase por las 3. Quizas agregarla las 3 a google maps en un solo recorrido. Tambien pienso que alguna patente quizas esta muy lejos, asi que se deberia poder elegir cuales quiero agregar y cuales no. Tambien cambiar el orden en que las busco por si prefiero hacer en otro orden, pero deberia ser comodo poner los 3 puntos en un maps y armar el recorrido~~ (hecho en la 005)
+- ~~Que vuelva el fondo verde para la patente buscada~~ (hecho en la 005)
+- ~~Que la patente buscada se vea incluso si esta dentro de un grupo en todo momento~~ (hecho en la 005)
+- La confianza en la patente deberia ser por horario y dia. Estaba pensando en partirlo en turno mañana, turno tarde y turno noche.
+- Me gustaria dibujar una zona y ponerme como objetivo recorrer todas las calles. Ver cuanto tiempo me lleva (podrian ser meses) desde que se creo la zona y que me muestre un porcentaje de cuanto recorri. Tambien la posibilidad de cerrar el objetivo en algun momento. Tambien poder quitar calles (pueden ser peligrosas).

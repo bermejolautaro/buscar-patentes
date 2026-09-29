@@ -1,0 +1,39 @@
+# Android / Kotlin
+build/
+out/
+.gradle/
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+*.iml
+*.apk
+*.aab
+*.ap_
+*.dex
+local.properties
+.cxx/
+
+# IDE
+.idea/
+.vscode/
+captures/
+
+# Logs y temporales
+*.log
+*.tmp
+*.swp
+.env*
+
+# SO
+.DS_Store
+Thumbs.db
+
+# Respaldos de datos del telefono (scripts/respaldo.ps1)
+respaldos/
+
+# 006: respaldos que saca la app, y lo que se genera para el iPhone
+*.respaldo
+iosApp/*.xcodeproj/
+iosApp/build/
+.kotlin/
+iosApp/iosApp/Info.plist

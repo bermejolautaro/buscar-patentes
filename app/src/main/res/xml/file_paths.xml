@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Las fotos viven en almacenamiento privado (D5). Compartirlas exige un
+         content:// URI: un file:// lanza FileUriExposedException desde Android 7 (C1). -->
+    <files-path
+        name="fotos"
+        path="fotos/" />
+</paths>

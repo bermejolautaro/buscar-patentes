@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Tema de ventana, variante clara (D1, causa 1).
+
+    Antes esto era `android:Theme.Material.NoActionBar`, que NO es el tema neutro que
+    parece: en la plataforma Android, `Theme.Material` es la variante **oscura**. La clara
+    es `Theme.Material.Light`. La ventana quedaba oscura siempre, sin importar el ajuste
+    del telefono.
+
+    El par claro/oscuro se resuelve con el calificador de recursos `values-night/`, que
+    funciona desde API 8. Un tema DayNight de la plataforma exigiria API 29, y minSdk es 26.
+-->
+<resources>
+    <style name="Theme.BuscarPatentes" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>
