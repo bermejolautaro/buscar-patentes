@@ -1,10 +1,12 @@
 package ar.lauta.buscarpatentes.ui
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Shapes
 import androidx.compose.ui.graphics.Color
@@ -181,11 +183,13 @@ fun TemaBuscarPatentes(
     oscuro: Boolean = isSystemInDarkTheme(),
     contenido: @Composable () -> Unit,
 ) {
-    MaterialTheme(
-        colorScheme = if (oscuro) EsquemaOscuro else EsquemaClaro,
-        shapes = Esquinas,
-        content = contenido,
-    )
+    val esquema = if (oscuro) EsquemaOscuro else EsquemaClaro
+    MaterialTheme(colorScheme = esquema, shapes = Esquinas) {
+        // Un `Text` sin color toma `LocalContentColor`, que sin un `Surface` arriba es negro.
+        // Ajustes y Salidas pintan su fondo pero no ponen `Surface`: en oscuro quedaba texto
+        // negro sobre fondo casi negro.
+        CompositionLocalProvider(LocalContentColor provides esquema.onBackground, content = contenido)
+    }
 }
 
 /**
