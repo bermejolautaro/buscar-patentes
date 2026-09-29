@@ -22,6 +22,10 @@ kotlin {
 
         withHostTestBuilder {}
 
+        // Los íconos de las pantallas son recursos de Compose, que en el Android viajan como
+        // recursos de la biblioteca.
+        androidResources.enable = true
+
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
         }
@@ -61,6 +65,10 @@ kotlin {
             implementation(libs.play.services.location)
         }
     }
+}
+
+compose.resources {
+    packageOfResClass = "ar.lauta.buscarpatentes.recursos"
 }
 
 // Room genera el código de la base para cada target (D6).
