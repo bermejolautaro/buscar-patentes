@@ -36,6 +36,8 @@ targets:
         NSLocationAlwaysAndWhenInUseUsageDescription: Para avisarte cuando pasás cerca de la patente que toca, y para grabar la salida con la pantalla apagada.
         NSCameraUsageDescription: Para sacarle foto a la patente.
         UIFileSharingEnabled: true
+        # Para saber si está la app de Google Maps antes de mandarle un recorrido largo.
+        LSApplicationQueriesSchemes: [comgooglemaps]
         LSSupportsOpeningDocumentsInPlace: true
     settings:
       base:

@@ -13,15 +13,21 @@ import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
 import kotlinx.io.readByteArray
-import platform.Foundation.NSBundle
-// Con comodín: el POST usa métodos de categorías de Foundation, que Kotlin ve como extensiones.
+// Con comodín: el POST y la foto usan métodos de categorías de Foundation, que Kotlin ve como
+// extensiones.
 import platform.Foundation.*
-import platform.Foundation.NSURL
 import platform.UIKit.UIActivityViewController
 import platform.UIKit.UIApplication
 import platform.UIKit.UIApplicationOpenSettingsURLString
 import platform.UIKit.UIDocumentPickerDelegateProtocol
 import platform.UIKit.UIDocumentPickerViewController
+import platform.UIKit.UIImage
+import platform.UIKit.UIImageJPEGRepresentation
+import platform.UIKit.UIImagePickerController
+import platform.UIKit.UIImagePickerControllerDelegateProtocol
+import platform.UIKit.UIImagePickerControllerOriginalImage
+import platform.UIKit.UIImagePickerControllerSourceType
+import platform.UIKit.UINavigationControllerDelegateProtocol
 import platform.UIKit.UIViewController
 import platform.UniformTypeIdentifiers.UTTypeData
 import platform.UserNotifications.UNAuthorizationOptionAlert
@@ -33,9 +39,8 @@ import platform.UserNotifications.UNUserNotificationCenter
 import platform.darwin.NSObject
 
 /*
- * La costura del iPhone (contrato P de la 006). Lo que todavía no existe tira NotImplementedError
- * con la story que lo implementa. Lo que las pantallas llaman solas, sin que el jugador lo pida,
- * no tira: no hace nada, así la app abre igual.
+ * La costura del iPhone (contrato P de la 006). Lo que todavía no existe no hace nada: son los
+ * avisos, que las pantallas llaman solas sin que el jugador lo pida.
  */
 
 actual object Vigilancia {
@@ -43,18 +48,45 @@ actual object Vigilancia {
     actual suspend fun reconciliar(elSistemaLosOlvido: Boolean) {}
 }
 
+/**
+ * Un link de Google Maps, que abre la app si está instalada y si no Safari (D14). El iPhone no
+ * tiene un equivalente de `geo:` que deje elegir la app de mapas.
+ */
 actual fun abrirPunto(latitud: Double, longitud: Double, etiqueta: String): Boolean =
-    throw NotImplementedError("US4 (T060): abrir el lugar en mapas")
+    abrirUrl("https://www.google.com/maps/search/?api=1&query=$latitud,$longitud")
 
-actual fun abrirRecorrido(url: String, paradas: Int): Ir.ResultadoRecorrido =
-    throw NotImplementedError("US4 (T060): abrir el recorrido en Maps")
+/**
+ * Como en el Android: sin la app de Google Maps el recorrido va al navegador, donde entran menos
+ * paradas, y si sobran no se abre (FR-019b). Saber si la app está necesita el esquema
+ * `comgooglemaps` en `LSApplicationQueriesSchemes`.
+ */
+actual fun abrirRecorrido(url: String, paradas: Int): Ir.ResultadoRecorrido {
+    val hayApp = NSURL.URLWithString("comgooglemaps://")?.let { UIApplication.sharedApplication.canOpenURL(it) } == true
+    if (!hayApp && Ir.accionPara(paradas, Ir.MAXIMO_PARADAS_NAVEGADOR) is Ir.AccionRecorrido.Sobran) {
+        return Ir.ResultadoRecorrido.DEMASIADAS_PARA_EL_NAVEGADOR
+    }
+    return if (abrirUrl(url)) Ir.ResultadoRecorrido.ABIERTO else Ir.ResultadoRecorrido.SIN_APP
+}
+
+private fun abrirUrl(url: String): Boolean {
+    val destino = NSURL.URLWithString(url) ?: return false
+    UIApplication.sharedApplication.openURL(destino, emptyMap<Any?, Any>(), null)
+    return true
+}
 
 actual fun abrirAjustesDelSistema() {
     val ajustes = NSURL.URLWithString(UIApplicationOpenSettingsURLString) ?: return
     UIApplication.sharedApplication.openURL(ajustes, emptyMap<Any?, Any>(), null)
 }
 
-actual fun compartir(texto: String, foto: String?): Unit = throw NotImplementedError("US4 (T059): compartir")
+/** La foto como imagen y no como archivo: WhatsApp la manda como foto, con el texto de epígrafe. */
+actual fun compartir(texto: String, foto: String?) {
+    mostrarHoja(listOfNotNull(texto, foto?.let { UIImage.imageWithContentsOfFile(it) }))
+}
+
+private fun mostrarHoja(cosas: List<Any>) {
+    arriba()?.presentViewController(UIActivityViewController(cosas, null), animated = true, completion = null)
+}
 
 /**
  * Sin preguntarle al sistema: saberlo en el iPhone es asíncrono, y sin red `postear` falla en el
@@ -112,10 +144,7 @@ actual fun programarAvisoDeVencimiento(vence: Long) {
 
 private const val UN_DIA_MS = 24L * 60 * 60 * 1000
 
-actual fun mandarRespaldo(ruta: String) {
-    val hoja = UIActivityViewController(listOf(NSURL.fileURLWithPath(ruta)), null)
-    arriba()?.presentViewController(hoja, animated = true, completion = null)
-}
+actual fun mandarRespaldo(ruta: String) = mostrarHoja(listOf(NSURL.fileURLWithPath(ruta)))
 
 /** `asCopy`: iOS copia el archivo adentro de la app, y lo que llega es una ruta local. */
 @Composable
@@ -152,6 +181,46 @@ private fun arriba(): UIViewController? {
 actual fun versionInstalada(): Pair<String, Long?> =
     (NSBundle.mainBundle.objectForInfoDictionaryKey("CFBundleShortVersionString") as? String ?: "?") to null
 
+/** La cámara del sistema. La foto se guarda en JPEG con el nombre que da `AlmacenFotos` (T058). */
 @Composable
-actual fun rememberSacarFoto(alTerminar: (Boolean) -> Unit): (destino: String) -> Unit =
-    { throw NotImplementedError("US4 (T058): sacar foto") }
+actual fun rememberSacarFoto(alTerminar: (Boolean) -> Unit): (destino: String) -> Unit {
+    val terminar by rememberUpdatedState(alTerminar)
+    // La cámara no retiene a su delegado: lo retiene esta pantalla.
+    val delegado = remember { DelegadoDeLaCamara { terminar(it) } }
+    return { destino ->
+        val camara = UIImagePickerControllerSourceType.UIImagePickerControllerSourceTypeCamera
+        if (!UIImagePickerController.isSourceTypeAvailable(camara)) {
+            terminar(false)
+        } else {
+            delegado.destino = destino
+            val selector = UIImagePickerController().apply {
+                sourceType = camara
+                delegate = delegado
+            }
+            arriba()?.presentViewController(selector, animated = true, completion = null)
+        }
+    }
+}
+
+private class DelegadoDeLaCamara(private val alTerminar: (Boolean) -> Unit) :
+    NSObject(), UIImagePickerControllerDelegateProtocol, UINavigationControllerDelegateProtocol {
+
+    var destino: String? = null
+
+    override fun imagePickerController(picker: UIImagePickerController, didFinishPickingMediaWithInfo: Map<Any?, *>) {
+        val imagen = didFinishPickingMediaWithInfo[UIImagePickerControllerOriginalImage] as? UIImage
+        val ruta = destino
+        val guardada = imagen != null && ruta != null &&
+            UIImageJPEGRepresentation(imagen, CALIDAD_JPEG)?.writeToFile(ruta, atomically = true) == true
+        picker.dismissViewControllerAnimated(true, completion = null)
+        alTerminar(guardada)
+    }
+
+    override fun imagePickerControllerDidCancel(picker: UIImagePickerController) {
+        picker.dismissViewControllerAnimated(true, completion = null)
+        alTerminar(false)
+    }
+}
+
+/** Una patente se lee igual, y la foto pesa la mitad que sin comprimir. */
+private const val CALIDAD_JPEG = 0.85
