@@ -77,7 +77,7 @@ Tres raíces, todas con el paquete `ar/lauta/buscarpatentes`:
 - [X] T003 [P] **Hecha**: además de la T002 de la 005, se limpiaron las coordenadas de una captura real en `specs/001-captura-patentes/tasks.md` (línea 90) y los nombres de calles en `specs/003-rumbo-y-aspecto/tasks.md` (línea 228). Borrar `specs/005-buscar-la-que-toca/antes-grupos.png`. Reescribir la T002 de `specs/005-buscar-la-que-toca/tasks.md` sin nombres de calles ni la ruta de la imagen: "la zona con más patentes, a zoom de calle, con 4 grupos (2, 2, 2 y 3) y 2 pines sueltos…". Revisar `specs/` y `README.md` con `git grep -n` por nombres de calles o barrios de la zona, y neutralizarlos (D22, SC-011)
 - [X] T004 [P] En `.gitignore`, sumar `*.respaldo`, `iosApp/*.xcodeproj/`, `iosApp/build/` y `.kotlin/` (C4)
 - [X] T005 Commitear en `006-jugar-en-iphone` la spec, el plan, la enmienda de la constitución 1.2.0 y T002 a T004, en commits separados por tema (docs, test, chore)
-- [ ] T006 Crear la historia pública (D22):
+- [X] T006 **Hecha el 2026-09-28**, después de T011 y con el OK del usuario: `github.com/bermejolautaro/buscar-patentes`, público. El chequeo de §8 dio limpio. Crear la historia pública (D22):
   1. `git config user.email <id>+bermejolautaro@users.noreply.github.com`, con el id de `gh api user --jq .id`.
   2. `git branch -m main historial` y `git branch -m 006-jugar-en-iphone historial-006`.
   3. `git checkout --orphan main` y un commit `chore: primer commit público`.
