@@ -181,7 +181,7 @@ object Acomodo {
     }
 
     private fun proyectar(latitud: Double, longitud: Double, mundo: Double): Pair<Double, Double> {
-        val lat = Math.toRadians(latitud)
+        val lat = (latitud).aRadianes()
         val x = (longitud + 180.0) / 360.0 * mundo
         val y = (1 - ln(tan(lat) + 1 / cos(lat)) / PI) / 2 * mundo
         return x to y
@@ -189,12 +189,12 @@ object Acomodo {
 
     private fun desproyectar(x: Double, y: Double, mundo: Double): Pair<Double, Double> {
         val longitud = x / mundo * 360.0 - 180.0
-        val latitud = Math.toDegrees(atan(sinh(PI * (1 - 2 * y / mundo))))
+        val latitud = atan(sinh(PI * (1 - 2 * y / mundo))).aGrados()
         return latitud to longitud
     }
 
     private fun metrosPorDp(latitud: Double, mundo: Double) =
-        CIRCUNFERENCIA_M * cos(Math.toRadians(latitud)) / mundo
+        CIRCUNFERENCIA_M * cos((latitud).aRadianes()) / mundo
 }
 
 /** Una patente para acomodar: solo lo que hace falta para saber dónde está. */

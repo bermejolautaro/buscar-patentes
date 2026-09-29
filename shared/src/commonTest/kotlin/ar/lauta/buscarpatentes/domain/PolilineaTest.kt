@@ -1,8 +1,8 @@
 package ar.lauta.buscarpatentes.domain
 
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+import kotlin.test.Test
 
 /**
  * El decodificador de la polilínea que devuelve el map matching (FR-031).
@@ -29,7 +29,7 @@ class PolilineaTest {
     fun `la polilinea cae donde tiene que caer`() {
         val puntos = Polilinea.decodificar(real)
 
-        assertTrue("dio ${puntos.size} puntos", puntos.size >= 5)
+        assertTrue(puntos.size >= 5, "dio ${puntos.size} puntos")
         val (lat, lon) = puntos.first()
         // Si el factor fuera 1e5 esto daría -3.46, que está en el Atlántico frente a Brasil.
         assertEquals(-34.6037, lat, 1e-6)
@@ -45,7 +45,7 @@ class PolilineaTest {
 
         puntos.forEach { (lat, lon) ->
             val d = Geo.distanciaMetros(lat0, lon0, lat, lon)
-            assertTrue("un punto quedó a $d m del primero", d < 2_000)
+            assertTrue(d < 2_000, "un punto quedó a $d m del primero")
         }
     }
 
@@ -57,7 +57,7 @@ class PolilineaTest {
         }.sum()
 
         // Cuatro tramos de unos 90 m: unos 360 m en total.
-        assertTrue("el camino midió $largo m", largo in 200.0..500.0)
+        assertTrue(largo in 200.0..500.0, "el camino midió $largo m")
     }
 
     @Test
@@ -75,7 +75,7 @@ class PolilineaTest {
         // Un prefijo corta en el medio de un número, así que puede no completar ni un punto.
         // Lo que importa es que no tire: el trazo crudo sigue abajo como respaldo.
         val puntos = Polilinea.decodificar(real.substring(0, 10))
-        assertTrue("dio ${puntos.size} puntos", puntos.size <= 2)
+        assertTrue(puntos.size <= 2, "dio ${puntos.size} puntos")
     }
 
     @Test

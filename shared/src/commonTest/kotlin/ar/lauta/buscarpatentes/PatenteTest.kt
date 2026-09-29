@@ -2,9 +2,9 @@ package ar.lauta.buscarpatentes
 
 import ar.lauta.buscarpatentes.domain.FormatoPatente
 import ar.lauta.buscarpatentes.domain.Patente
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlin.test.Test
 
 /** FR-010: extracción del número de 3 dígitos de los dos formatos argentinos. */
 class PatenteTest {

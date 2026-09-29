@@ -2,10 +2,10 @@ package ar.lauta.buscarpatentes
 
 import ar.lauta.buscarpatentes.domain.Avisos
 import ar.lauta.buscarpatentes.domain.RegistroParaAviso
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
+import kotlin.test.Test
 
 /** D4, FR-028, FR-029, FR-041: qué merece geofence y qué merece notificación. */
 class AvisosTest {
@@ -46,18 +46,18 @@ class AvisosTest {
             Avisos.previosSegunElSistema(loQueLaAppCreeRegistrado, elSistemaLosOlvido = false),
             deseados,
         )
-        assertTrue("Sin reinicio no hay que despertar al sistema de gusto", enOperacionNormal.sinCambios)
+        assertTrue(enOperacionNormal.sinCambios, "Sin reinicio no hay que despertar al sistema de gusto")
 
         val despuesDeReiniciar = Avisos.reconciliar(
             Avisos.previosSegunElSistema(loQueLaAppCreeRegistrado, elSistemaLosOlvido = true),
             deseados,
         )
         assertFalse(
-            "Después de reiniciar hay que registrar de nuevo, no confiar en lo anotado",
             despuesDeReiniciar.sinCambios,
+            "Después de reiniciar hay que registrar de nuevo, no confiar en lo anotado",
         )
         assertEquals(listOf(1L), despuesDeReiniciar.aAgregar.map { it.id })
-        assertTrue("No hay nada que dar de baja: el sistema ya los perdió", despuesDeReiniciar.aQuitar.isEmpty())
+        assertTrue(despuesDeReiniciar.aQuitar.isEmpty(), "No hay nada que dar de baja: el sistema ya los perdió")
     }
 
     @Test

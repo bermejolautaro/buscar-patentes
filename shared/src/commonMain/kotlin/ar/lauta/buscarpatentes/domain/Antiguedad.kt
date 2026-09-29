@@ -95,5 +95,7 @@ object Antiguedad {
      * salida de hace 3 días y 20 horas sigue siendo reciente hasta que cumple los 4.
      */
     fun diasDesde(momento: Long, ahora: Long): Long =
-        TimeUnit.MILLISECONDS.toDays(ahora - momento)
+        (ahora - momento) / MILIS_POR_DIA
+
+    private const val MILIS_POR_DIA = 86_400_000L
 }

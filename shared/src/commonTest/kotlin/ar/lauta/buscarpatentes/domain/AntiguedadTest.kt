@@ -1,8 +1,7 @@
 package ar.lauta.buscarpatentes.domain
 
-import org.junit.Assert.assertEquals
-import org.junit.Test
-import java.util.concurrent.TimeUnit
+import kotlin.test.assertEquals
+import kotlin.test.Test
 
 /**
  * La única prueba nueva de la 004, y la única lógica pura que la feature agrega (D9).
@@ -17,10 +16,10 @@ class AntiguedadTest {
 
     private val ahora = 1_756_600_000_000L
 
-    private fun haceDias(dias: Long) = ahora - TimeUnit.DAYS.toMillis(dias)
+    private fun haceDias(dias: Long) = ahora - (dias * 86_400_000L)
 
     private fun escalonDeHace(dias: Long, horas: Long = 0) = Antiguedad.escalon(
-        finalizadoEn = haceDias(dias) - TimeUnit.HOURS.toMillis(horas),
+        finalizadoEn = haceDias(dias) - (horas * 3_600_000L),
         iniciadoEn = 0L,
         ahora = ahora,
     )
@@ -98,13 +97,13 @@ class AntiguedadTest {
     @Test
     fun `una fecha futura se dice hoy y no una cuenta negativa`() {
         // Reloj corrido: "hace -2 días" sería peor que impreciso, sería absurdo.
-        assertEquals("hoy", Antiguedad.hace(ahora + TimeUnit.DAYS.toMillis(2), ahora))
+        assertEquals("hoy", Antiguedad.hace(ahora + (2 * 86_400_000L), ahora))
     }
 
     @Test
     fun `una fecha futura por reloj corrido no rompe y cae en reciente`() {
         val futura = Antiguedad.escalon(
-            finalizadoEn = ahora + TimeUnit.DAYS.toMillis(2),
+            finalizadoEn = ahora + (2 * 86_400_000L),
             iniciadoEn = 0L,
             ahora = ahora,
         )

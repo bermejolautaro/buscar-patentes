@@ -1,8 +1,8 @@
 package ar.lauta.buscarpatentes.domain
 
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+import kotlin.test.Test
 
 /**
  * Pines que se hacen lugar antes de agruparse (D13 de la 005, US5).
@@ -45,7 +45,7 @@ class AcomodoTest {
 
         // Y separados al menos un ancho de pin: 34 dp a 0,49 m/dp son unos 16,7 m.
         val separacion = Geo.distanciaMetros(da.latitud, da.longitud, db.latitud, db.longitud)
-        assertTrue("quedaron a $separacion m", separacion >= 16.0)
+        assertTrue(separacion >= 16.0, "quedaron a $separacion m")
     }
 
     @Test
@@ -77,7 +77,7 @@ class AcomodoTest {
         // el último están a 120 m, más de un ancho de pin: tiene que haber más de un grupo.
         val fila = (0..4).map { pin(it.toLong() + 1, it * 30.0) }
         val dibujos = Acomodo.para(fila, 15, ancho)
-        assertTrue("salieron ${dibujos.size}", dibujos.size > 1)
+        assertTrue(dibujos.size > 1, "salieron ${dibujos.size}")
         assertEquals(5, dibujos.sumOf { if (it is Dibujo.Grupo) it.cuenta else 1 })
     }
 
@@ -94,9 +94,9 @@ class AcomodoTest {
         for (zoom in 12..19) {
             val dibujos = Acomodo.para(pines, zoom, ancho)
             assertEquals(
-                "zoom $zoom",
                 12,
                 dibujos.sumOf { if (it is Dibujo.Grupo) it.cuenta else 1 },
+                "zoom $zoom",
             )
         }
     }

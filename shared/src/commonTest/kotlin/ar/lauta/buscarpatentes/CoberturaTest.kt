@@ -1,8 +1,8 @@
 package ar.lauta.buscarpatentes
 
 import ar.lauta.buscarpatentes.domain.Cobertura
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.Test
 
 /**
  * FR-003 de la 005: cuántas patentes hay del número que toca, dicho en castellano.

@@ -1,7 +1,7 @@
 package ar.lauta.buscarpatentes.domain
 
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.Test
 
 /**
  * El orden en que conviene revisar las patentes de un número (D8 de la 005).

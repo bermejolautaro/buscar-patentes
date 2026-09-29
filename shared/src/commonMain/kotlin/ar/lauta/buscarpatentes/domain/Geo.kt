@@ -1,5 +1,6 @@
 package ar.lauta.buscarpatentes.domain
 
+import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.roundToInt
@@ -46,10 +47,10 @@ object Geo {
         latitudB: Double,
         longitudB: Double,
     ): Double {
-        val dLat = Math.toRadians(latitudB - latitudA)
-        val dLon = Math.toRadians(longitudB - longitudA)
-        val latA = Math.toRadians(latitudA)
-        val latB = Math.toRadians(latitudB)
+        val dLat = (latitudB - latitudA).aRadianes()
+        val dLon = (longitudB - longitudA).aRadianes()
+        val latA = (latitudA).aRadianes()
+        val latB = (latitudB).aRadianes()
 
         val a = sin(dLat / 2) * sin(dLat / 2) +
             cos(latA) * cos(latB) * sin(dLon / 2) * sin(dLon / 2)
@@ -95,9 +96,9 @@ object Geo {
         latitudB: Double,
         longitudB: Double,
     ): Double {
-        val latA = Math.toRadians(latitudA)
-        val latB = Math.toRadians(latitudB)
-        val dLon = Math.toRadians(longitudB - longitudA)
+        val latA = (latitudA).aRadianes()
+        val latB = (latitudB).aRadianes()
+        val dLon = (longitudB - longitudA).aRadianes()
 
         val y = sin(dLon) * cos(latB)
         val x = cos(latA) * sin(latB) - sin(latA) * cos(latB) * cos(dLon)
@@ -105,7 +106,7 @@ object Geo {
         // `atan2` devuelve `(-180, 180]`. El `+ 360` y el resto lo llevan a `[0, 360)`, que
         // es lo que `cardinal` espera: sin esto, todo rumbo hacia el oeste cae en el sector
         // equivocado.
-        return (Math.toDegrees(atan2(y, x)) + 360.0) % 360.0
+        return (atan2(y, x).aGrados() + 360.0) % 360.0
     }
 
     private val PUNTOS = listOf("norte", "noreste", "este", "sudeste", "sur", "sudoeste", "oeste", "noroeste")
@@ -206,7 +207,7 @@ object Geo {
      */
     fun distanciaLegible(metros: Double): String = when {
         metros < 1_000 -> "${(metros / 10).roundToInt() * 10} m"
-        else -> "%.1f km".format(metros / 1_000).replace('.', ',')
+        else -> (metros / 100).roundToInt().let { d -> "${d / 10},${d % 10} km" }
     }
 
     /**
@@ -230,3 +231,11 @@ object Geo {
         return "A ${distanciaLegible(metros)} al ${cardinal(rumbo)}"
     }
 }
+
+/**
+ * `Math.toRadians` y `Math.toDegrees` de Java, que en código común no existen (D1 de la 006).
+ * Multiplican por la misma constante que Java, así que dan el mismo resultado bit a bit.
+ */
+internal fun Double.aRadianes(): Double = this * (PI / 180.0)
+
+internal fun Double.aGrados(): Double = this * (180.0 / PI)

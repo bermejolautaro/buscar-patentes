@@ -1,9 +1,9 @@
 package ar.lauta.buscarpatentes.domain
 
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import kotlin.test.Test
 
 /**
  * La única prueba nueva de la 003, y la única lógica pura que la feature agrega (D3).
@@ -28,7 +28,7 @@ class GeoTest {
         val d = Geo.distanciaMetros(latA, lonA, latB, lonB)
         // ~0.0058° de latitud son unos 650 m. Margen amplio: lo que se prueba es que la
         // fórmula está bien, no el sexto decimal.
-        assertTrue("dio $d m", d in 600.0..700.0)
+        assertTrue(d in 600.0..700.0, "dio $d m")
     }
 
     @Test
@@ -214,8 +214,8 @@ class GeoTest {
         // clase de mentira que el Principio II prohíbe en la evidencia.
         val texto = Geo.distanciaYRumbo(null, -34.6221, -58.3591)
 
-        assertTrue(texto, texto.contains("desconocida"))
-        assertTrue("no puede haber ningún dígito: $texto", texto.none { it.isDigit() })
+        assertTrue(texto.contains("desconocida"), texto)
+        assertTrue(texto.none { it.isDigit() }, "no puede haber ningún dígito: $texto")
     }
 
     @Test
