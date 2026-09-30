@@ -20,6 +20,7 @@ class Contenedor(val baseDeDatos: BaseDeDatos, val fotos: AlmacenFotos) {
     val recorridos by lazy { baseDeDatos.recorridos() }
     val puntos by lazy { baseDeDatos.puntos() }
     val votos by lazy { baseDeDatos.votos() }
+    val zonas by lazy { baseDeDatos.zonas() }
 }
 
 /** El de la app. Lo fija [iniciarContenedor], antes que cualquier pantalla. */

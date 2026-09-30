@@ -257,3 +257,99 @@ interface VotoDao {
     @Query("DELETE FROM voto WHERE registroId = :registroId")
     suspend fun borrarDe(registroId: Long)
 }
+
+/**
+ * Las zonas y sus cuadras (008).
+ *
+ * **No toca ninguna salida**: la zona lee `recorrido` y `punto_de_trayecto` desde afuera, con
+ * [RecorridoDao], y acá no hay ninguna sentencia que los nombre (FR-019). `InmutabilidadTest`
+ * lo verifica.
+ */
+@Dao
+abstract class ZonaDao {
+
+    @Insert
+    abstract suspend fun insertar(zona: Zona): Long
+
+    @Query("SELECT * FROM zona ORDER BY creadaEn DESC")
+    abstract suspend fun todas(): List<Zona>
+
+    /** La cola de la búsqueda de cuadras (D8): lo que todavía no tiene cuadras ni un problema. */
+    @Query("SELECT * FROM zona WHERE estado = 'BUSCANDO' AND problema IS NULL")
+    abstract suspend fun buscando(): List<Zona>
+
+    @Query("SELECT * FROM zona WHERE estado = 'ACTIVA'")
+    abstract suspend fun activas(): List<Zona>
+
+    @Query("SELECT * FROM zona WHERE id = :id")
+    abstract suspend fun porId(id: Long): Zona?
+
+    @Query("SELECT * FROM cuadra WHERE zonaId = :zonaId")
+    abstract suspend fun cuadrasDe(zonaId: Long): List<Cuadra>
+
+    @Query("SELECT * FROM cuadra WHERE zonaId IN (SELECT id FROM zona WHERE estado = 'ACTIVA')")
+    abstract suspend fun cuadrasDeActivas(): List<Cuadra>
+
+    @Query("UPDATE zona SET problema = :problema WHERE id = :id")
+    abstract suspend fun marcarProblema(id: Long, problema: String)
+
+    @Query("UPDATE zona SET cuentaDesde = :desde WHERE id = :id AND estado = 'ACTIVA'")
+    abstract suspend fun cambiarCuentaDesde(id: Long, desde: Long)
+
+    @Query("UPDATE cuadra SET quitada = :quitada WHERE id IN (:ids)")
+    abstract suspend fun marcarQuitadas(ids: List<Long>, quitada: Boolean)
+
+    @Insert
+    protected abstract suspend fun insertarCuadra(cuadra: Cuadra): Long
+
+    @Query("UPDATE zona SET estado = 'ACTIVA' WHERE id = :id")
+    protected abstract suspend fun marcarActiva(id: Long)
+
+    /**
+     * Guarda las cuadras que encontró la búsqueda y pasa la zona a activa (D8).
+     *
+     * Cada gemela lleva el **índice** de su principal en [principales], porque el id recién
+     * existe después de insertarla.
+     */
+    @Transaction
+    open suspend fun activar(zonaId: Long, principales: List<Cuadra>, gemelas: List<Pair<Int, Cuadra>>) {
+        val ids = principales.map { insertarCuadra(it.copy(zonaId = zonaId)) }
+        gemelas.forEach { (indice, gemela) -> insertarCuadra(gemela.copy(zonaId = zonaId, gemelaDe = ids[indice])) }
+        marcarActiva(zonaId)
+    }
+
+    @Query(
+        "UPDATE zona SET estado = :estado, terminadaEn = :en, porcentajeFinal = :porcentaje " +
+            "WHERE id = :id AND estado = 'ACTIVA'",
+    )
+    protected abstract suspend fun marcarTerminada(id: Long, estado: EstadoZona, en: Long, porcentaje: Int): Int
+
+    @Query("UPDATE cuadra SET recorridaAlTerminar = 1 WHERE id IN (:ids)")
+    protected abstract suspend fun marcarRecorridas(ids: List<Long>)
+
+    /**
+     * Congela el resultado de una zona que termina (FR-014 a FR-016). Solo una activa: una zona
+     * terminada no se vuelve a terminar, y su resultado queda como estaba.
+     */
+    @Transaction
+    open suspend fun terminar(id: Long, estado: EstadoZona, en: Long, porcentaje: Int, recorridas: List<Long>) {
+        if (marcarTerminada(id, estado, en, porcentaje) == 0) return
+        recorridas.chunked(MAXIMO_POR_SENTENCIA).forEach { marcarRecorridas(it) }
+    }
+
+    @Query("DELETE FROM cuadra WHERE zonaId = :id")
+    protected abstract suspend fun borrarCuadrasDe(id: Long)
+
+    @Query("DELETE FROM zona WHERE id = :id")
+    protected abstract suspend fun borrarZona(id: Long)
+
+    /** Borra una zona con sus cuadras (FR-018). Las salidas no se enteran. */
+    @Transaction
+    open suspend fun borrarConSusCuadras(id: Long) {
+        borrarCuadrasDe(id)
+        borrarZona(id)
+    }
+}
+
+/** SQLite acepta hasta 999 parámetros por sentencia en sus versiones viejas. */
+private const val MAXIMO_POR_SENTENCIA = 900

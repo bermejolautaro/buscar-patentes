@@ -162,6 +162,13 @@ private object Migraciones {
             }
         }
 
+        /** Las zonas de la 008. El SQL es común: el iPhone corre el mismo ([SQL_7_8]). */
+        private val MIGRACION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                SQL_7_8.forEach { db.execSQL(it) }
+            }
+        }
+
         // Sin instancia guardada: la guarda el contenedor, que la cambia al restaurar un respaldo.
         fun construir(context: Context): BaseDeDatos =
             Room.databaseBuilder(
@@ -176,6 +183,7 @@ private object Migraciones {
                     MIGRACION_4_5,
                     MIGRACION_5_6,
                     MIGRACION_6_7,
+                    MIGRACION_7_8,
                 )
                 .build()
 }

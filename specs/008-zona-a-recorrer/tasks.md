@@ -30,12 +30,12 @@ la misma ruta de paquete.
 **Purpose**: la respuesta real de Overpass para las pruebas, y la identificación de la app ante los
 servicios.
 
-- [ ] T001 [P] Crear `commonTest/domain/RespuestaDeOverpass.kt` con una constante `internal val VIAS: String`: la respuesta de Overpass al pedido del contrato Z1 ([cuadras.md](./contracts/cuadras.md)) para la franja `(-34.6055,-58.3905,-34.6020,-58.3800)`. Es la franja del primer tramo de la caminata `CAMINATA` de `commonTest/ubicacion/RespuestaDeAjuste.kt`.
+- [X] T001 [P] Crear `commonTest/domain/RespuestaDeOverpass.kt` con una constante `internal val VIAS: String`: la respuesta de Overpass al pedido del contrato Z1 ([cuadras.md](./contracts/cuadras.md)) para la franja `(-34.6055,-58.3905,-34.6020,-58.3800)`. Es la franja del primer tramo de la caminata `CAMINATA` de `commonTest/ubicacion/RespuestaDeAjuste.kt`.
   - **Cómo se genera**: desde la PC, con un script de Python en el scratchpad, con `User-Agent: buscar-patentes-prueba`. Se recorta a `type`, `id`, `nodes`, `geometry` (`lat` y `lon` a 7 decimales) y `tags` (`name`, `highway`, `oneway`), en JSON compacto.
   - **Tamaño**: un literal de Kotlin no puede pasar de 65.535 bytes. Si no entra, achicar la franja hacia el oeste hasta que entre, dejando por lo menos cuatro cuadras caminadas por el primer tramo.
   - **Privacidad**: solo la franja del centro. Antes de guardarlo, buscar en el archivo los nombres de la lista de "Nunca subir" de la memoria del proyecto; si aparece alguno, correr la franja.
   - **Comentario**: arriba de la constante, de dónde sale, la fecha y el recorte, como en `RespuestaDeAjuste.kt`.
-- [ ] T002 [P] En `postear`, sumar la cabecera `User-Agent: buscar-patentes` (D1 de [research.md](./research.md)).
+- [X] T002 [P] En `postear`, sumar la cabecera `User-Agent: buscar-patentes` (D1 de [research.md](./research.md)).
   - **Android**: `setRequestProperty("User-Agent", "buscar-patentes")` en `androidMain/…/plataforma/Plataforma.android.kt`.
   - **iPhone**: `setValue("buscar-patentes", forHTTPHeaderField = "User-Agent")` en `iosMain/…/plataforma/Plataforma.ios.kt`.
   - **Comentario**: una línea que diga que Overpass rechaza con 406 los pedidos sin identificación propia, y que el servidor de Valhalla pide lo mismo.
@@ -48,12 +48,12 @@ servicios.
 
 **⚠️ CRITICAL**: la base cambia de versión. Hasta que T005 esté hecha, la app no abre una base de la 7.
 
-- [ ] T003 En `common/data/Entidades.kt`, sumar lo del [data-model.md](./data-model.md):
+- [X] T003 En `common/data/Entidades.kt`, sumar lo del [data-model.md](./data-model.md):
   - `enum class EstadoZona { BUSCANDO, ACTIVA, COMPLETADA, CERRADA }`.
   - `@Entity(tableName = "zona") data class Zona` con `id` autogenerado, `nombre`, `borde`, `creadaEn`, `cuentaDesde`, `estado`, `problema: String? = null`, `terminadaEn: Long? = null` y `porcentajeFinal: Int? = null`.
   - `@Entity(tableName = "cuadra", indices = [Index("zonaId")]) data class Cuadra` con `id` autogenerado, `zonaId`, `nombre: String?`, `forma`, `gemelaDe: Long? = null`, `quitada: Boolean = false` y `recorridaAlTerminar: Boolean = false`.
   - Un KDoc por clase y por campo, con qué guarda y qué FR cumple, al estilo de `Recorrido`.
-- [ ] T004 Crear `ZonaDao` en `common/data/Daos.kt`, abstracto como `RecorridoDao`. Todo con funciones `suspend` de una vez, sin `Flow`, igual que el resto.
+- [X] T004 Crear `ZonaDao` en `common/data/Daos.kt`, abstracto como `RecorridoDao`. Todo con funciones `suspend` de una vez, sin `Flow`, igual que el resto.
   - **Lecturas**: `todas()`, ordenadas por `creadaEn` descendente; `buscando()`, las `BUSCANDO` sin `problema`; `activas()`; `porId(id)`; `cuadrasDe(zonaId)`; `cuadrasDeActivas()`.
   - **Escrituras**: `insertar(zona): Long`; `marcarProblema(id, problema)`; `cambiarCuentaDesde(id, desde)`; `marcarQuitadas(ids: List<Long>, quitada: Boolean)`.
   - **Transacciones**:
@@ -62,7 +62,7 @@ servicios.
     - `borrarConSusCuadras(id)`.
   - Sumar `abstract fun zonas(): ZonaDao` en `common/data/BaseDeDatos.kt` y `val zonas by lazy { baseDeDatos.zonas() }` en `common/Contenedor.kt`.
   Depende de T003.
-- [ ] T005 La base 8 (D7 de [research.md](./research.md)).
+- [X] T005 La base 8 (D7 de [research.md](./research.md)).
   - **Versión**: en `common/data/BaseDeDatos.kt`, sumar `Zona::class` y `Cuadra::class` a `entities` y pasar `version` a 8. Actualizar el KDoc: la 8 es la primera versión con migración común.
   - **La migración, común**: crear `common/data/Migraciones.kt` con `val SQL_7_8: List<String>`. Son los `CREATE TABLE` de `zona` y de `cuadra` y el `CREATE INDEX` de `cuadra.zonaId`, **copiados textuales** del `createAllTables` que genera Room: está en `shared/build/generated/ksp/…/BaseDeDatos_Impl.kt` después de compilar. Room valida el esquema al abrir, y una columna distinta tira la app.
   - **Android**: en `androidMain/…/data/ConstruirBase.kt`, `MIGRACION_7_8` recorre `SQL_7_8` con `db.execSQL` y se suma a `addMigrations`.
@@ -70,11 +70,11 @@ servicios.
   - **Por qué dos objetos y una lista**: en el Android, Room abre la base con `SupportSQLiteDatabase` y llama a `migrate(db)`; en el iPhone, con el driver, llama a `migrate(connection)`. Lo común es el SQL.
   - **El respaldo**: en `common/respaldo/Respaldo.kt`, `VERSION_BASE = 8`.
   Depende de T003 y T004.
-- [ ] T006 [P] Crear `commonTest/data/MigracionTest.kt`.
+- [X] T006 [P] Crear `commonTest/data/MigracionTest.kt`.
   - **La migración**: arma una base de la 7 con los `CREATE TABLE` que ya tiene `RespaldoTest` (moverlos a una función `internal` compartida si hace falta). Corre `SQL_7_8` sobre una `BundledSQLiteDriver().open(...)`. Verifica que existen `zona` y `cuadra`, que se puede insertar una fila en cada una, y que las filas de `recorrido` y `punto_de_trayecto` no cambiaron.
   - **El respaldo**: en `commonTest/respaldo/RespaldoTest.kt`, sumar que un respaldo con `user_version` 7 se acepta y uno con 9 se rechaza como más nuevo.
   Depende de T005.
-- [ ] T007 [P] En `shared/src/androidHostTest/…/InmutabilidadTest.kt`, sumar una prueba que lea el bloque de `ZonaDao` en `Daos.kt` y falle si alguna `@Query`, `@Insert`, `@Update` o `@Delete` escribe en `recorrido` o en `punto_de_trayecto` (FR-019, Principio II). Depende de T004.
+- [X] T007 [P] En `shared/src/androidHostTest/…/InmutabilidadTest.kt`, sumar una prueba que lea el bloque de `ZonaDao` en `Daos.kt` y falle si alguna `@Query`, `@Insert`, `@Update` o `@Delete` escribe en `recorrido` o en `punto_de_trayecto` (FR-019, Principio II). Depende de T004.
 
 **Checkpoint**: compila en los dos targets y pasan todas las pruebas. La app abre la base de siempre, migrada a la 8, sin zonas.
 

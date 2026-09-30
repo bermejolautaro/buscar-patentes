@@ -133,6 +133,9 @@ actual suspend fun postear(url: String, cuerpo: String): String? = withContext(D
         requestMethod = "POST"
         doOutput = true
         setRequestProperty("Content-Type", "application/json")
+        // Overpass rechaza con 406 un pedido sin identificación propia, y el servidor de Valhalla
+        // pide lo mismo en sus reglas de uso (D1 de la 008).
+        setRequestProperty("User-Agent", "buscar-patentes")
     }
     try {
         conexion.outputStream.bufferedWriter().use { it.write(cuerpo) }
