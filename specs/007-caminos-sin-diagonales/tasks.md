@@ -131,8 +131,8 @@ description: "Tareas de la 007: caminos sin diagonales"
 
 ## Phase 5: Polish & Cross-Cutting Concerns
 
-- [ ] T013 [P] En `TODO.md`, tachar los dos ítems con "(hecho en la 007)": el de las diagonales y el del interruptor entre los puntos reales y el camino ajustado.
-- [ ] T014 [P] En `README.md`, sumar `CaminoAjustadoTest` a la tabla de pruebas: el armado del camino ajustado sin rectas inventadas y el formato guardado (contrato A de la 007). Actualizar la fila de `ColeccionTest`: los trazos por tramos, vengan de donde vengan.
+- [X] T013 **Hecha**. [P] En `TODO.md`, tachar los dos ítems con "(hecho en la 007)": el de las diagonales y el del interruptor entre los puntos reales y el camino ajustado.
+- [X] T014 **Hecha**. [P] En `README.md`, sumar `CaminoAjustadoTest` a la tabla de pruebas: el armado del camino ajustado sin rectas inventadas y el formato guardado (contrato A de la 007). Actualizar la fila de `ColeccionTest`: los trazos por tramos, vengan de donde vengan.
 - [ ] T015 Cierre:
   - correr el quickstart §5 de la 007: un respaldo del Android restaurado en el iPhone reajusta las salidas viejas;
   - revisar con el quickstart §8 de la 006 que no se suba nada del jugador (coordenadas, imágenes, emails);

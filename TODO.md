@@ -8,5 +8,5 @@
 - ~~Que vuelva el fondo verde para la patente buscada~~ (hecho en la 005)
 - ~~Que la patente buscada se vea incluso si esta dentro de un grupo en todo momento~~ (hecho en la 005)
 - Me gustaria dibujar una zona y ponerme como objetivo recorrer todas las calles. Ver cuanto tiempo me lleva (podrian ser meses) desde que se creo la zona y que me muestre un porcentaje de cuanto recorri. Tambien la posibilidad de cerrar el objetivo en algun momento. Tambien poder quitar calles (pueden ser peligrosas).
-- En los caminos siguen apareciendo ciertas diagonales que no matchean con la calle y se ven medio glitch. Hoy en dia el dibujo a partir de los puntos de GPS se dibujar perfecto sobre el camino, asi que es raro estos glitches
-- En la pantalla de recorrido, estaria bueno un toggle entre el mapa dibujado con los puntos reales y el mapa dibujado con AjustarACalles.
+- ~~En los caminos siguen apareciendo ciertas diagonales que no matchean con la calle y se ven medio glitch. Hoy en dia el dibujo a partir de los puntos de GPS se dibujar perfecto sobre el camino, asi que es raro estos glitches~~ (hecho en la 007)
+- ~~En la pantalla de recorrido, estaria bueno un toggle entre el mapa dibujado con los puntos reales y el mapa dibujado con AjustarACalles.~~ (hecho en la 007)

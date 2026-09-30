@@ -116,10 +116,11 @@ Las pruebas comunes viven en `shared/src/commonTest` y corren en dos lados: en l
 | `PatenteTest` | Extracción del número de 3 dígitos, formato viejo y Mercosur (FR-010) |
 | `CoberturaTest` | El texto de descubiertas del número actual (FR-003 de la 005) |
 | `InmutabilidadTest` | Que **no exista** ninguna forma de editar la evidencia de un registro (Principio II) |
-| `ColeccionTest` | El GeoJSON de los marcadores y de los recorridos: un feature por registro, la que toca en su propia colección, los pines corridos y los grupos; un `LineString` por tramo, el hueco punteado de cada desconexión y el escalón de antigüedad de cada salida (FR-010, D1 y D13 de la 005; FR-006, FR-009a, FR-031) |
+| `ColeccionTest` | El GeoJSON de los marcadores y de los recorridos: un feature por registro, la que toca en su propia colección, los pines corridos y los grupos; un `LineString` por tramo y el hueco punteado entre tramos, vengan del ajuste o de los puntos medidos, y el escalón de antigüedad de cada salida (FR-010, D1 y D13 de la 005; FR-006, FR-009a, FR-031) |
 | `GeoTest` | Distancia y rumbo hasta una patente, los bordes del punto cardinal y el corte del trazo donde se cortó la señal (FR-003, FR-009) |
-| `PolilineaTest` | El decodificador de la polilínea que devuelve el servicio de ajuste a calles (FR-031) |
-| `AjustarACallesTest` | El pedido al servicio de ajuste a calles: el radio de cada punto sale de su precisión, con piso y techo |
+| `PolilineaTest` | El decodificador de la polilínea que devuelve el servicio de ajuste a calles, y el codificador que guarda los tramos (FR-031) |
+| `CaminoAjustadoTest` | El camino ajustado sin rectas inventadas: los pedazos que el servicio no pudo unir se unen por los puntos medidos, y lo que no emparejó sigue dibujado; y el formato guardado, que distingue lo nuevo de lo que hay que reajustar (contrato A de la 007) |
+| `AjustarACallesTest` | El pedido al servicio de ajuste a calles, con el radio de cada punto según su precisión; y la lectura de una respuesta real, sobre la que el camino armado no tiene ninguna recta entre pedazos |
 | `ProbabilidadTest` | La cuenta de los votos sobre si una patente sigue estando (FR-037), y qué patentes conservan sus votos al migrar a la v7 |
 | `PrioridadTest` | El orden de la lista de la barra y el orden de caminar las paradas de un recorrido (FR-012, FR-015 de la 005) |
 | `IrTest` | Qué hace "Abrir en Google Maps" según cuántas paradas quedaron, y la URL con punto decimal (FR-019 de la 005) |
