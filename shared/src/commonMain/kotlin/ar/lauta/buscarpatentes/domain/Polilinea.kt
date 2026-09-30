@@ -45,6 +45,34 @@ object Polilinea {
         List<Pair<Double, Double>> =
         codificada.split(SEPARADOR_PIERNAS).flatMap { decodificarUna(it, precision) }
 
+    /**
+     * El inverso de una pierna de [decodificar]. Lo usa el camino ajustado de la 007, que guarda
+     * tramos armados en la app y no solo lo que devolvió el servicio.
+     */
+    fun codificar(puntos: List<Pair<Double, Double>>, precision: Double = PRECISION_VALHALLA): String =
+        buildString {
+            var lat = 0L
+            var lon = 0L
+            for ((la, lo) in puntos) {
+                val nLat = kotlin.math.round(la * precision).toLong()
+                val nLon = kotlin.math.round(lo * precision).toLong()
+                escribirValor(nLat - lat)
+                escribirValor(nLon - lon)
+                lat = nLat
+                lon = nLon
+            }
+        }
+
+    /** Zigzag y trozos de 5 bits, con el sexto bit de continuación: lo que lee [siguienteValor]. */
+    private fun StringBuilder.escribirValor(valor: Long) {
+        var v = if (valor < 0) (valor shl 1).inv() else valor shl 1
+        while (v >= 0x20) {
+            append(((0x20 or (v and 0x1f).toInt()) + 63).toChar())
+            v = v shr 5
+        }
+        append((v.toInt() + 63).toChar())
+    }
+
     /** Una sola pierna: el formato clásico, diferencias acumuladas desde cero. */
     private fun decodificarUna(codificada: String, precision: Double):
         List<Pair<Double, Double>> {

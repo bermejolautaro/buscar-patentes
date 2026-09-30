@@ -2,12 +2,18 @@ package ar.lauta.buscarpatentes.ubicacion
 
 import ar.lauta.buscarpatentes.contenedor
 import ar.lauta.buscarpatentes.data.PuntoDeTrayecto
+import ar.lauta.buscarpatentes.domain.CaminoAjustado
+import ar.lauta.buscarpatentes.domain.CaminoGuardado
+import ar.lauta.buscarpatentes.domain.Geo
+import ar.lauta.buscarpatentes.domain.Polilinea
 import ar.lauta.buscarpatentes.plataforma.hayConexion
 import ar.lauta.buscarpatentes.plataforma.postear
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
@@ -42,8 +48,18 @@ import kotlinx.serialization.json.putJsonArray
  * jugador termina la salida en la calle sin datos, queda pendiente hasta que llegue a su
  * casa y abra la app con wifi, que es exactamente el caso que hay que cubrir.
  *
+ * Desde la 007, un camino guardado antes de la 007 también está en la cola: `sinAjustar()` trae
+ * todo lo que no tiene el formato nuevo (`CaminoGuardado.PREFIJO`), así que se reajusta solo.
+ *
  * Un fallo permanente —un recorrido que el servicio nunca puede resolver— se reintenta en
  * cada apertura. Es barato y se cura solo si el servicio vuelve.
+ *
+ * ## Por tramos (D2 de la 007)
+ *
+ * Un pedido por **tramo de señal**, cortado igual que el trazo crudo (`Geo.tramos`). Con un
+ * solo pedido, el servicio rellenaba un corte de señal con calles que nadie caminó, y pegaba en
+ * una recta los pedazos de un camino que no pudo unir: esas eran las diagonales. Cada respuesta
+ * se arma con `CaminoAjustado.armar`, que une los pedazos por los puntos medidos.
  *
  * ## Ninguna dependencia de más
  *
@@ -72,15 +88,6 @@ object AjustarACalles {
     private const val MINIMO_PUNTOS = 2
 
     /**
-     * El radio de búsqueda que se le pasa a cada punto, tomado de la precisión que el
-     * teléfono reportó. Mínimo 5 m porque un radio de cero no encuentra ninguna calle;
-     * máximo 30 m porque más que eso alcanza a la manzana de al lado y el servicio empieza a
-     * elegir entre calles que no son.
-     */
-    private const val RADIO_MINIMO_M = 5f
-    private const val RADIO_MAXIMO_M = 30f
-
-    /**
      * Intenta ajustar todas las salidas pendientes. Devuelve cuántas se ajustaron.
      *
      * No tira nunca: si algo falla, el recorrido se queda pendiente y se reintenta la próxima
@@ -96,30 +103,66 @@ object AjustarACalles {
             val puntos = contenedor.puntos.deRecorrido(recorrido.id)
             if (puntos.size < MINIMO_PUNTOS) continue
 
-            val polilinea = pedirCamino(puntos) ?: continue
-            contenedor.recorridos.guardarCaminoAjustado(recorrido.id, polilinea)
+            val camino = ajustar(puntos) ?: continue
+            contenedor.recorridos.guardarCaminoAjustado(recorrido.id, camino)
             ajustadas++
         }
         return ajustadas
     }
 
-    /** La polilínea del camino ajustado, o null si el servicio no contestó algo utilizable. */
-    private suspend fun pedirCamino(puntos: List<PuntoDeTrayecto>): String? = try {
-        // POST y no GET con el JSON en la query. Una salida de 647 puntos son 34 KB de
-        // cuerpo, y metidos en la URL codificada dan 52 KB: el servidor cierra la conexión
-        // sin contestar y el recorrido queda pendiente para siempre, porque no adelgaza
-        // solo. Con nueve puntos entraba, que es por qué las primeras salidas sí se
-        // ajustaron y la primera caminata larga no.
-        //
-        // Una sola cadena: `trace_attributes` devuelve la geometría matcheada entera y no
-        // hay piernas que pegar. `Polilinea` sigue sabiendo separarlas por los dos caminos
-        // que ya están guardados.
-        postear(SERVICIO, cuerpo(puntos).toString())
-            ?.let { Json.parseToJsonElement(it).jsonObject["shape"]?.jsonPrimitive?.contentOrNull }
-            ?.takeIf { it.isNotEmpty() }
+    /**
+     * El camino a guardar (contrato A1 de la 007), o null si hay que volver a intentar.
+     *
+     * - **Sin red** en cualquier pedido: null, y la salida queda como estaba.
+     * - **El servicio rechaza un tramo** (no contesta 200, o contesta algo que no se entiende):
+     *   ese tramo no pinta calles. Un tramo de dos puntos en una plaza no puede dejar sin ajustar
+     *   la salida entera.
+     * - **Rechaza todos**: null. Es más probable que el servicio esté caído que no haya calles.
+     * - **Contesta y no hay ningún pedazo de calle**: el prefijo solo, que no se vuelve a pedir.
+     */
+    private suspend fun ajustar(puntos: List<PuntoDeTrayecto>): String? {
+        val pedazos = mutableListOf<List<Pair<Double, Double>>>()
+        var respondio = false
+        for (tramo in porTramoDeSenal(puntos)) {
+            if (tramo.size < MINIMO_PUNTOS) continue
+            // POST y no GET con el JSON en la query. Una salida de 647 puntos son 34 KB de
+            // cuerpo, y metidos en la URL codificada dan 52 KB: el servidor cierra la conexión
+            // sin contestar y el recorrido queda pendiente para siempre.
+            val texto = try {
+                postear(SERVICIO, cuerpo(tramo).toString())
+            } catch (e: Exception) {
+                return null
+            }
+            val respuesta = texto?.let(::leerRespuesta) ?: continue
+            respondio = true
+            pedazos += CaminoAjustado.pedazos(respuesta.forma, respuesta.aristas)
+        }
+        if (!respondio) return null
+        return CaminoGuardado.escribir(pedazos)
+    }
+
+    /** Los puntos cortados donde se cortó la señal, con el mismo umbral que el trazo crudo. */
+    private fun porTramoDeSenal(puntos: List<PuntoDeTrayecto>): List<List<PuntoDeTrayecto>> {
+        var desde = 0
+        return Geo.tramos(puntos.map { it.latitud to it.longitud }).map { tramo ->
+            puntos.subList(desde, desde + tramo.size).also { desde += tramo.size }
+        }
+    }
+
+    /** Lo que se usa de una respuesta de `trace_attributes` (contrato A3 de la 007). */
+    internal class Respuesta(val forma: List<Pair<Double, Double>>, val aristas: List<IntRange>)
+
+    /** Null si falta algo o no cierra: un índice de una arista fuera de la forma. */
+    internal fun leerRespuesta(texto: String): Respuesta? = try {
+        val json = Json.parseToJsonElement(texto).jsonObject
+        val forma = Polilinea.decodificar(json.getValue("shape").jsonPrimitive.content)
+        val aristas = json.getValue("edges").jsonArray.map {
+            val arista = it.jsonObject
+            arista.getValue("begin_shape_index").jsonPrimitive.int..arista.getValue("end_shape_index").jsonPrimitive.int
+        }
+        require(aristas.all { it.first in forma.indices && it.last in forma.indices })
+        Respuesta(forma, aristas)
     } catch (e: Exception) {
-        // Sin red, con el servicio caído o con una respuesta inesperada, el recorrido se
-        // queda pendiente. Es el mismo estado que tenía antes de intentar.
         null
     }
 
@@ -129,10 +172,12 @@ object AjustarACalles {
                 addJsonObject {
                     put("lat", it.latitud)
                     put("lon", it.longitud)
-                    // Cuánto se le cree a este punto. Sin esto el servicio busca calle con
-                    // su radio por defecto y pega con la misma confianza un punto de 5 m que
-                    // uno de 25, que es como termina eligiendo la paralela.
-                    put("radius", it.precisionMetros.coerceIn(RADIO_MINIMO_M, RADIO_MAXIMO_M))
+                    // Sin `radius`: el servicio busca la calle con su radio por defecto. La 003
+                    // le pasaba la precisión de cada punto, de 5 a 30 m (FR-036a), y caminando
+                    // por la vereda de una avenida ancha el eje de la calle queda más lejos que
+                    // eso: en las salidas reales un tercio de los puntos no emparejaba (202 de
+                    // 647), y el camino salía cortado en decenas de pedazos. Sin radio, 1 de 647
+                    // (D7 de la 007).
                 }
             }
         }

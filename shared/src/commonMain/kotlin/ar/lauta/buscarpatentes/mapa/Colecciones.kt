@@ -3,6 +3,7 @@ package ar.lauta.buscarpatentes.mapa
 import ar.lauta.buscarpatentes.data.ModoMapa
 import ar.lauta.buscarpatentes.domain.Acomodo
 import ar.lauta.buscarpatentes.domain.Dibujo
+import ar.lauta.buscarpatentes.domain.CaminoGuardado
 import ar.lauta.buscarpatentes.domain.Escalon
 import ar.lauta.buscarpatentes.domain.Geo
 import ar.lauta.buscarpatentes.domain.Pin
@@ -65,20 +66,42 @@ data class Marcador(
  */
 data class Trazo(
     val recorridoId: Long,
-    /** En orden. Cada par es latitud y longitud. */
-    val puntos: List<Pair<Double, Double>>,
+
+    /** Cada tramo es una línea continua. Los decide [trazoDe]. */
+    val tramos: List<List<Pair<Double, Double>>>,
 
     /** Hace cuánto se caminó. Solo se dibuja en [ModoMapa.ANTIGUEDAD]. */
     val escalon: Escalon,
 
     /**
-     * True cuando estos puntos son el camino ajustado a las calles (FR-031).
-     *
-     * Un camino ajustado ya viene continuo y pegado al grafo de calles, así que **no se corta
-     * ni se puntea**: el servicio ya contestó qué pasó entre dos posiciones lejanas.
+     * Si entre un tramo y el siguiente va un hueco punteado (FR-009a de la 003). Sí para los
+     * puntos medidos, donde entre dos tramos hubo un corte de señal. No para los pedazos de calle
+     * del camino ajustado: el mapa por defecto pinta calles y nada más (D4 de la 007).
      */
-    val ajustado: Boolean = false,
+    val huecos: Boolean = true,
 )
+
+/**
+ * El trazo de una salida (D4 de la 007).
+ *
+ * - **Vista por defecto**: los pedazos de calle del camino ajustado, sin nada entre ellos. Si no
+ *   se pudo ajustar, no pinta nada.
+ * - **Vista de los puntos reales** ([puntosReales]): lo que midió el teléfono, cortado donde se
+ *   cortó la señal, con los cortes punteados.
+ * - **Todavía sin ajustar**: los puntos reales en las dos vistas. Una salida recién terminada sin
+ *   conexión no puede verse como una salida que no existe (FR-033 de la 003).
+ */
+fun trazoDe(
+    recorridoId: Long,
+    medidos: List<Pair<Double, Double>>,
+    guardado: CaminoGuardado,
+    escalon: Escalon,
+    puntosReales: Boolean,
+): Trazo = when {
+    !puntosReales && guardado is CaminoGuardado.Ajustado -> Trazo(recorridoId, guardado.tramos, escalon, huecos = false)
+    !puntosReales && guardado is CaminoGuardado.NoSePudo -> Trazo(recorridoId, emptyList(), escalon, huecos = false)
+    else -> Trazo(recorridoId, Geo.tramos(medidos), escalon)
+}
 
 internal typealias Coleccion = FeatureCollection<Geometry, JsonObject>
 
@@ -118,7 +141,7 @@ private fun linea(puntos: List<Pair<Double, Double>>) =
  */
 internal fun coleccionTrazos(trazos: List<Trazo>): Coleccion = FeatureCollection(
     trazos.flatMap { trazo ->
-        tramosDe(trazo)
+        trazo.tramos
             .filter { it.size >= 2 }
             .map { tramo ->
                 Feature<Geometry, JsonObject>(
@@ -138,7 +161,7 @@ internal fun coleccionTrazos(trazos: List<Trazo>): Coleccion = FeatureCollection
  */
 internal fun coleccionHuecos(trazos: List<Trazo>): Coleccion = FeatureCollection(
     trazos.flatMap { trazo ->
-        Geo.huecos(tramosDe(trazo)).map { (desde, hasta) ->
+        (if (trazo.huecos) Geo.huecos(trazo.tramos) else emptyList()).map { (desde, hasta) ->
             Feature<Geometry, JsonObject>(
                 linea(listOf(desde, hasta)),
                 buildJsonObject { put(PROP_ESCALON, trazo.escalon.name) },
@@ -146,15 +169,6 @@ internal fun coleccionHuecos(trazos: List<Trazo>): Coleccion = FeatureCollection
         }
     },
 )
-
-/**
- * Los tramos de un trazo: uno solo si viene ajustado, cortados por salto si viene crudo.
- *
- * Un camino ajustado no se corta porque no tiene nada que ocultar: el servicio ya resolvió
- * por dónde se fue entre dos posiciones lejanas, siguiendo calles.
- */
-private fun tramosDe(trazo: Trazo): List<List<Pair<Double, Double>>> =
-    if (trazo.ajustado) listOf(trazo.puntos) else Geo.tramos(trazo.puntos)
 
 internal fun coleccion(marcadores: List<Marcador>): Coleccion = FeatureCollection(
     marcadores.map { featureDe(it, it.latitud, it.longitud) },
