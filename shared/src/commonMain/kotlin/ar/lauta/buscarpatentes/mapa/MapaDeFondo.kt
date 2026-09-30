@@ -1,17 +1,30 @@
 package ar.lauta.buscarpatentes.mapa
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -262,6 +275,13 @@ fun MapaDeFondo(
     onTocarMapa: ((latitud: Double, longitud: Double) -> Unit)? = null,
     /** Un toque sobre una cuadra, con su id (FR-012 de la 008). */
     onTocarCuadra: ((Long) -> Unit)? = null,
+    /** Las esquinas que el dedo puede arrastrar, mientras se dibuja una zona (FR-001 de la 008). */
+    esquinasMovibles: List<Pair<Double, Double>> = emptyList(),
+    /**
+     * Una esquina arrastrada: su índice y dónde está ahora. [empieza] marca el primer aviso de cada
+     * arrastre, que es lo que deja deshacerlo de una vez.
+     */
+    onMoverEsquina: (indice: Int, latitud: Double, longitud: Double, empieza: Boolean) -> Unit = { _, _, _, _ -> },
     modifier: Modifier = Modifier,
 ) {
     val alcance = rememberCoroutineScope()
@@ -275,7 +295,6 @@ fun MapaDeFondo(
     val coleccionHuecos = remember(trazos) { coleccionHuecos(trazos) }
     val coleccionBordes = remember(zonas) { coleccionBordes(zonas) }
     val coleccionCuadras = remember(zonas) { coleccionCuadras(zonas) }
-    val coleccionEsquinas = remember(zonas) { coleccionEsquinas(zonas) }
 
     val pines = remember {
         Pines(
@@ -313,7 +332,6 @@ fun MapaDeFondo(
             CapasDeZonas(
                 cuadras = rememberGeoJsonSource(GeoJsonData.Features(coleccionCuadras)),
                 bordes = rememberGeoJsonSource(GeoJsonData.Features(coleccionBordes)),
-                esquinas = rememberGeoJsonSource(GeoJsonData.Features(coleccionEsquinas)),
                 onTocarCuadra = onTocarCuadra,
             )
             CapasDeTrazos(
@@ -379,32 +397,94 @@ fun MapaDeFondo(
         mapa.irA(posiciones, RELLENO_ENCUADRE, animado = false)
     }
 
-    MaplibreMap(
-        modifier = modifier,
-        state = mapa,
-        cameraConstraints = CameraConstraints(maxZoom = ZOOM_MAXIMO),
-        // FR-040: sin rotación. El norte arriba es información —el rumbo a la patente se dice
-        // en puntos cardinales (FR-003)— y el gesto de dos dedos se disparaba solo al hacer zoom.
-        interactions = MapInteractions(MapInteractions.Standard) {
-            camera { rotate { enabled = false } }
-            // D9 de la 008: el toque que ninguna capa consumió —ni un pin ni una cuadra— es una
-            // esquina de la zona que se está dibujando.
-            if (onTocarMapa != null) {
-                callbacks {
-                    click {
-                        onUnhandled { evento ->
-                            val posicion = evento.position ?: return@onUnhandled ClickResult.Pass
-                            onTocarMapa(posicion.latitude, posicion.longitude)
-                            ClickResult.Consume
+    Box(modifier) {
+        MaplibreMap(
+            modifier = Modifier.fillMaxSize(),
+            state = mapa,
+            cameraConstraints = CameraConstraints(maxZoom = ZOOM_MAXIMO),
+            // FR-040: sin rotación. El norte arriba es información —el rumbo a la patente se dice
+            // en puntos cardinales (FR-003)— y el gesto de dos dedos se disparaba solo al hacer zoom.
+            interactions = MapInteractions(MapInteractions.Standard) {
+                camera { rotate { enabled = false } }
+                // D9 de la 008: el toque que ninguna capa consumió —ni un pin ni una cuadra— es una
+                // esquina de la zona que se está dibujando.
+                if (onTocarMapa != null) {
+                    callbacks {
+                        click {
+                            onUnhandled { evento ->
+                                val posicion = evento.position ?: return@onUnhandled ClickResult.Pass
+                                onTocarMapa(posicion.latitude, posicion.longitude)
+                                ClickResult.Consume
+                            }
                         }
                     }
                 }
+            },
+            // Sin brújula (no hay rotación) ni escala: la franja de controles de la pantalla es
+            // la única que habla.
+            overlay = {},
+        )
+        EsquinasMovibles(mapa, esquinasMovibles, onMoverEsquina)
+    }
+}
+
+/** El punto de una esquina, y el lugar alrededor que agarra el dedo. */
+private val PUNTO_ESQUINA = 20.dp
+private val TOQUE_ESQUINA = 44.dp
+
+/**
+ * Las esquinas de la zona que se dibuja, encima del mapa (FR-001 de la 008). Van en Compose y no en
+ * una capa del mapa porque el mapa no deja arrastrar lo que dibuja. Cada una sigue su posición
+ * cuando se mueve la cámara, y el dedo que la arrastra no le llega al mapa, que se queda quieto.
+ */
+@Composable
+private fun EsquinasMovibles(
+    mapa: MapState,
+    esquinas: List<Pair<Double, Double>>,
+    onMover: (indice: Int, latitud: Double, longitud: Double, empieza: Boolean) -> Unit,
+) {
+    // Leer la cámara acá recompone las esquinas cada vez que se mueve.
+    mapa.cameraPosition
+    val alMover by rememberUpdatedState(onMover)
+    val color = remember { colorDe(ColoresDeMapa.BORDE) }
+    esquinas.forEachIndexed { i, (lat, lon) ->
+        // Null mientras el mapa no está listo.
+        val centro = mapa.screenLocationFromPosition(Position(lon, lat)) ?: return@forEachIndexed
+        key(i) {
+            val centroActual by rememberUpdatedState(centro)
+            Box(
+                Modifier
+                    .offset(centro.x - TOQUE_ESQUINA / 2, centro.y - TOQUE_ESQUINA / 2)
+                    .size(TOQUE_ESQUINA)
+                    .pointerInput(Unit) {
+                        var dedo = DpOffset.Zero
+                        var empieza = true
+                        detectDragGestures(
+                            onDragStart = {
+                                dedo = centroActual
+                                empieza = true
+                            },
+                            onDrag = { cambio, arrastre ->
+                                cambio.consume()
+                                dedo = DpOffset(dedo.x + arrastre.x.toDp(), dedo.y + arrastre.y.toDp())
+                                mapa.positionFromScreenLocation(dedo)?.let {
+                                    alMover(i, it.latitude, it.longitude, empieza)
+                                    empieza = false
+                                }
+                            },
+                        )
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(
+                    Modifier
+                        .size(PUNTO_ESQUINA)
+                        .background(color, CircleShape)
+                        .border(2.dp, Color.White, CircleShape),
+                )
             }
-        },
-        // Sin brújula (no hay rotación) ni escala: la franja de controles de la pantalla es
-        // la única que habla.
-        overlay = {},
-    )
+        }
+    }
 }
 
 /**
@@ -478,7 +558,6 @@ private class Pines(
 private fun CapasDeZonas(
     cuadras: GeoJsonSource,
     bordes: GeoJsonSource,
-    esquinas: GeoJsonSource,
     onTocarCuadra: ((Long) -> Unit)?,
 ) {
     val alTocar: FeaturesClickHandler? = onTocarCuadra?.let { tocar ->
@@ -525,14 +604,6 @@ private fun CapasDeZonas(
         color = const(colorDe(ColoresDeMapa.BORDE)),
         width = const(2.dp),
         dasharray = const(listOf(3, 2)),
-    )
-    CircleLayer(
-        id = "zonas-esquinas",
-        source = esquinas,
-        color = const(colorDe(ColoresDeMapa.BORDE)),
-        radius = const(5.dp),
-        strokeColor = const(Color.White),
-        strokeWidth = const(1.5.dp),
     )
 }
 

@@ -5,6 +5,7 @@ import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -145,6 +146,15 @@ class CuadrasTest {
         assertTrue("(-34.605500,-58.390500,-34.602000,-58.380000)" in consulta, consulta)
         assertTrue(consulta.startsWith("[out:json]"))
         assertTrue(consulta.trimEnd().endsWith("out geom;"))
+    }
+
+    @Test
+    fun `la misma cuadra se reconoce en los dos sentidos y no con una punta corrida`() {
+        val cuadra = listOf(m(0.0, 0.0), m(50.0, 1.0), m(100.0, 0.0))
+        assertTrue(Cuadras.misma(cuadra, cuadra.reversed()))
+        assertTrue(Cuadras.misma(cuadra, listOf(m(2.0, 2.0), m(100.0, -3.0))))
+        assertFalse(Cuadras.misma(cuadra, listOf(m(0.0, 0.0), m(110.0, 0.0))))
+        assertFalse(Cuadras.misma(cuadra, emptyList()))
     }
 
     private companion object {

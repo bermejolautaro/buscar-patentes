@@ -90,4 +90,4 @@ de Z2):
 | Pantalla principal, recorridos apagados | No | No |
 | Mapa de una zona activa | Continuo | Recorridas, pendientes y quitadas, cada clase con su color. Se tocan (FR-012) |
 | Mapa de una zona terminada | Continuo | Recorridas y pendientes según `recorridaAlTerminar`, y las quitadas. No se tocan |
-| Mientras se dibuja una zona | Las esquinas marcadas y las rectas entre ellas, cerrando contra la primera | No |
+| Mientras se dibuja o se edita una zona | Las rectas entre las esquinas, cerrando contra la primera. Las esquinas van encima del mapa, para arrastrarlas | No |

@@ -297,6 +297,13 @@ la verifica el quickstart.
   - **iPhone**: `gh workflow run ios.yml --ref 008-zona-a-recorrer`, y el `.ipa` a `Downloads\buscar-patentes-ios\zonas`.
   Recordarle al jugador que saque un respaldo antes de instalar: la base pasa a la 8.
 - [ ] T032 El jugador corre el [quickstart](./quickstart.md) §2 a §8 en el teléfono de juego. Lo que falle vuelve como tarea nueva en esta fase.
+- [X] T034 [US1] Lo que volvió de T032 (FR-001, FR-022): las esquinas más grandes y arrastrables, y editar una zona.
+  - `MapaDeFondo`: las esquinas se dibujan en Compose encima del mapa (20 dp, 44 dp de toque) y se arrastran; sale la capa `zonas-esquinas` y `DibujoDeZona.conEsquinas`.
+  - `PantallaZonas`: **Editar** en el detalle de una zona activa o buscando, que abre el mismo dibujo con el borde que tenía. Deshacer vuelve de a un cambio.
+  - `Zonas.editar` y `ZonaDao.editar`: con otro borde la zona vuelve a `BUSCANDO`. `activar` reemplaza las cuadras, y `BuscarCuadras` pasa lo quitado a las nuevas con `Cuadras.misma`.
+  - `BuscarCuadras.pendientes` descarta lo encontrado si mientras tanto el borde cambió o la zona se borró.
+  - Prueba en `CuadrasTest`.
+- [ ] T035 El jugador prueba en el teléfono el [quickstart](./quickstart.md) §3b.
 - [ ] T033 Antes de cada push, revisar el diff: ni coordenadas de la zona de juego, ni nombres de calles o barrios de la lista de "Nunca subir", ni capturas del mapa, ni respaldos. La franja de T001 es del centro y es la única geografía que se sube.
 
 ---

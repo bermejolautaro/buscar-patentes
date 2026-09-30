@@ -145,4 +145,19 @@ object Cuadras {
         }
         return cerca >= puntos.size * GEMELA_PARTE
     }
+
+    /** ponytail: fijo. Dos esquinas de una misma cuadra en dos búsquedas caen en el mismo nodo. */
+    private const val MISMA_PUNTA_M = 5.0
+
+    /**
+     * Si [a] y [b] son la misma cuadra, en cualquier sentido: las dos puntas a 5 m o menos. Con el
+     * borde nuevo se vuelven a buscar las cuadras, y así lo quitado sigue quitado (FR-022).
+     */
+    fun misma(a: List<Pair<Double, Double>>, b: List<Pair<Double, Double>>): Boolean {
+        if (a.isEmpty() || b.isEmpty()) return false
+        val plano = Plano(a.first().first)
+        fun cerca(p: Pair<Double, Double>, q: Pair<Double, Double>) = distancia(plano.punto(p), plano.punto(q)) <= MISMA_PUNTA_M
+        return (cerca(a.first(), b.first()) && cerca(a.last(), b.last())) ||
+            (cerca(a.first(), b.last()) && cerca(a.last(), b.first()))
+    }
 }

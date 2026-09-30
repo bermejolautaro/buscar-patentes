@@ -64,6 +64,9 @@ object BuscarCuadras {
             } catch (e: Exception) {
                 null
             } ?: continue
+            // Mientras se buscaba, la zona se pudo borrar o su borde se pudo editar (FR-022): lo
+            // encontrado ya no es de ella.
+            if (contenedor.zonas.porId(zona.id)?.borde != zona.borde) continue
             val principales = cuadras.count { it.gemelaDe == null }
             when {
                 principales == 0 -> contenedor.zonas.marcarProblema(zona.id, SIN_CALLES)
@@ -83,19 +86,28 @@ object BuscarCuadras {
         return Cuadras.armar(vias, esquinas)
     }
 
-    /** Las principales primero, y cada gemela con el índice de su principal entre ellas. */
+    /**
+     * Las principales primero, y cada gemela con el índice de su principal entre ellas.
+     *
+     * Si la zona ya tenía cuadras es que se editó su borde: las que estaban quitadas siguen
+     * quitadas en las nuevas (FR-022). La gemela va con su principal, como al quitar.
+     */
     private suspend fun guardar(zonaId: Long, cuadras: List<CuadraArmada>) {
-        fun cuadra(c: CuadraArmada) = Cuadra(zonaId = zonaId, nombre = c.nombre, forma = Polilinea.codificar(c.forma))
+        val quitadas = contenedor.zonas.cuadrasDe(zonaId).filter { it.quitada }.map { Polilinea.decodificar(it.forma) }
+        fun cuadra(c: CuadraArmada, quitada: Boolean) =
+            Cuadra(zonaId = zonaId, nombre = c.nombre, forma = Polilinea.codificar(c.forma), quitada = quitada)
         val indiceEntrePrincipales = HashMap<Int, Int>()
         val principales = mutableListOf<Cuadra>()
         cuadras.forEachIndexed { i, c ->
             if (c.gemelaDe == null) {
                 indiceEntrePrincipales[i] = principales.size
-                principales += cuadra(c)
+                principales += cuadra(c, quitadas.any { Cuadras.misma(it, c.forma) })
             }
         }
-        val gemelas = cuadras.filter { it.gemelaDe != null }
-            .map { indiceEntrePrincipales.getValue(it.gemelaDe!!) to cuadra(it) }
+        val gemelas = cuadras.filter { it.gemelaDe != null }.map {
+            val indice = indiceEntrePrincipales.getValue(it.gemelaDe!!)
+            indice to cuadra(it, principales[indice].quitada)
+        }
         contenedor.zonas.activar(zonaId, principales, gemelas)
     }
 

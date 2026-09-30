@@ -125,7 +125,7 @@ Las pruebas comunes viven en `shared/src/commonTest` y corren en dos lados: en l
 | `CaminoAjustadoTest` | El camino ajustado sin rectas inventadas: se guardan solo los pedazos de calle, cortados donde el servicio no los unió; y el formato guardado, que distingue lo nuevo de lo que hay que reajustar (contrato A de la 007) |
 | `AjustarACallesTest` | El pedido al servicio de ajuste a calles, sin radio; y la lectura de una respuesta real, sobre la que el camino armado no tiene ninguna recta entre pedazos |
 | `BordeTest` | El borde de una zona: tres esquinas o más, sin cruces, y qué queda adentro (FR-001 de la 008) |
-| `CuadrasTest` | De las vías de OpenStreetMap a las cuadras de una zona: se cortan en cada esquina, se descartan las de menos de 30 m y las dos manos de una avenida cuentan como una; y la lectura de una respuesta real de Overpass (contrato Z2 de la 008) |
+| `CuadrasTest` | De las vías de OpenStreetMap a las cuadras de una zona: se cortan en cada esquina, se descartan las de menos de 30 m, las dos manos de una avenida cuentan como una y una cuadra se reconoce en otra búsqueda; y la lectura de una respuesta real de Overpass (contrato Z2 de la 008) |
 | `CoberturaDeZonaTest` | Qué cuadras están recorridas: con la respuesta real del servicio de ajuste, lo caminado de esquina a esquina cuenta y lo cruzado en la esquina no; las salidas se suman, lo quitado no cuenta, y 99 de 100 no es 100% (contrato Z3 de la 008) |
 | `ZonasTest` | Qué se quita al tocar una cuadra: esa, o toda su calle, siempre con la otra mano de la avenida (FR-012 de la 008) |
 | `MigracionTest` | La base de la 7 a la 8: suma las zonas sin tocar las salidas (D7 de la 008) |
@@ -158,6 +158,8 @@ cada feature: [`001`](specs/001-captura-patentes/quickstart.md),
 En la pantalla principal → **Zonas**: se dibuja una zona tocando sus esquinas, y la app cuenta
 qué porcentaje de sus cuadras caminaste desde el día que elegiste, cuántas faltan y cuánto tiempo
 llevás. Las cuadras peligrosas se quitan, y el objetivo se completa solo al 100% o se cierra a mano.
+Mientras no termine, la zona se edita: su nombre, desde cuándo cuenta y su borde, arrastrando las
+esquinas. Con otro borde vuelve a buscar sus cuadras, y lo quitado sigue quitado.
 En la pantalla principal se ve el borde de cada zona y las cuadras que faltan, sin ningún número.
 
 Las cuadras salen de OpenStreetMap, con un pedido a [Overpass](https://overpass-api.de) **una

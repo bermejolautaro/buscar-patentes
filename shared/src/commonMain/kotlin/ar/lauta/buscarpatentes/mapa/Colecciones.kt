@@ -242,8 +242,6 @@ data class DibujoDeZona(
     val cuadras: List<CuadraDibujada>,
     /** Continuo en el mapa de la zona, punteado en la pantalla principal. */
     val bordeContinuo: Boolean,
-    /** Un punto en cada esquina, mientras se dibuja: con una sola esquina todavía no hay línea. */
-    val conEsquinas: Boolean = false,
 )
 
 /** Un `LineString` por zona, cerrado contra la primera esquina. */
@@ -264,12 +262,5 @@ internal fun coleccionCuadras(zonas: List<DibujoDeZona>): Coleccion = FeatureCol
                 put(PROP_CLASE, cuadra.clase.name)
             },
         )
-    },
-)
-
-/** Las esquinas de las zonas que se están dibujando. */
-internal fun coleccionEsquinas(zonas: List<DibujoDeZona>): Coleccion = FeatureCollection(
-    zonas.filter { it.conEsquinas }.flatMap { zona ->
-        zona.borde.map { (lat, lon) -> Feature<Geometry, JsonObject>(punto(lat, lon), JsonObject(emptyMap())) }
     },
 )

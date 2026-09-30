@@ -62,7 +62,7 @@ import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toLocalDateTime
 
 /**
- * Las zonas: dibujar una, ver cuánto falta, quitar cuadras y terminar el objetivo (008).
+ * Las zonas: dibujar una, editarla, ver cuánto falta, quitar cuadras y terminar el objetivo (008).
  *
  * Como en Salidas, el detalle y el dibujo son el adentro de esta pantalla y no destinos de
  * navegación: entran y salen con su estado.
@@ -78,6 +78,9 @@ fun PantallaZonas(onVolver: () -> Unit) {
     /** La zona abierta en el detalle. Null es la lista. */
     var abierta by remember { mutableStateOf<Long?>(null) }
     var dibujando by remember { mutableStateOf(false) }
+
+    /** Mientras se dibuja, la zona que se edita. Null es una zona nueva. */
+    var editando by remember { mutableStateOf<Zona?>(null) }
 
     // D8: con conexión, las zonas que esperan sus cuadras las buscan al entrar.
     LaunchedEffect(Unit) {
@@ -114,11 +117,13 @@ fun PantallaZonas(onVolver: () -> Unit) {
             .safeDrawingPadding(),
     ) {
         when {
-            dibujando -> DibujoDeZonaNueva(
+            dibujando -> DibujarZona(
+                zona = editando,
                 onCancelar = { dibujando = false },
-                onCrear = { nombre, esquinas, desde ->
+                onListo = { nombre, esquinas, desde ->
                     alcance.launch {
-                        val id = Zonas.crear(nombre, esquinas, desde, ahora())
+                        val id = editando?.id?.also { Zonas.editar(it, nombre, esquinas, desde, ahora()) }
+                            ?: Zonas.crear(nombre, esquinas, desde, ahora())
                         // La zona se abre enseguida, diciendo "Buscando las calles", y no después
                         // de la búsqueda: con mala señal puede tardar los 20 s de espera.
                         dibujando = false
@@ -136,6 +141,10 @@ fun PantallaZonas(onVolver: () -> Unit) {
                 BarraSuperior(zonaAbierta.zona.nombre, onVolver = { abierta = null })
                 DetalleDeZona(
                     z = zonaAbierta,
+                    onEditar = {
+                        editando = zonaAbierta.zona
+                        dibujando = true
+                    },
                     onCambio = { recarga++ },
                     onBorrada = {
                         abierta = null
@@ -146,7 +155,14 @@ fun PantallaZonas(onVolver: () -> Unit) {
 
             else -> {
                 BarraSuperior("Zonas", onVolver)
-                ListaDeZonas(zonas, onNueva = { dibujando = true }, onAbrir = { abierta = it })
+                ListaDeZonas(
+                    zonas,
+                    onNueva = {
+                        editando = null
+                        dibujando = true
+                    },
+                    onAbrir = { abierta = it },
+                )
             }
         }
     }
@@ -232,14 +248,16 @@ private fun enCuanto(desde: Long, hasta: Long) = duracion(desde, hasta).let { if
 
 /**
  * El detalle: cuánto falta, desde cuándo cuenta y el mapa de la zona (FR-007, FR-008), con lo que
- * se puede hacer según su estado: quitar cuadras y cerrar si está activa, y borrar siempre.
+ * se puede hacer según su estado: quitar cuadras y cerrar si está activa, editar si no terminó
+ * (FR-022), y borrar siempre.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DetalleDeZona(z: ZonaConCuenta, onCambio: () -> Unit, onBorrada: () -> Unit) {
+private fun DetalleDeZona(z: ZonaConCuenta, onEditar: () -> Unit, onCambio: () -> Unit, onBorrada: () -> Unit) {
     val alcance = rememberCoroutineScope()
     val zona = z.zona
     val activa = zona.estado == EstadoZona.ACTIVA
+    val editable = activa || zona.estado == EstadoZona.BUSCANDO
     val cuenta = z.cuenta
 
     var eligiendoFecha by remember { mutableStateOf(false) }
@@ -279,6 +297,7 @@ private fun DetalleDeZona(z: ZonaConCuenta, onCambio: () -> Unit, onBorrada: () 
             TextButton(onClick = { aBorrar = true }) {
                 Text("Borrar zona", color = MaterialTheme.colorScheme.error)
             }
+            if (editable) TextButton(onClick = onEditar) { Text("Editar") }
             if (activa) FilledTonalButton(onClick = { aCerrar = true }) { Text("Cerrar objetivo") }
         }
     }
@@ -378,9 +397,11 @@ private fun DetalleDeZona(z: ZonaConCuenta, onCambio: () -> Unit, onBorrada: () 
 
 /**
  * Cada cuadra con su clase (contrato Z4). Quitada gana: no cuenta, esté recorrida o no. Una zona
- * terminada se pinta con lo que quedó guardado al terminar.
+ * terminada se pinta con lo que quedó guardado al terminar. Una que busca sus calles no pinta
+ * ninguna: si se editó el borde, las que tiene son las del borde viejo.
  */
 private fun dibujadas(z: ZonaConCuenta): List<CuadraDibujada> {
+    if (z.zona.estado == EstadoZona.BUSCANDO) return emptyList()
     val quitadas = z.cuadras.filter { it.quitada }.map { it.id }.toSet()
     val recorridas = z.cuenta?.recorridas ?: z.cuadras.filter { it.recorridaAlTerminar }.map { it.id }.toSet()
     return z.paraContar.map { c ->
@@ -394,31 +415,46 @@ private fun dibujadas(z: ZonaConCuenta): List<CuadraDibujada> {
 }
 
 /**
- * Dibujar una zona nueva tocando sus esquinas (FR-001 a FR-003). Con Listo pide el nombre y desde
- * cuándo cuenta.
+ * Dibujar una zona tocando sus esquinas, o editar el borde de una que no terminó (FR-001 a FR-003,
+ * FR-022). Cada esquina se arrastra para moverla. Con Listo pide el nombre y desde cuándo cuenta.
  */
 @Composable
-private fun DibujoDeZonaNueva(
+private fun DibujarZona(
+    /** La zona que se edita, o null para una nueva. */
+    zona: Zona?,
     onCancelar: () -> Unit,
-    onCrear: (nombre: String, esquinas: List<Pair<Double, Double>>, desde: Long) -> Unit,
+    onListo: (nombre: String, esquinas: List<Pair<Double, Double>>, desde: Long) -> Unit,
 ) {
-    var esquinas by remember { mutableStateOf(listOf<Pair<Double, Double>>()) }
+    var esquinas by remember { mutableStateOf(zona?.let { Borde.leer(it.borde) } ?: emptyList()) }
+    /** Cómo estaban las esquinas antes de cada cambio: Deshacer vuelve de a uno. */
+    var antes by remember { mutableStateOf(listOf<List<Pair<Double, Double>>>()) }
     var confirmando by remember { mutableStateOf(false) }
     // Sigue al jugador hasta que arrastra, como la pantalla principal: sin esto cada lectura de
     // ubicación traería la cámara de vuelta mientras se dibuja lejos.
     val estadoDelMapa = remember { EstadoDelMapa() }
     val problema = Borde.problema(esquinas)
 
-    BarraSuperior("Nueva zona", onCancelar)
+    BarraSuperior(if (zona == null) "Nueva zona" else "Editar zona", onCancelar)
     Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         Text(
-            "Tocá las esquinas de la zona, una por una. Entre toque y toque podés mover el mapa.",
+            "Tocá las esquinas de la zona, una por una, y arrastralas para moverlas. Entre toque y " +
+                "toque podés mover el mapa.",
             fontSize = 13.sp,
         )
         MapaDeFondo(
-            zonas = listOf(DibujoDeZona(esquinas, emptyList(), bordeContinuo = true, conEsquinas = true)),
+            zonas = listOf(DibujoDeZona(esquinas, emptyList(), bordeContinuo = true)),
             estado = estadoDelMapa,
-            onTocarMapa = { lat, lon -> esquinas = esquinas + (lat to lon) },
+            // Una zona que se edita se ve entera; una nueva arranca donde está el jugador.
+            seguirAlJugador = zona == null,
+            onTocarMapa = { lat, lon ->
+                antes = antes.plusElement(esquinas)
+                esquinas = esquinas + (lat to lon)
+            },
+            esquinasMovibles = esquinas,
+            onMoverEsquina = { i, lat, lon, empieza ->
+                if (empieza) antes = antes.plusElement(esquinas)
+                esquinas = esquinas.toMutableList().also { it[i] = lat to lon }
+            },
             modifier = Modifier.fillMaxWidth().weight(1f).padding(vertical = 8.dp),
         )
         Row(
@@ -426,7 +462,13 @@ private fun DibujoDeZonaNueva(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TextButton(onClick = { esquinas = esquinas.dropLast(1) }, enabled = esquinas.isNotEmpty()) {
+            TextButton(
+                onClick = {
+                    esquinas = antes.last()
+                    antes = antes.dropLast(1)
+                },
+                enabled = antes.isNotEmpty(),
+            ) {
                 Text("Deshacer")
             }
             Text(problema ?: "${esquinas.size} esquinas", fontSize = 13.sp)
@@ -435,10 +477,12 @@ private fun DibujoDeZonaNueva(
     }
 
     if (confirmando) {
-        ConfirmarZonaNueva(
-            onCrear = { nombre, desde ->
+        ConfirmarZona(
+            zona = zona,
+            otroBorde = zona != null && Borde.escribir(esquinas) != zona.borde,
+            onListo = { nombre, desde ->
                 confirmando = false
-                onCrear(nombre, esquinas, desde)
+                onListo(nombre, esquinas, desde)
             },
             onCancelar = { confirmando = false },
         )
@@ -446,14 +490,19 @@ private fun DibujoDeZonaNueva(
 }
 
 @Composable
-private fun ConfirmarZonaNueva(onCrear: (nombre: String, desde: Long) -> Unit, onCancelar: () -> Unit) {
-    var nombre by remember { mutableStateOf("") }
-    var desde by remember { mutableStateOf(inicioDelDia(ahora())) }
+private fun ConfirmarZona(
+    zona: Zona?,
+    otroBorde: Boolean,
+    onListo: (nombre: String, desde: Long) -> Unit,
+    onCancelar: () -> Unit,
+) {
+    var nombre by remember { mutableStateOf(zona?.nombre ?: "") }
+    var desde by remember { mutableStateOf(zona?.cuentaDesde ?: inicioDelDia(ahora())) }
     var eligiendoFecha by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onCancelar,
-        title = { Text("Nueva zona") },
+        title = { Text(if (zona == null) "Nueva zona" else "Editar zona") },
         text = {
             Column {
                 OutlinedTextField(
@@ -472,9 +521,18 @@ private fun ConfirmarZonaNueva(onCrear: (nombre: String, desde: Long) -> Unit, o
                     fontSize = 12.sp,
                     modifier = Modifier.padding(top = 4.dp),
                 )
+                if (otroBorde) {
+                    Text(
+                        "Con el borde nuevo la zona vuelve a buscar sus calles. Lo que quitaste sigue quitado.",
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
             }
         },
-        confirmButton = { TextButton(onClick = { onCrear(nombre, desde) }) { Text("Crear") } },
+        confirmButton = {
+            TextButton(onClick = { onListo(nombre, desde) }) { Text(if (zona == null) "Crear" else "Guardar") }
+        },
         dismissButton = { TextButton(onClick = onCancelar) { Text("Cancelar") } },
     )
 

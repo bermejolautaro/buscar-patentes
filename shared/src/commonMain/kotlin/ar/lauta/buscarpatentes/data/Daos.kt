@@ -296,6 +296,13 @@ abstract class ZonaDao {
     @Query("UPDATE zona SET cuentaDesde = :desde WHERE id = :id AND estado = 'ACTIVA'")
     abstract suspend fun cambiarCuentaDesde(id: Long, desde: Long)
 
+    /** FR-022: el nombre, el borde y desde cuándo cuenta. [estado] y [problema] vuelven a la búsqueda si cambió el borde. */
+    @Query(
+        "UPDATE zona SET nombre = :nombre, borde = :borde, cuentaDesde = :desde, estado = :estado, problema = :problema " +
+            "WHERE id = :id",
+    )
+    abstract suspend fun editar(id: Long, nombre: String, borde: String, desde: Long, estado: EstadoZona, problema: String?)
+
     @Query("UPDATE cuadra SET quitada = :quitada WHERE id IN (:ids)")
     abstract suspend fun marcarQuitadas(ids: List<Long>, quitada: Boolean)
 
@@ -306,13 +313,15 @@ abstract class ZonaDao {
     protected abstract suspend fun marcarActiva(id: Long)
 
     /**
-     * Guarda las cuadras que encontró la búsqueda y pasa la zona a activa (D8).
+     * Guarda las cuadras que encontró la búsqueda y pasa la zona a activa (D8). Reemplaza las que
+     * tenía: una zona con el borde editado las vuelve a buscar (FR-022).
      *
      * Cada gemela lleva el **índice** de su principal en [principales], porque el id recién
      * existe después de insertarla.
      */
     @Transaction
     open suspend fun activar(zonaId: Long, principales: List<Cuadra>, gemelas: List<Pair<Int, Cuadra>>) {
+        borrarCuadrasDe(zonaId)
         val ids = principales.map { insertarCuadra(it.copy(zonaId = zonaId)) }
         gemelas.forEach { (indice, gemela) -> insertarCuadra(gemela.copy(zonaId = zonaId, gemelaDe = ids[indice])) }
         marcarActiva(zonaId)

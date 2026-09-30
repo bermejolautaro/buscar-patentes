@@ -49,6 +49,17 @@ El `.ipa` corre las mismas pruebas en el simulador del iPhone antes de armarse.
 **Un dibujo que no es una zona**: con dos esquinas no deja confirmar, y lo mismo si el borde se
 cruza.
 
+## 3b. Editar una zona (FR-001, FR-022)
+
+1. En el dibujo de una zona nueva, arrastrar una esquina: el mapa no se mueve y el borde la
+   sigue. **Deshacer** la devuelve a donde estaba; otro **Deshacer** saca la última esquina.
+2. En una zona activa con una cuadra quitada, **Editar** → agrandar el borde arrastrando dos
+   esquinas → **Listo**. El diálogo avisa que vuelve a buscar las calles → **Guardar**.
+3. La zona dice "Buscando las calles…" y después vuelve con las cuadras nuevas. La quitada sigue
+   quitada.
+4. **Editar** solo el nombre: no vuelve a buscar.
+5. Una zona terminada no tiene **Editar**.
+
 ## 4. Caminar (US1, SC-002)
 
 1. Con la zona activa, salir y caminar **diez cuadras pendientes de esquina a esquina**. En el

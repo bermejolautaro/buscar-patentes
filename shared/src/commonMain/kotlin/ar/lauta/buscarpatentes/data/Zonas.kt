@@ -23,12 +23,35 @@ object Zonas {
     suspend fun crear(nombre: String, esquinas: List<Pair<Double, Double>>, cuentaDesde: Long, ahora: Long): Long =
         contenedor.zonas.insertar(
             Zona(
-                nombre = nombre.trim().ifEmpty { "Zona del ${fechaCorta(ahora, conAnio = false)}" },
+                nombre = nombre.trim().ifEmpty { nombrePorDefecto(ahora) },
                 borde = Borde.escribir(esquinas),
                 creadaEn = ahora,
                 cuentaDesde = inicioDelDia(minOf(cuentaDesde, ahora)),
             ),
         )
+
+    private fun nombrePorDefecto(creadaEn: Long) = "Zona del ${fechaCorta(creadaEn, conAnio = false)}"
+
+    /**
+     * Cambia el nombre, el borde y desde cuándo cuenta de una zona que no terminó (FR-022). Con otro
+     * borde la zona vuelve a buscar sus cuadras. Las viejas quedan hasta que llegan las nuevas, que
+     * heredan lo quitado.
+     */
+    suspend fun editar(id: Long, nombre: String, esquinas: List<Pair<Double, Double>>, cuentaDesde: Long, ahora: Long) {
+        val zona = contenedor.zonas.porId(id) ?: return
+        if (zona.estado != EstadoZona.ACTIVA && zona.estado != EstadoZona.BUSCANDO) return
+        val borde = Borde.escribir(esquinas)
+        val otroBorde = borde != zona.borde
+        contenedor.zonas.editar(
+            id = id,
+            nombre = nombre.trim().ifEmpty { nombrePorDefecto(zona.creadaEn) },
+            borde = borde,
+            desde = inicioDelDia(minOf(cuentaDesde, ahora)),
+            estado = if (otroBorde) EstadoZona.BUSCANDO else zona.estado,
+            problema = if (otroBorde) null else zona.problema,
+        )
+        revisar()
+    }
 
     /** Corre "desde cuándo cuenta" (FR-003). Nunca después de hoy, y solo con la zona activa. */
     suspend fun cambiarCuentaDesde(id: Long, desde: Long, ahora: Long) {

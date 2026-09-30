@@ -37,6 +37,12 @@ para una zona: una cuadra está recorrida si el camino pintado la recorre.
 - Q: ¿Cómo se dibuja el borde de la zona? → A: Tocando las esquinas una por una, unidas con rectas,
   con un botón para deshacer la última. No a mano alzada.
 
+### Session 2026-09-30
+
+Después de la primera prueba en el teléfono, el jugador pidió tres cosas: esquinas más grandes,
+poder arrastrarlas y poder editar una zona ya creada. Entran en el FR-001 y el FR-022, y el cambio
+de borde sale de Out of Scope.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Dibujar una zona y ver cuánto falta (Priority: P1)
@@ -171,8 +177,9 @@ queda en la lista con su porcentaje y sus días, y que una salida posterior ya n
 
 - **FR-001**: El jugador MUST poder crear una zona tocando sus esquinas sobre el mapa, una por una;
   la app las une con rectas. Hacen falta tres o más esquinas y bordes que no se crucen. Entre toque y
-  toque el jugador MUST poder mover el mapa y cambiar el zoom, y MUST poder deshacer la última
-  esquina antes de confirmar.
+  toque el jugador MUST poder mover el mapa y cambiar el zoom. Cada esquina MUST verse grande y
+  poder arrastrarse con el dedo sin mover el mapa. El jugador MUST poder deshacer los cambios de a
+  uno, una esquina nueva o un arrastre, antes de confirmar.
 - **FR-002**: Cada zona MUST tener un nombre, que el jugador puede escribir; si no escribe ninguno,
   la app le pone uno con la fecha de creación.
 - **FR-003**: Cada zona MUST tener un "desde cuándo cuenta": un día que arranca en el de la creación
@@ -233,6 +240,14 @@ queda en la lista con su porcentaje y sus días, y que una salida posterior ya n
 - **FR-020**: Las zonas, sus cuadras, lo quitado y su resultado MUST viajar en el respaldo de la 006.
 - **FR-021**: Todo esto MUST funcionar igual en el Android y en el iPhone (regla de la 006).
 
+**Editar**
+
+- **FR-022**: El jugador MUST poder editar una zona que no terminó: su nombre, su "desde cuándo
+  cuenta" y su borde, que se dibuja igual que en el FR-001 empezando por el que tenía. Si el borde
+  cambia, la zona MUST volver a buscar sus cuadras como en el FR-004. Las cuadras que estaban
+  quitadas MUST seguir quitadas en la búsqueda nueva: se reconocen por sus dos puntas, a 5 m o
+  menos. Una zona terminada no se edita (FR-016).
+
 ### Key Entities
 
 - **Zona**: un pedazo del mapa que el jugador se propone recorrer entero. Tiene su borde, su nombre,
@@ -284,7 +299,6 @@ queda en la lista con su porcentaje y sus días, y que una salida posterior ya n
   adentro de la zona.
 - **Sugerir por dónde caminar para completar la zona.** Pide un motor de ruteo, que la 003 y la 004
   ya dejaron afuera. El mapa de la zona muestra lo que falta; el camino lo elige el jugador.
-- **Cambiar el borde de una zona después de crearla.** Se borra y se dibuja otra.
 - **Agregar cuadras que el mapa no tiene.**
 - **Reabrir una zona terminada.**
 - **Ver el porcentaje subir durante la salida.** Suma cuando la salida termina y se ajusta.
