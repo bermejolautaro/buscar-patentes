@@ -31,6 +31,11 @@ para una zona: una cuadra está recorrida si el camino pintado la recorre.
   desde una fecha que elige el jugador, "desde cuándo cuenta". Arranca en el día en que se crea la
   zona, así el objetivo empieza en 0%, pero se puede correr para atrás para no perder el progreso
   que ya hizo. El tiempo del objetivo se mide desde esa misma fecha.
+- Q: En la pantalla principal, mientras camina, ¿qué ve el jugador de una zona activa? → A: El borde
+  y las cuadras que faltan, resaltadas, sin ningún número. Así ve adónde ir sin abrir la zona; el
+  porcentaje sigue viviendo solo adentro de la zona.
+- Q: ¿Cómo se dibuja el borde de la zona? → A: Tocando las esquinas una por una, unidas con rectas,
+  con un botón para deshacer la última. No a mano alzada.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -68,7 +73,9 @@ faltaba, de esquina a esquina, y ver que la zona la suma cuando la salida queda 
 6. **Given** una salida que solo cruza una calle de la zona en una esquina, **When** se ajusta,
    **Then** esa calle no suma ninguna cuadra.
 7. **Given** una o varias zonas activas, **When** el jugador mira la pantalla principal, **Then**
-   ve el borde de cada zona sobre el mapa, y ningún porcentaje ni contador.
+   ve el borde de cada zona y sus cuadras que faltan resaltadas, y ningún porcentaje ni contador.
+8. **Given** la pantalla principal con una zona activa, **When** una salida recorre una cuadra que
+   faltaba y queda ajustada, **Then** esa cuadra deja de estar resaltada.
 
 ---
 
@@ -162,8 +169,10 @@ queda en la lista con su porcentaje y sus días, y que una salida posterior ya n
 
 **Crear y ver una zona**
 
-- **FR-001**: El jugador MUST poder crear una zona marcando sus esquinas sobre el mapa, con tres o
-  más esquinas y sin bordes que se crucen. MUST poder deshacer la última esquina antes de confirmar.
+- **FR-001**: El jugador MUST poder crear una zona tocando sus esquinas sobre el mapa, una por una;
+  la app las une con rectas. Hacen falta tres o más esquinas y bordes que no se crucen. Entre toque y
+  toque el jugador MUST poder mover el mapa y cambiar el zoom, y MUST poder deshacer la última
+  esquina antes de confirmar.
 - **FR-002**: Cada zona MUST tener un nombre, que el jugador puede escribir; si no escribe ninguno,
   la app le pone uno con la fecha de creación.
 - **FR-003**: Cada zona MUST tener un "desde cuándo cuenta": un día que arranca en el de la creación
@@ -188,8 +197,10 @@ queda en la lista con su porcentaje y sus días, y que una salida posterior ya n
   pendiente y quitada.
 - **FR-009**: El porcentaje MUST actualizarse solo cuando una salida queda ajustada, cuando se
   borra una salida, cuando se quita o se suma una cuadra, y cuando cambia "desde cuándo cuenta".
-- **FR-010**: La pantalla principal MUST mostrar el borde de cada zona activa, y MUST NOT mostrar
-  porcentajes ni contadores: el FR-020a de la 004 sigue valiendo para el mapa entero.
+- **FR-010**: La pantalla principal MUST mostrar el borde de cada zona activa y resaltar sus cuadras
+  que faltan, en los modos cobertura y antigüedad; con los recorridos apagados, tampoco se ven las
+  zonas. MUST NOT mostrar porcentajes ni contadores: el FR-020a de la 004 sigue valiendo para el
+  mapa entero. Las cuadras quitadas no se resaltan.
 - **FR-011**: Puede haber varias zonas activas a la vez, y MAY pisarse. Cada una lleva su propia
   cuenta.
 
