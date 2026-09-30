@@ -30,15 +30,16 @@ interpretó el ajuste.
 
 - Q: Cuando un tramo que el ajuste no pudo pegar se dibuja con los puntos medidos, ¿se ve distinto del resto del camino ajustado? → A: No. Misma línea continua y mismo color que el resto: no se nota dónde empalma.
 - Q: Al abrir el detalle de una salida, ¿qué camino se muestra primero? → A: Siempre el ajustado, cuando existe. El real se ve tocando el interruptor, y la elección no se recuerda entre visitas.
+- Q: Después de probar la primera versión en el teléfono (el mapa salió lleno de garabatos cerca de casa), ¿qué se dibuja donde el ajuste no pudo pegar un tramo a una calle? → A: **Nada.** Reemplaza a la primera respuesta. La vista por defecto pinta solo calles, con rectas que doblan en las esquinas: el objetivo es pintar las calles recorridas. Los puntos medidos se ven con un interruptor, que también va en la pantalla principal.
 
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - El camino de una salida sigue las calles de punta a punta (Priority: P1)
 
-El jugador mira el mapa, en cobertura o en antigüedad, para decidir por dónde salir. Todas las
-salidas se dibujan sobre calles: ninguna línea atraviesa una manzana en diagonal. Donde el ajuste
-no supo pegar el camino a una calle, se ve lo que midió el teléfono en ese tramo, que sí sigue la
-calle. Donde se cortó la señal, se ve la línea punteada de siempre.
+El jugador mira el mapa, en cobertura o en antigüedad, para decidir por dónde salir. El mapa pinta
+las **calles recorridas**: rectas que doblan en las esquinas, y ninguna línea que atraviese una
+manzana. Donde el ajuste no supo pegar el camino a una calle, no se pinta nada: ahí no hay una calle
+que dar por recorrida.
 
 **Why this priority**: el mapa de cobertura existe para responder "por dónde ya pasé". Una
 diagonal dice que se pasó por el medio de una manzana, o tapa una calle que no se caminó. Es el
@@ -54,11 +55,10 @@ una manzana. Repetir con una salida nueva, ajustada con conexión al volver.
    cada tramo continuo sigue una calle o un sendero peatonal; no hay rectas entre dos puntos que
    no estén unidos por una calle.
 2. **Given** una salida donde el ajuste no pudo pegar un tramo a ninguna calle, **When** se
-   dibuja, **Then** ese tramo se dibuja con los puntos que midió el teléfono, y el resto con el
-   camino ajustado, sin rectas de unión entre las partes.
+   dibuja, **Then** ese tramo no se dibuja, y el resto sí, sin rectas de unión entre las partes.
 3. **Given** una salida con un corte de señal (dos puntos seguidos demasiado lejos entre sí, como
-   define el FR-009 de la 003), **When** se dibuja ajustada, **Then** los dos lados del corte se
-   unen con la línea punteada, igual que en el trazo crudo, y no con una línea continua.
+   define el FR-009 de la 003), **When** se dibuja ajustada, **Then** el servicio no rellena el
+   corte con calles que nadie caminó: entre los dos lados no se pinta nada.
 4. **Given** una salida que ya tenía un camino ajustado guardado antes de esta feature, **When**
    la app abre con conexión, **Then** esa salida se vuelve a ajustar con el criterio nuevo sin que
    el jugador haga nada, y mientras tanto se dibuja con los puntos medidos.
@@ -69,8 +69,8 @@ una manzana. Repetir con una salida nueva, ajustada con conexión al volver.
 
 ### User Story 2 - Ver lo que midió el teléfono o lo que interpretó el ajuste (Priority: P2)
 
-En el detalle de una salida, el jugador puede alternar entre dos vistas del mismo camino: **el
-real**, con los puntos que midió el teléfono, y **el ajustado**, pegado a las calles. Le sirve para
+En la pantalla principal y en el detalle de una salida, el jugador puede alternar entre dos vistas:
+**el real**, con los puntos que midió el teléfono, y **el ajustado**, las calles pintadas. Le sirve para
 ver si el ajuste inventó o se comió alguna calle, y para quedarse con la vista que le resulte más
 fiel.
 
@@ -102,10 +102,11 @@ interruptor explica por qué no hay versión ajustada.
 - **Salida con uno o ningún punto**: no hay camino que ajustar ni que alternar. El detalle se ve
   como hoy.
 - **Un tramo por una plaza o un terreno sin calles mapeadas**: el ajuste no tiene dónde pegarlo, y
-  ese tramo se dibuja con los puntos medidos (escenario 2 de la US1). La diagonal medida es real y
-  se muestra; lo que no se muestra es una diagonal inventada.
-- **Todo el camino queda sin pegar**: la salida se dibuja entera con los puntos medidos, y cuenta
-  como "No se pudo ajustar" en el detalle.
+  en la vista por defecto no se pinta (escenario 2 de la US1). Se ve con los puntos reales.
+- **Todo el camino queda sin pegar**: en la vista por defecto la salida no pinta nada, y el detalle
+  dice "No se pudo ajustar".
+- **El GPS saltando adentro de casa**, al empezar o al terminar una salida: son los puntos que peor
+  emparejan. En la vista por defecto no se pinta nada que no sea calle.
 - **El servicio de ajuste no responde o no hay conexión**: igual que hoy, queda pendiente y se
   reintenta sola (FR-032 de la 003). Un reajuste de una salida vieja que falla deja la salida
   dibujada con los puntos medidos hasta el próximo intento.
@@ -119,30 +120,30 @@ interruptor explica por qué no hay versión ajustada.
 
 - **FR-001**: Un camino ajustado MUST NOT dibujar una recta entre dos puntos que el ajuste no unió
   por una calle o un sendero. Todo tramo continuo del camino ajustado MUST seguir la red de calles.
-- **FR-002**: Donde el ajuste no pudo pegar un tramo a una calle, el sistema MUST dibujar ese
-  tramo con los puntos que midió el teléfono, y el resto con el camino ajustado. Las partes MUST
-  empalmar sin rectas de unión, y el tramo medido MUST dibujarse con la misma línea y el mismo
-  color que el resto: en el mapa no se distingue dónde empalma. Para comparar está el
-  interruptor del detalle (FR-006).
+- **FR-002**: Donde el ajuste no pudo pegar un tramo a una calle, ese tramo MUST NOT dibujarse en
+  la vista por defecto. La vista por defecto pinta calles y nada más. *(Reescrito después de la
+  prueba en la calle: la primera versión dibujaba ahí los puntos medidos, y cerca de casa eso era
+  un garabato.)*
 - **FR-003**: Los cortes de señal del FR-009 de la 003 MUST respetarse también en el camino
-  ajustado: los dos lados de un corte se unen con la línea punteada del FR-009a de la 003, nunca
-  con una línea continua ni con un camino inventado por el ajuste.
+  ajustado: el servicio no rellena un corte con calles que nadie caminó. En la vista por defecto
+  entre los dos lados no se dibuja nada; en la de los puntos reales, la línea punteada del FR-009a
+  de la 003.
 - **FR-004**: Las salidas que ya tienen un camino ajustado con el criterio anterior MUST volver a
   ajustarse solas, una vez, la primera vez que la app tenga conexión, sin que el jugador lo pida.
   Mientras no se reajusten, MUST dibujarse con los puntos medidos.
 - **FR-005**: Ni el ajuste ni el reajuste MUST modificar o descartar los puntos medidos (FR-034 de
   la 003, Principio II). El camino ajustado es una interpretación y se puede recalcular.
-- **FR-006**: El detalle de una salida MUST ofrecer un interruptor entre la vista **real** —los
-  puntos medidos, con sus cortes punteados— y la vista **ajustada**, y MUST decir cuál se está
-  viendo.
+- **FR-006**: La pantalla principal y el detalle de una salida MUST ofrecer un interruptor entre la
+  vista **real** —los puntos medidos, con sus cortes punteados— y la vista **ajustada**, y MUST
+  decir cuál se está viendo.
 - **FR-007**: El detalle MUST arrancar en la vista ajustada cuando la salida tiene camino ajustado.
   Si no lo tiene, MUST mostrar la vista real, no dejar cambiar, y decir por qué: "Todavía sin
   ajustar" o "No se pudo ajustar".
 - **FR-008**: Cambiar de vista MUST NOT mover la cámara ni cambiar el zoom, para que las dos se
   puedan comparar en el mismo lugar.
-- **FR-009**: El interruptor MUST afectar solo al detalle de esa salida. El mapa principal sigue
-  dibujando el camino ajustado cuando existe (FR-031 de la 003) y la elección no se recuerda entre
-  una visita al detalle y la siguiente.
+- **FR-009**: Cada interruptor MUST afectar solo a su pantalla, arrancar en la vista ajustada y no
+  recordarse: al volver a abrir la pantalla, el mapa pinta calles otra vez. Una salida todavía sin
+  ajustar se ve con sus puntos reales en las dos vistas (FR-033 de la 003).
 - **FR-010**: Todo esto MUST funcionar igual en el Android y en el iPhone (regla de la 006).
 
 ### Key Entities
@@ -170,16 +171,15 @@ interruptor explica por qué no hay versión ajustada.
 - **SC-004**: Los puntos medidos de cada salida son idénticos antes y después del reajuste,
   comparados uno por uno.
 - **SC-005**: Al mirar las dos vistas de sus salidas, el jugador no encuentra ninguna calle que
-  caminó y que la vista ajustada no muestre, salvo en los tramos que el ajuste marcó como sin pegar.
+  caminó y que la vista ajustada no pinte, ni un garabato que no sea una calle.
 
 ## Assumptions
 
 - **Las diagonales vienen del ajuste, no de la medición.** El jugador ve el camino crudo "perfecto"
   y las diagonales solo en el ajustado. Si en el plan aparece una diagonal en los puntos medidos
   que no sea un corte de señal, esa es otra causa y entra en esta feature.
-- **En un tramo sin pegar se muestran los puntos medidos, no una línea punteada.** La línea
-  punteada significa "hubo un corte y no se sabe por dónde se fue"; en un tramo sin pegar sí se
-  sabe, porque el teléfono lo midió.
+- **En un tramo sin pegar no se dibuja nada** en la vista por defecto: el objetivo del mapa es
+  pintar calles, y lo que no es calle se ve con los puntos reales.
 - **Se sigue usando el mismo servicio de ajuste**, gratis y sin clave. Cambiar de servicio no es
   parte de esta feature.
 - **La vista por defecto del detalle es la ajustada** y no se recuerda la elección (confirmado en

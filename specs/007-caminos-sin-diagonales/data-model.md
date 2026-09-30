@@ -22,9 +22,9 @@ No es una columna: se deduce de `estado` y de `caminoAjustado`, con `CaminoGuard
 | Estado | Cuándo | Se dibuja | El interruptor dice |
 |---|---|---|---|
 | **Pendiente** | `caminoAjustado` es `null` | Los puntos medidos | "Todavía sin ajustar" |
-| **A reajustar** | Tiene camino y no empieza con `2:` | Los puntos medidos | "Todavía sin ajustar" |
-| **No se pudo** | Es exactamente `2:` | Los puntos medidos | "No se pudo ajustar" |
-| **Ajustado** | Empieza con `2:` y trae tramos | Los tramos | El interruptor, en "Ajustado a las calles" |
+| **A reajustar** | Tiene camino y no empieza con `3:` | Los puntos medidos | "Todavía sin ajustar" |
+| **No se pudo** | Es exactamente `3:` | Nada (en la vista por defecto) | "No se pudo ajustar" |
+| **Ajustado** | Empieza con `3:` y trae pedazos | Los pedazos de calle | El interruptor, en "Ajustado a las calles" |
 
 Una salida `EN_CURSO` está siempre pendiente: se ajusta al terminar.
 

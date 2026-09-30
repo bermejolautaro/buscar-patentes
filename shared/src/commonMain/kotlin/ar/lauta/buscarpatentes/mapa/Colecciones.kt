@@ -3,6 +3,7 @@ package ar.lauta.buscarpatentes.mapa
 import ar.lauta.buscarpatentes.data.ModoMapa
 import ar.lauta.buscarpatentes.domain.Acomodo
 import ar.lauta.buscarpatentes.domain.Dibujo
+import ar.lauta.buscarpatentes.domain.CaminoGuardado
 import ar.lauta.buscarpatentes.domain.Escalon
 import ar.lauta.buscarpatentes.domain.Geo
 import ar.lauta.buscarpatentes.domain.Pin
@@ -66,17 +67,41 @@ data class Marcador(
 data class Trazo(
     val recorridoId: Long,
 
-    /**
-     * Cada tramo es una línea continua, y entre uno y el siguiente va un hueco punteado. Los
-     * decide quien arma el trazo, con `CaminoGuardado.dibujo`: el camino ajustado o los puntos
-     * medidos, cortados donde se cortó la señal. Esta capa los dibuja igual vengan de donde
-     * vengan (D4 de la 007).
-     */
+    /** Cada tramo es una línea continua. Los decide [trazoDe]. */
     val tramos: List<List<Pair<Double, Double>>>,
 
     /** Hace cuánto se caminó. Solo se dibuja en [ModoMapa.ANTIGUEDAD]. */
     val escalon: Escalon,
+
+    /**
+     * Si entre un tramo y el siguiente va un hueco punteado (FR-009a de la 003). Sí para los
+     * puntos medidos, donde entre dos tramos hubo un corte de señal. No para los pedazos de calle
+     * del camino ajustado: el mapa por defecto pinta calles y nada más (D4 de la 007).
+     */
+    val huecos: Boolean = true,
 )
+
+/**
+ * El trazo de una salida (D4 de la 007).
+ *
+ * - **Vista por defecto**: los pedazos de calle del camino ajustado, sin nada entre ellos. Si no
+ *   se pudo ajustar, no pinta nada.
+ * - **Vista de los puntos reales** ([puntosReales]): lo que midió el teléfono, cortado donde se
+ *   cortó la señal, con los cortes punteados.
+ * - **Todavía sin ajustar**: los puntos reales en las dos vistas. Una salida recién terminada sin
+ *   conexión no puede verse como una salida que no existe (FR-033 de la 003).
+ */
+fun trazoDe(
+    recorridoId: Long,
+    medidos: List<Pair<Double, Double>>,
+    guardado: CaminoGuardado,
+    escalon: Escalon,
+    puntosReales: Boolean,
+): Trazo = when {
+    !puntosReales && guardado is CaminoGuardado.Ajustado -> Trazo(recorridoId, guardado.tramos, escalon, huecos = false)
+    !puntosReales && guardado is CaminoGuardado.NoSePudo -> Trazo(recorridoId, emptyList(), escalon, huecos = false)
+    else -> Trazo(recorridoId, Geo.tramos(medidos), escalon)
+}
 
 internal typealias Coleccion = FeatureCollection<Geometry, JsonObject>
 
@@ -136,7 +161,7 @@ internal fun coleccionTrazos(trazos: List<Trazo>): Coleccion = FeatureCollection
  */
 internal fun coleccionHuecos(trazos: List<Trazo>): Coleccion = FeatureCollection(
     trazos.flatMap { trazo ->
-        Geo.huecos(trazo.tramos).map { (desde, hasta) ->
+        (if (trazo.huecos) Geo.huecos(trazo.tramos) else emptyList()).map { (desde, hasta) ->
             Feature<Geometry, JsonObject>(
                 linea(listOf(desde, hasta)),
                 buildJsonObject { put(PROP_ESCALON, trazo.escalon.name) },

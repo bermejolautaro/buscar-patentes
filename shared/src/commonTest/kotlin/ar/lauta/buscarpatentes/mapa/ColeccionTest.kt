@@ -1,5 +1,6 @@
 package ar.lauta.buscarpatentes.mapa
 
+import ar.lauta.buscarpatentes.domain.CaminoGuardado
 import ar.lauta.buscarpatentes.domain.Dibujo
 import ar.lauta.buscarpatentes.domain.Escalon
 import ar.lauta.buscarpatentes.domain.Geo
@@ -230,5 +231,31 @@ class ColeccionTrazosTest {
         assertEquals(3, coleccionTrazos(trazos).features.size)
         assertEquals(caminata.size, coordenadas(coleccionTrazos(trazos), 0).size)
         assertEquals(2, coleccionHuecos(trazos).features.size)
+    }
+
+    @Test
+    fun `por defecto se pintan solo los pedazos de calle y nada entre ellos`() {
+        val calles = listOf(caminata, caminata.map { (la, lo) -> la - 0.01 to lo })
+        val trazo = trazoDe(1, conCorte, CaminoGuardado.Ajustado(calles), Escalon.RECIENTE, puntosReales = false)
+
+        assertEquals(2, coleccionTrazos(listOf(trazo)).features.size)
+        assertEquals(0, coleccionHuecos(listOf(trazo)).features.size)
+    }
+
+    @Test
+    fun `los puntos reales se ven con sus cortes punteados aunque haya camino ajustado`() {
+        val trazo = trazoDe(1, conCorte, CaminoGuardado.Ajustado(listOf(caminata)), Escalon.RECIENTE, puntosReales = true)
+
+        assertEquals(Geo.tramos(conCorte), trazo.tramos)
+        assertEquals(1, coleccionHuecos(listOf(trazo)).features.size)
+    }
+
+    @Test
+    fun `sin calles emparejadas no se pinta nada y sin ajustar se ven los puntos reales`() {
+        val noSePudo = trazoDe(1, caminata, CaminoGuardado.NoSePudo, Escalon.RECIENTE, puntosReales = false)
+        assertEquals(0, coleccionTrazos(listOf(noSePudo)).features.size)
+
+        val pendiente = trazoDe(1, caminata, CaminoGuardado.Pendiente, Escalon.RECIENTE, puntosReales = false)
+        assertEquals(1, coleccionTrazos(listOf(pendiente)).features.size)
     }
 }

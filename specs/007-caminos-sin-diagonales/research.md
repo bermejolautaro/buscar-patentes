@@ -44,6 +44,20 @@ formato que distingue lo nuevo de lo viejo (D3).
 
 ## D2 — Cómo se arma el camino ajustado
 
+> **Revisado el 2026-09-29, después de la prueba en la calle.** La primera versión unía los pedazos
+> con los puntos medidos. En el teléfono, con las salidas reales, eso llenó el mapa de garabatos:
+> un tercio de los puntos no emparejaba (D7) y cerca de casa el GPS salta. El jugador pidió que la
+> vista por defecto pinte **solo calles**. Queda así:
+>
+> 1. Un pedido por tramo de señal, igual que abajo.
+> 2. De cada respuesta se guardan **solo los pedazos**: `shape` cortada donde las aristas no son
+>    contiguas (`CaminoAjustado.pedazos`). Nada de puntos medidos, ni entre pedazos ni en las
+>    puntas.
+> 3. Si el servicio rechaza un tramo, ese tramo no pinta nada. Si rechaza todos, se reintenta.
+> 4. Se guarda con el prefijo `3:`. Los `2:` de la primera versión vuelven a la cola.
+>
+> Lo que sigue es la primera versión, como registro.
+
 **Decisión**, por salida:
 
 1. Los puntos medidos se cortan en **tramos de señal** con `Geo.tramos`, el mismo umbral que usa el
@@ -134,6 +148,33 @@ el doble y un interruptor alcanza para dos vistas.
   Se verifica en el teléfono.
 - El mapa principal no tiene interruptor: dibuja el ajustado nuevo cuando existe y los puntos
   medidos cuando no (FR-009).
+
+## D7 — El radio de búsqueda: sin radio
+
+**Hallazgo**, con las 6 salidas reales del jugador, leídas del teléfono a la PC sin salir de ella:
+con el `radius` de cada punto igual a su precisión, entre 5 y 30 m (FR-036a de la 003), **202 de 647
+puntos** de una salida no emparejaron, y **164 de 463** de otra. El camino ajustado salía en 30 y 23
+pedazos, con 4,3 km pintados de 6,6. Caminando por la vereda de una avenida ancha, el eje de la
+calle —que es lo que tiene el mapa— queda más lejos que 5 o 10 m.
+
+| Radio | Sin emparejar (salida de 647) | Pedazos | Pintado |
+|---|---|---|---|
+| El de hoy (precisión, 5 a 30 m) | 202 | 30 | 4331 m |
+| Sin `radius` (el del servicio) | 1 | 2 | 6618 m |
+| 25 m fijo | 6 | 1 | 6602 m |
+| 40 m fijo | 1 | 2 | 6618 m |
+
+**Decisión**: el pedido va **sin `radius`**, con el radio por defecto del servicio. Dibujado sobre
+las salidas reales, sale un camino continuo por las calles, recto y doblando en las esquinas. Es
+también lo que hacía el ajuste de la 003 antes del FR-036a: la salida del 31/08 de 6,7 km había dado
+6489 m con confianza 1.0.
+
+**Descartado**: un radio fijo. 25 m deja 6 puntos afuera donde el del servicio deja 1, y no hay una
+razón medida para elegir otro número.
+
+**Pendiente de mirar**: el GPS que salta adentro de casa puede emparejar con una calle de al lado y
+pintar un pedazo corto que no se caminó. Si en el mapa aparece, se filtran los puntos sueltos que
+se van lejos y vuelven, antes de pedir.
 
 ## D6 — Cuántos pedidos y cuándo
 

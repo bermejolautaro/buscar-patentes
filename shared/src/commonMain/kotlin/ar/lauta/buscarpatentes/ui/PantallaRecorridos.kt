@@ -44,7 +44,7 @@ import ar.lauta.buscarpatentes.domain.CaminoGuardado
 import ar.lauta.buscarpatentes.domain.Probabilidad
 import ar.lauta.buscarpatentes.mapa.MapaDeFondo
 import ar.lauta.buscarpatentes.mapa.Marcador
-import ar.lauta.buscarpatentes.mapa.Trazo
+import ar.lauta.buscarpatentes.mapa.trazoDe
 import ar.lauta.buscarpatentes.plataforma.Grabacion
 import ar.lauta.buscarpatentes.plataforma.ahora
 import kotlinx.coroutines.launch
@@ -348,7 +348,6 @@ private fun DetalleDeSalida(
             val camino = CaminoGuardado.leer(recorrido.caminoAjustado)
             var verAjustado by remember(recorrido.id) { mutableStateOf(true) }
             val medidos = salida.puntos.map { it.latitud to it.longitud }
-            val mostrado = if (verAjustado) camino else CaminoGuardado.Pendiente
 
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
@@ -387,11 +386,7 @@ private fun DetalleDeSalida(
                 // Cambiar de vista cambia los trazos y nada más: el mapa encuadra una sola vez, así
                 // que la cámara se queda donde está (FR-008 de la 007).
                 trazos = listOf(
-                    Trazo(
-                        recorridoId = recorrido.id,
-                        tramos = mostrado.dibujo(medidos),
-                        escalon = escalonDe(recorrido),
-                    ),
+                    trazoDe(recorrido.id, medidos, camino, escalonDe(recorrido), puntosReales = !verAjustado),
                 ),
                 // Acá importa dónde estuvo esa salida, no dónde está parado el jugador ahora.
                 // Y con el seguimiento apagado, el mapa encuadra lo que recibe: el camino

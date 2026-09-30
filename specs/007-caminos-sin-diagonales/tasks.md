@@ -98,7 +98,7 @@ description: "Tareas de la 007: caminos sin diagonales"
   - **Se va**: `pedirCamino`, y con él la lectura de `shape` sola. El cuerpo de cada pedido sigue siendo `cuerpo(puntos)`.
   Tiene que pasar T006.
 - [X] T009 **Hecha**. `guardarCaminoAjustado` sigue siendo el único que escribe la columna. [US1] En `common/data/Daos.kt`, `sinAjustar()` pasa a `SELECT * FROM recorrido WHERE estado = 'TERMINADO' AND (caminoAjustado IS NULL OR caminoAjustado NOT LIKE '2:%')`, con el comentario de que un camino viejo vuelve a la cola sin nada que lo administre (D3). Revisar que `guardarCaminoAjustado` siga siendo el único que escribe la columna.
-- [ ] T010 [US1] **Verificar**:
+- [X] T010 **Hecha** (2026-09-29): el usuario probó y el mapa salió lleno de garabatos cerca de casa. Eso llevó a la fase 4b. [US1] **Verificar**:
   - `./gradlew.bat :shared:testAndroidHostTest assembleDebug`;
   - compilar el iPhone en la nube (`gh workflow run ios.yml --ref 007-caminos-sin-diagonales`);
   - APK a `Download/buscar-patentes.apk`, pisando el anterior, e `.ipa` al usuario;
@@ -126,6 +126,22 @@ description: "Tareas de la 007: caminos sin diagonales"
 - [ ] T012 [US2] **Verificar**: pruebas y APK; compilar el iPhone; el usuario corre el quickstart §4 en los dos teléfonos.
 
 **Checkpoint**: las dos stories andando en los dos teléfonos.
+
+---
+
+## Phase 4b: Después de la prueba en la calle (2026-09-29)
+
+La primera versión llenó el mapa de garabatos cerca de casa. Con las salidas reales del jugador,
+leídas del teléfono sin salir de la PC, salieron dos causas (D2 revisado y D7 de
+[research.md](./research.md)): un tercio de los puntos no emparejaba por el radio de búsqueda, y
+los tramos sin pegar se dibujaban con los puntos medidos. El jugador pidió que la vista por defecto
+pinte solo calles, y un interruptor de puntos reales en la pantalla principal.
+
+- [X] T016 [US1] En `common/ubicacion/AjustarACalles.kt`, `cuerpo()` sin `radius` (D7). `commonTest/ubicacion/AjustarACallesTest.kt` prueba que ningún punto lo lleva.
+- [X] T017 [US1] En `common/domain/CaminoAjustado.kt`, `armar` pasa a `pedazos(forma, aristas)`: solo los pedazos de calle, sin puntos medidos. El prefijo pasa a `3:`, así los `2:` vuelven a la cola. `ajustar()` guarda los pedazos de todos los tramos que el servicio contestó; un tramo rechazado no pinta nada. Pruebas en `CaminoAjustadoTest` y `AjustarACallesTest`.
+- [X] T018 [US1] [US2] En `common/mapa/Colecciones.kt`, `Trazo` suma `huecos` y aparece `trazoDe(...)`: pedazos sin huecos en la vista por defecto, nada si no se pudo, y puntos reales con cortes punteados en la otra vista o si todavía no se ajustó. Lo usan la pantalla principal y el detalle. Pruebas en `ColeccionTest`.
+- [X] T019 [US2] En `common/ui/PantallaPrincipal.kt`, un botón en la fila del mapa, junto al de las patentes, que alterna entre las calles pintadas (`ic_calles`) y los puntos reales (`ic_puntos_reales`). Arranca en calles y no se recuerda.
+- [ ] T020 **Verificar** con las mismas salidas: pruebas y APK; compilar el iPhone; el usuario mira la pantalla principal cerca de casa en las dos vistas y el detalle de una salida.
 
 ---
 

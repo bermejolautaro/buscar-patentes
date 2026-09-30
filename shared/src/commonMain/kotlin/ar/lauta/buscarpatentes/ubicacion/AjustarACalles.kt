@@ -88,15 +88,6 @@ object AjustarACalles {
     private const val MINIMO_PUNTOS = 2
 
     /**
-     * El radio de búsqueda que se le pasa a cada punto, tomado de la precisión que el
-     * teléfono reportó. Mínimo 5 m porque un radio de cero no encuentra ninguna calle;
-     * máximo 30 m porque más que eso alcanza a la manzana de al lado y el servicio empieza a
-     * elegir entre calles que no son.
-     */
-    private const val RADIO_MINIMO_M = 5f
-    private const val RADIO_MAXIMO_M = 30f
-
-    /**
      * Intenta ajustar todas las salidas pendientes. Devuelve cuántas se ajustaron.
      *
      * No tira nunca: si algo falla, el recorrido se queda pendiente y se reintenta la próxima
@@ -124,18 +115,16 @@ object AjustarACalles {
      *
      * - **Sin red** en cualquier pedido: null, y la salida queda como estaba.
      * - **El servicio rechaza un tramo** (no contesta 200, o contesta algo que no se entiende):
-     *   ese tramo va con sus puntos medidos. Un tramo de dos puntos en una plaza no puede dejar
-     *   sin ajustar la salida entera.
+     *   ese tramo no pinta calles. Un tramo de dos puntos en una plaza no puede dejar sin ajustar
+     *   la salida entera.
      * - **Rechaza todos**: null. Es más probable que el servicio esté caído que no haya calles.
-     * - **Contesta y nada emparejó**: `2:` solo, que no se vuelve a pedir.
+     * - **Contesta y no hay ningún pedazo de calle**: el prefijo solo, que no se vuelve a pedir.
      */
     private suspend fun ajustar(puntos: List<PuntoDeTrayecto>): String? {
-        val tramos = mutableListOf<List<Pair<Double, Double>>>()
+        val pedazos = mutableListOf<List<Pair<Double, Double>>>()
         var respondio = false
-        var emparejo = false
         for (tramo in porTramoDeSenal(puntos)) {
             if (tramo.size < MINIMO_PUNTOS) continue
-            val medidos = tramo.map { it.latitud to it.longitud }
             // POST y no GET con el JSON en la query. Una salida de 647 puntos son 34 KB de
             // cuerpo, y metidos en la URL codificada dan 52 KB: el servidor cierra la conexión
             // sin contestar y el recorrido queda pendiente para siempre.
@@ -144,17 +133,12 @@ object AjustarACalles {
             } catch (e: Exception) {
                 return null
             }
-            val respuesta = texto?.let(::leerRespuesta)
-            if (respuesta == null) {
-                tramos += medidos
-                continue
-            }
+            val respuesta = texto?.let(::leerRespuesta) ?: continue
             respondio = true
-            emparejo = emparejo || respuesta.emparejados.any { it != null }
-            tramos += CaminoAjustado.armar(medidos, respuesta.forma, respuesta.aristas, respuesta.emparejados)
+            pedazos += CaminoAjustado.pedazos(respuesta.forma, respuesta.aristas)
         }
         if (!respondio) return null
-        return CaminoGuardado.escribir(if (emparejo) tramos else emptyList())
+        return CaminoGuardado.escribir(pedazos)
     }
 
     /** Los puntos cortados donde se cortó la señal, con el mismo umbral que el trazo crudo. */
@@ -166,14 +150,9 @@ object AjustarACalles {
     }
 
     /** Lo que se usa de una respuesta de `trace_attributes` (contrato A3 de la 007). */
-    internal class Respuesta(
-        val forma: List<Pair<Double, Double>>,
-        val aristas: List<IntRange>,
-        /** Por cada punto pedido, la arista donde emparejó, o null. `interpolated` cuenta. */
-        val emparejados: List<Int?>,
-    )
+    internal class Respuesta(val forma: List<Pair<Double, Double>>, val aristas: List<IntRange>)
 
-    /** Null si falta algo o no cierra: un índice fuera de la forma, o una arista que no existe. */
+    /** Null si falta algo o no cierra: un índice de una arista fuera de la forma. */
     internal fun leerRespuesta(texto: String): Respuesta? = try {
         val json = Json.parseToJsonElement(texto).jsonObject
         val forma = Polilinea.decodificar(json.getValue("shape").jsonPrimitive.content)
@@ -181,14 +160,8 @@ object AjustarACalles {
             val arista = it.jsonObject
             arista.getValue("begin_shape_index").jsonPrimitive.int..arista.getValue("end_shape_index").jsonPrimitive.int
         }
-        val emparejados = json.getValue("matched_points").jsonArray.map {
-            val punto = it.jsonObject
-            if (punto["type"]?.jsonPrimitive?.contentOrNull == "unmatched") null
-            else punto.getValue("edge_index").jsonPrimitive.int
-        }
         require(aristas.all { it.first in forma.indices && it.last in forma.indices })
-        require(emparejados.all { it == null || it in aristas.indices })
-        Respuesta(forma, aristas, emparejados)
+        Respuesta(forma, aristas)
     } catch (e: Exception) {
         null
     }
@@ -199,10 +172,12 @@ object AjustarACalles {
                 addJsonObject {
                     put("lat", it.latitud)
                     put("lon", it.longitud)
-                    // Cuánto se le cree a este punto. Sin esto el servicio busca calle con
-                    // su radio por defecto y pega con la misma confianza un punto de 5 m que
-                    // uno de 25, que es como termina eligiendo la paralela.
-                    put("radius", it.precisionMetros.coerceIn(RADIO_MINIMO_M, RADIO_MAXIMO_M))
+                    // Sin `radius`: el servicio busca la calle con su radio por defecto. La 003
+                    // le pasaba la precisión de cada punto, de 5 a 30 m (FR-036a), y caminando
+                    // por la vereda de una avenida ancha el eje de la calle queda más lejos que
+                    // eso: en las salidas reales un tercio de los puntos no emparejaba (202 de
+                    // 647), y el camino salía cortado en decenas de pedazos. Sin radio, 1 de 647
+                    // (D7 de la 007).
                 }
             }
         }

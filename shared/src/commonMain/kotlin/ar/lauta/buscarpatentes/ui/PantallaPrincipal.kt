@@ -53,6 +53,8 @@ import ar.lauta.buscarpatentes.data.EstadoDelJuego
 import ar.lauta.buscarpatentes.data.ModoMapa
 import ar.lauta.buscarpatentes.data.RegistroDeCaptura
 import ar.lauta.buscarpatentes.domain.Antiguedad
+import ar.lauta.buscarpatentes.domain.Escalon
+import ar.lauta.buscarpatentes.mapa.trazoDe
 import ar.lauta.buscarpatentes.domain.Candidato
 import ar.lauta.buscarpatentes.domain.Geo
 import ar.lauta.buscarpatentes.domain.Prioridad
@@ -76,6 +78,8 @@ import ar.lauta.buscarpatentes.recursos.Res
 import ar.lauta.buscarpatentes.respaldo.Vencimiento
 import ar.lauta.buscarpatentes.recursos.ic_ajustes
 import ar.lauta.buscarpatentes.recursos.ic_antiguedad
+import ar.lauta.buscarpatentes.recursos.ic_calles
+import ar.lauta.buscarpatentes.recursos.ic_puntos_reales
 import ar.lauta.buscarpatentes.recursos.ic_cobertura
 import ar.lauta.buscarpatentes.recursos.ic_patentes
 import ar.lauta.buscarpatentes.recursos.ic_patentes_ocultas
@@ -141,7 +145,16 @@ fun PantallaPrincipal(
 
     // FR-006a: el histórico completo de recorridos. Al retirarse la grilla, el trazo quedó
     // como la única respuesta a "¿por dónde ya anduve?".
-    var trazos by remember { mutableStateOf<List<Trazo>>(emptyList()) }
+    // Lo que hace falta para dibujar cada salida en las dos vistas, así cambiar de vista no
+    // vuelve a leer la base.
+    var caminos by remember { mutableStateOf<List<CaminoDeSalida>>(emptyList()) }
+
+    // FR-009 de la 007: los puntos que midió el teléfono en lugar de las calles pintadas. No se
+    // recuerda: al volver a abrir, el mapa pinta calles otra vez.
+    var puntosReales by remember { mutableStateOf(false) }
+    val trazos = remember(caminos, puntosReales) {
+        caminos.map { trazoDe(it.id, it.medidos, it.guardado, it.escalon, puntosReales) }
+    }
 
     // FR-002 y FR-003: cuál de las tres preguntas contesta el mapa. Arranca en cobertura y se
     // pisa con lo guardado apenas la base contesta, así que el primer cuadro nunca muestra un
@@ -328,14 +341,11 @@ fun PantallaPrincipal(
         // una prolijidad. MapLibre dibuja las features en el orden de la fuente, así que la
         // salida reciente queda encima de la vieja donde se pisan, sin calcular una sola
         // intersección de geometría.
-        trazos = salidas.sortedBy { it.iniciadoEn }.map { salida ->
-            // FR-031: el camino ajustado a las calles cuando existe, el crudo cuando no.
-            // Nunca los dos: serían dos líneas casi iguales encimadas. Un camino de antes de la
-            // 007 cuenta como "no existe" hasta que se reajuste (FR-004 de la 007).
-            Trazo(
-                recorridoId = salida.id,
-                tramos = CaminoGuardado.leer(salida.caminoAjustado)
-                    .dibujo(puntosPorRecorrido[salida.id].orEmpty().map { it.latitud to it.longitud }),
+        caminos = salidas.sortedBy { it.iniciadoEn }.map { salida ->
+            CaminoDeSalida(
+                id = salida.id,
+                medidos = puntosPorRecorrido[salida.id].orEmpty().map { it.latitud to it.longitud },
+                guardado = CaminoGuardado.leer(salida.caminoAjustado),
                 escalon = Antiguedad.escalon(salida.finalizadoEn, salida.iniciadoEn, ahora),
             )
         }
@@ -362,7 +372,7 @@ fun PantallaPrincipal(
     LaunchedEffect(puntosGrabados, recorrido) {
         val id = recorrido ?: return@LaunchedEffect
         val puntos = contenedor.puntos.deRecorrido(id).map { it.latitud to it.longitud }
-        trazos = trazos.map { if (it.recorridoId == id) it.copy(tramos = Geo.tramos(puntos)) else it }
+        caminos = caminos.map { if (it.id == id) it.copy(medidos = puntos) else it }
     }
 
     // FR-032 y FR-035: el standby del ajuste a calles, **en su propio efecto**.
@@ -623,6 +633,20 @@ fun PantallaPrincipal(
                             },
                         )
                     }
+                    // FR-009 de la 007: las calles pintadas o los puntos que midió el teléfono.
+                    // Muestra lo que se está viendo, como el de las patentes.
+                    FilledTonalIconButton(onClick = { puntosReales = !puntosReales }) {
+                        Icon(
+                            painter = painterResource(
+                                if (puntosReales) Res.drawable.ic_puntos_reales else Res.drawable.ic_calles,
+                            ),
+                            contentDescription = if (puntosReales) {
+                                "Ver las calles recorridas"
+                            } else {
+                                "Ver los puntos que midió el teléfono"
+                            },
+                        )
+                    }
                     // Acá estaba el botón de la pantalla de búsqueda. Se fue en la 005 (FR-013):
                     // su trabajo lo hace la barra de arriba, y el campo de número gana su ancho.
                     FilledTonalIconButton(onClick = onRecorridos) {
@@ -824,3 +848,11 @@ private suspend fun SnackbarHostState.mostrar(texto: String) {
     currentSnackbarData?.dismiss()
     showSnackbar(texto)
 }
+
+/** Una salida del mapa principal, con lo necesario para dibujarla en las dos vistas. */
+private data class CaminoDeSalida(
+    val id: Long,
+    val medidos: List<Pair<Double, Double>>,
+    val guardado: CaminoGuardado,
+    val escalon: Escalon,
+)

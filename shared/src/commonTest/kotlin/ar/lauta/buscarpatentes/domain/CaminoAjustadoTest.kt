@@ -17,6 +17,12 @@ class CaminoAjustadoTest {
     }
 
     @Test
+    fun `un camino con el criterio anterior de la 007 se lee pendiente para que se reajuste`() {
+        // Los `2:` llevaban los puntos medidos entre pedazos de calle: se vuelven a ajustar.
+        assertEquals(CaminoGuardado.Pendiente, CaminoGuardado.leer("2:" + Polilinea.codificar(tramoA)))
+    }
+
+    @Test
     fun `un camino de antes de la 007 se lee pendiente para que se reajuste`() {
         val unaPierna = Polilinea.codificar(tramoA)
         val dosPiernas = Polilinea.codificar(tramoA) + Polilinea.SEPARADOR_PIERNAS + Polilinea.codificar(tramoB)
@@ -26,8 +32,8 @@ class CaminoAjustadoTest {
 
     @Test
     fun `el prefijo solo es que no se pudo`() {
-        assertEquals(CaminoGuardado.NoSePudo, CaminoGuardado.leer("2:"))
-        assertEquals("2:", CaminoGuardado.escribir(emptyList()))
+        assertEquals(CaminoGuardado.NoSePudo, CaminoGuardado.leer("3:"))
+        assertEquals("3:", CaminoGuardado.escribir(emptyList()))
     }
 
     @Test
@@ -42,63 +48,30 @@ class CaminoAjustadoTest {
         assertEquals(CaminoGuardado.Ajustado(listOf(tramoA)), CaminoGuardado.leer(guardado))
     }
 
-    // --- El armado (contrato A4) ---
-    //
-    // Posiciones de juguete: lo que importa es el orden en que salen, no dónde caen. `M` son los
-    // puntos medidos y `F`, la forma que devolvió el servicio.
+    // --- Los pedazos de calle (contrato A4) ---
 
-    private val m = List(6) { -34.0 - it * 0.001 to -58.0 }
     private val f = List(8) { -35.0 - it * 0.001 to -59.0 }
 
     @Test
-    fun `dos pedazos se unen por los puntos medidos del medio y no por una recta`() {
-        // Aristas 0..2 y 3..5: la segunda no empieza donde terminó la primera, así que son dos
-        // pedazos. M2 no emparejó.
-        val armado = CaminoAjustado.armar(
-            medidos = m.take(5),
-            forma = f.take(6),
-            aristas = listOf(0..2, 3..5),
-            emparejados = listOf(0, 0, null, 1, 1),
-        )
-        assertEquals(listOf(f[0], f[1], f[2], m[1], m[2], m[3], f[3], f[4], f[5]), armado)
+    fun `donde una arista no sigue a la anterior hay dos pedazos y ninguna recta entre ellos`() {
+        // Aristas 0..2 y 3..5: la segunda no empieza donde terminó la primera. La forma trae los
+        // dos pedazos pegados, y la recta de f[2] a f[3] era la diagonal.
+        val pedazos = CaminoAjustado.pedazos(f.take(6), listOf(0..2, 3..5))
+        assertEquals(listOf(f.subList(0, 3), f.subList(3, 6)), pedazos)
     }
 
     @Test
-    fun `sin puntos sueltos en el medio el empalme son los dos medidos de cada lado`() {
-        val armado = CaminoAjustado.armar(
-            medidos = m.take(4),
-            forma = f.take(6),
-            aristas = listOf(0..2, 3..5),
-            emparejados = listOf(0, 0, 1, 1),
-        )
-        assertEquals(listOf(f[0], f[1], f[2], m[1], m[2], f[3], f[4], f[5]), armado)
+    fun `aristas contiguas son un solo pedazo`() {
+        assertEquals(listOf(f.take(5)), CaminoAjustado.pedazos(f.take(5), listOf(0..2, 2..3, 3..4)))
     }
 
     @Test
-    fun `lo que no emparejo al principio y al final no desaparece`() {
-        val armado = CaminoAjustado.armar(
-            medidos = m.take(5),
-            forma = f.take(3),
-            aristas = listOf(0..1, 1..2),
-            emparejados = listOf(null, 0, 1, null, null),
-        )
-        assertEquals(listOf(m[0], m[1], f[0], f[1], f[2], m[2], m[3], m[4]), armado)
+    fun `sin aristas no hay ningun pedazo`() {
+        assertEquals(emptyList(), CaminoAjustado.pedazos(emptyList(), emptyList()))
     }
 
     @Test
-    fun `sin nada emparejado son los puntos medidos`() {
-        val medidos = m.take(3)
-        assertEquals(medidos, CaminoAjustado.armar(medidos, forma = emptyList(), aristas = emptyList(), emparejados = listOf(null, null, null)))
-    }
-
-    @Test
-    fun `aristas contiguas son un solo pedazo aunque haya varios puntos por arista`() {
-        val armado = CaminoAjustado.armar(
-            medidos = m.take(3),
-            forma = f.take(5),
-            aristas = listOf(0..2, 2..4),
-            emparejados = listOf(0, 0, 1),
-        )
-        assertEquals(f.take(5), armado)
+    fun `un pedazo de una sola posicion no es una calle`() {
+        assertEquals(listOf(f.subList(0, 3)), CaminoAjustado.pedazos(f.take(5), listOf(0..2, 4..4)))
     }
 }
