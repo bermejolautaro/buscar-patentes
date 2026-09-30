@@ -287,7 +287,7 @@ la verifica el quickstart.
 ## Phase 6: Polish & Cross-Cutting Concerns
 
 - [ ] T029 [P] Correr `./gradlew :shared:testAndroidHostTest` y `:shared:compileKotlinIosSimulatorArm64`. Todo verde, sin warnings nuevos.
-- [ ] T030 [P] Actualizar `README.md`:
+- [X] T030 [P] Actualizar `README.md`:
   - la tabla de pruebas, con `BordeTest`, `CuadrasTest`, `CoberturaDeZonaTest` y `MigracionTest`;
   - una sección corta "Zonas": qué hace, que las cuadras salen de OpenStreetMap vía Overpass una vez por zona, y dónde vive la URL;
   - la lista de specs, con la 008.
