@@ -119,11 +119,15 @@ fun PantallaZonas(onVolver: () -> Unit) {
                 onCrear = { nombre, esquinas, desde ->
                     alcance.launch {
                         val id = Zonas.crear(nombre, esquinas, desde, ahora())
-                        BuscarCuadras.pendientes()
-                        Zonas.revisar()
+                        // La zona se abre enseguida, diciendo "Buscando las calles", y no después
+                        // de la búsqueda: con mala señal puede tardar los 20 s de espera.
                         dibujando = false
                         abierta = id
                         recarga++
+                        if (BuscarCuadras.pendientes() > 0) {
+                            Zonas.revisar()
+                            recarga++
+                        }
                     }
                 },
             )
