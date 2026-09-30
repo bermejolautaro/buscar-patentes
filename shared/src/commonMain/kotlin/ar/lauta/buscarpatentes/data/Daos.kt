@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import ar.lauta.buscarpatentes.domain.CaminoGuardado
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -156,11 +157,13 @@ abstract class RecorridoDao {
      *
      * Desde la 007 tambien entra un camino guardado con el criterio anterior, que no empieza con
      * `CaminoGuardado.PREFIJO`: vuelve a la cola solo, sin una migracion ni una marca aparte
-     * (D3 de la 007). Un `2:` solo, lo que el servicio no pudo emparejar, no vuelve.
+     * (D3 de la 007). El prefijo solo, lo que el servicio no pudo emparejar, no vuelve.
      */
     @Query(
         "SELECT * FROM recorrido WHERE estado = 'TERMINADO' " +
-            "AND (caminoAjustado IS NULL OR caminoAjustado NOT LIKE '2:%')",
+            // La constante y no el texto: cuando el prefijo cambió de `2:` a `3:`, la consulta
+            // quedó con el viejo y los `2:` nunca volvieron a la cola.
+            "AND (caminoAjustado IS NULL OR caminoAjustado NOT LIKE '" + CaminoGuardado.PREFIJO + "%')",
     )
     abstract suspend fun sinAjustar(): List<Recorrido>
 
