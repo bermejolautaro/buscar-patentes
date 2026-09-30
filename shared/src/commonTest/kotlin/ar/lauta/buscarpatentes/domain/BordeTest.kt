@@ -31,6 +31,18 @@ class BordeTest {
     )
 
     @Test
+    fun `el tramo tocado es el más cercano, y el último cierra contra la primera`() {
+        val esquinas = listOf(Punto(0.0, 0.0), Punto(100.0, 0.0), Punto(100.0, 100.0), Punto(0.0, 100.0))
+        assertEquals(0, Borde.tramoTocado(Punto(50.0, 10.0), esquinas, 20.0))
+        assertEquals(1, Borde.tramoTocado(Punto(95.0, 50.0), esquinas, 20.0))
+        assertEquals(3, Borde.tramoTocado(Punto(-5.0, 50.0), esquinas, 20.0))
+        assertNull(Borde.tramoTocado(Punto(50.0, 50.0), esquinas, 20.0))
+        // Con dos esquinas hay un solo tramo, y con una ninguno.
+        assertEquals(0, Borde.tramoTocado(Punto(50.0, 5.0), esquinas.take(2), 20.0))
+        assertNull(Borde.tramoTocado(Punto(0.0, 0.0), esquinas.take(1), 20.0))
+    }
+
+    @Test
     fun `con dos esquinas faltan esquinas`() {
         assertEquals(Borde.FALTAN_ESQUINAS, Borde.problema(cuadrado.take(2)))
         assertEquals(Borde.FALTAN_ESQUINAS, Borde.problema(emptyList()))

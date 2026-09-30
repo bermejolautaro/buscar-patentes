@@ -3,6 +3,7 @@ package ar.lauta.buscarpatentes.mapa
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,13 +24,17 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import ar.lauta.buscarpatentes.data.ModoMapa
+import ar.lauta.buscarpatentes.domain.Borde
 import ar.lauta.buscarpatentes.domain.Escalon
+import ar.lauta.buscarpatentes.domain.Punto
 import ar.lauta.buscarpatentes.plataforma.Carpetas
 import ar.lauta.buscarpatentes.plataforma.Permiso
 import ar.lauta.buscarpatentes.plataforma.tienePermiso
@@ -282,6 +287,10 @@ fun MapaDeFondo(
      * arrastre, que es lo que deja deshacerlo de una vez.
      */
     onMoverEsquina: (indice: Int, latitud: Double, longitud: Double, empieza: Boolean) -> Unit = { _, _, _, _ -> },
+    /** Un toque sobre el tramo que sale de la esquina [indice]: la esquina nueva va después de ella. */
+    onPartirTramo: (indice: Int, latitud: Double, longitud: Double) -> Unit = { _, _, _ -> },
+    /** Una esquina apretada un rato: se borra. */
+    onBorrarEsquina: (indice: Int) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val alcance = rememberCoroutineScope()
@@ -295,6 +304,9 @@ fun MapaDeFondo(
     val coleccionHuecos = remember(trazos) { coleccionHuecos(trazos) }
     val coleccionBordes = remember(zonas) { coleccionBordes(zonas) }
     val coleccionCuadras = remember(zonas) { coleccionCuadras(zonas) }
+    // El toque llega en un callback que el mapa arma una vez: tiene que leer lo último.
+    val esquinasActuales by rememberUpdatedState(esquinasMovibles)
+    val alPartir by rememberUpdatedState(onPartirTramo)
 
     val pines = remember {
         Pines(
@@ -407,13 +419,18 @@ fun MapaDeFondo(
             interactions = MapInteractions(MapInteractions.Standard) {
                 camera { rotate { enabled = false } }
                 // D9 de la 008: el toque que ninguna capa consumió —ni un pin ni una cuadra— es una
-                // esquina de la zona que se está dibujando.
+                // esquina de la zona que se está dibujando. Sobre un tramo del borde, lo parte.
                 if (onTocarMapa != null) {
                     callbacks {
                         click {
                             onUnhandled { evento ->
                                 val posicion = evento.position ?: return@onUnhandled ClickResult.Pass
-                                onTocarMapa(posicion.latitude, posicion.longitude)
+                                val tramo = mapa.tramoTocado(esquinasActuales, posicion)
+                                if (tramo != null) {
+                                    alPartir(tramo, posicion.latitude, posicion.longitude)
+                                } else {
+                                    onTocarMapa(posicion.latitude, posicion.longitude)
+                                }
                                 ClickResult.Consume
                             }
                         }
@@ -424,13 +441,24 @@ fun MapaDeFondo(
             // la única que habla.
             overlay = {},
         )
-        EsquinasMovibles(mapa, esquinasMovibles, onMoverEsquina)
+        EsquinasMovibles(mapa, esquinasMovibles, onMoverEsquina, onBorrarEsquina)
     }
 }
 
 /** El punto de una esquina, y el lugar alrededor que agarra el dedo. */
 private val PUNTO_ESQUINA = 20.dp
 private val TOQUE_ESQUINA = 44.dp
+
+/** Hasta dónde de un tramo del borde un toque lo parte. La mitad del toque de una esquina. */
+private val TOQUE_TRAMO = 22.dp
+
+/** El tramo de [esquinas] que tocó el dedo en [toque], medido en la pantalla (FR-001 de la 008). */
+private fun MapState.tramoTocado(esquinas: List<Pair<Double, Double>>, toque: Position): Int? {
+    fun enPantalla(p: Position) = screenLocationFromPosition(p)?.let { Punto(it.x.value.toDouble(), it.y.value.toDouble()) }
+    val dedo = enPantalla(toque) ?: return null
+    val puntos = esquinas.map { (lat, lon) -> enPantalla(Position(lon, lat)) ?: return null }
+    return Borde.tramoTocado(dedo, puntos, TOQUE_TRAMO.value.toDouble())
+}
 
 /**
  * Las esquinas de la zona que se dibuja, encima del mapa (FR-001 de la 008). Van en Compose y no en
@@ -442,10 +470,13 @@ private fun EsquinasMovibles(
     mapa: MapState,
     esquinas: List<Pair<Double, Double>>,
     onMover: (indice: Int, latitud: Double, longitud: Double, empieza: Boolean) -> Unit,
+    onBorrar: (indice: Int) -> Unit,
 ) {
     // Leer la cámara acá recompone las esquinas cada vez que se mueve.
     mapa.cameraPosition
     val alMover by rememberUpdatedState(onMover)
+    val alBorrar by rememberUpdatedState(onBorrar)
+    val vibrar = LocalHapticFeedback.current
     val color = remember { colorDe(ColoresDeMapa.BORDE) }
     esquinas.forEachIndexed { i, (lat, lon) ->
         // Null mientras el mapa no está listo.
@@ -456,6 +487,14 @@ private fun EsquinasMovibles(
                 Modifier
                     .offset(centro.x - TOQUE_ESQUINA / 2, centro.y - TOQUE_ESQUINA / 2)
                     .size(TOQUE_ESQUINA)
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onLongPress = {
+                                vibrar.performHapticFeedback(HapticFeedbackType.LongPress)
+                                alBorrar(i)
+                            },
+                        )
+                    }
                     .pointerInput(Unit) {
                         var dedo = DpOffset.Zero
                         var empieza = true

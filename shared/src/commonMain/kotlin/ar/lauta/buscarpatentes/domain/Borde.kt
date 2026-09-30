@@ -62,6 +62,22 @@ object Borde {
 
     fun leer(texto: String): List<Pair<Double, Double>> = Polilinea.decodificar(texto)
 
+    /**
+     * El tramo del borde que pasa a [tolerancia] o menos de [toque], el más cercano, o null. Todo en
+     * las mismas unidades, las de la pantalla. El tramo i va de la esquina i a la siguiente; con tres
+     * esquinas o más, el último cierra contra la primera. Partirlo es poner la esquina nueva en el
+     * lugar i + 1 (FR-001).
+     */
+    internal fun tramoTocado(toque: Punto, esquinas: List<Punto>, tolerancia: Double): Int? {
+        if (esquinas.size < 2) return null
+        val tramos = if (esquinas.size >= 3) esquinas.size else 1
+        return (0 until tramos)
+            .map { i -> i to distanciaASegmento(toque, esquinas[i], esquinas[(i + 1) % esquinas.size]) }
+            .filter { (_, d) -> d <= tolerancia }
+            .minByOrNull { (_, d) -> d }
+            ?.first
+    }
+
     /** Si algún par de lados que no son vecinos se toca. */
     private fun seCruza(esquinas: List<Pair<Double, Double>>): Boolean {
         val n = esquinas.size

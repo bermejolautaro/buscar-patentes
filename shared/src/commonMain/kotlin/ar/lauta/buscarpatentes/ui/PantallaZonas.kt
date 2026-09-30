@@ -416,7 +416,8 @@ private fun dibujadas(z: ZonaConCuenta): List<CuadraDibujada> {
 
 /**
  * Dibujar una zona tocando sus esquinas, o editar el borde de una que no terminó (FR-001 a FR-003,
- * FR-022). Cada esquina se arrastra para moverla. Con Listo pide el nombre y desde cuándo cuenta.
+ * FR-022). Cada esquina se arrastra para moverla y se borra apretándola un rato; un toque sobre un
+ * tramo del borde lo parte con una esquina nueva. Con Listo pide el nombre y desde cuándo cuenta.
  */
 @Composable
 private fun DibujarZona(
@@ -434,11 +435,16 @@ private fun DibujarZona(
     val estadoDelMapa = remember { EstadoDelMapa() }
     val problema = Borde.problema(esquinas)
 
+    fun cambiar(nuevas: List<Pair<Double, Double>>) {
+        antes = antes.plusElement(esquinas)
+        esquinas = nuevas
+    }
+
     BarraSuperior(if (zona == null) "Nueva zona" else "Editar zona", onCancelar)
     Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         Text(
-            "Tocá las esquinas de la zona, una por una, y arrastralas para moverlas. Entre toque y " +
-                "toque podés mover el mapa.",
+            "Tocá las esquinas de la zona, una por una, y arrastralas para moverlas. Tocá un lado " +
+                "para partirlo, y mantené apretada una esquina para borrarla.",
             fontSize = 13.sp,
         )
         MapaDeFondo(
@@ -446,15 +452,14 @@ private fun DibujarZona(
             estado = estadoDelMapa,
             // Una zona que se edita se ve entera; una nueva arranca donde está el jugador.
             seguirAlJugador = zona == null,
-            onTocarMapa = { lat, lon ->
-                antes = antes.plusElement(esquinas)
-                esquinas = esquinas + (lat to lon)
-            },
+            onTocarMapa = { lat, lon -> cambiar(esquinas + (lat to lon)) },
             esquinasMovibles = esquinas,
             onMoverEsquina = { i, lat, lon, empieza ->
                 if (empieza) antes = antes.plusElement(esquinas)
                 esquinas = esquinas.toMutableList().also { it[i] = lat to lon }
             },
+            onPartirTramo = { i, lat, lon -> cambiar(esquinas.toMutableList().also { it.add(i + 1, lat to lon) }) },
+            onBorrarEsquina = { i -> cambiar(esquinas.filterIndexed { j, _ -> j != i }) },
             modifier = Modifier.fillMaxWidth().weight(1f).padding(vertical = 8.dp),
         )
         Row(

@@ -303,6 +303,10 @@ la verifica el quickstart.
   - `Zonas.editar` y `ZonaDao.editar`: con otro borde la zona vuelve a `BUSCANDO`. `activar` reemplaza las cuadras, y `BuscarCuadras` pasa lo quitado a las nuevas con `Cuadras.misma`.
   - `BuscarCuadras.pendientes` descarta lo encontrado si mientras tanto el borde cambió o la zona se borró.
   - Prueba en `CuadrasTest`.
+- [X] T036 [US1] Lo que pidió después de T034 (FR-001): partir un tramo y borrar una esquina.
+  - `Borde.tramoTocado`: el tramo a 22 dp o menos del toque, medido en la pantalla. `MapaDeFondo` lo parte en vez de agregar la esquina al final.
+  - Una esquina apretada un rato se borra, con vibración. Las dos cosas se deshacen con Deshacer.
+  - Prueba en `BordeTest`.
 - [ ] T035 El jugador prueba en el teléfono el [quickstart](./quickstart.md) §3b.
 - [ ] T033 Antes de cada push, revisar el diff: ni coordenadas de la zona de juego, ni nombres de calles o barrios de la lista de "Nunca subir", ni capturas del mapa, ni respaldos. La franja de T001 es del centro y es la única geografía que se sube.
 

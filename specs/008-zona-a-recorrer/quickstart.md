@@ -53,12 +53,15 @@ cruza.
 
 1. En el dibujo de una zona nueva, arrastrar una esquina: el mapa no se mueve y el borde la
    sigue. **Deshacer** la devuelve a donde estaba; otro **Deshacer** saca la última esquina.
-2. En una zona activa con una cuadra quitada, **Editar** → agrandar el borde arrastrando dos
+2. Tocar un lado del borde: aparece una esquina nueva en ese lugar, entre las dos de ese lado. Un
+   toque lejos del borde agrega la esquina al final, como antes.
+3. Mantener apretada una esquina: vibra y se borra. **Deshacer** la devuelve.
+4. En una zona activa con una cuadra quitada, **Editar** → agrandar el borde arrastrando dos
    esquinas → **Listo**. El diálogo avisa que vuelve a buscar las calles → **Guardar**.
-3. La zona dice "Buscando las calles…" y después vuelve con las cuadras nuevas. La quitada sigue
+5. La zona dice "Buscando las calles…" y después vuelve con las cuadras nuevas. La quitada sigue
    quitada.
-4. **Editar** solo el nombre: no vuelve a buscar.
-5. Una zona terminada no tiene **Editar**.
+6. **Editar** solo el nombre: no vuelve a buscar.
+7. Una zona terminada no tiene **Editar**.
 
 ## 4. Caminar (US1, SC-002)
 

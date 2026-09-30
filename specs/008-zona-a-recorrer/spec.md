@@ -41,7 +41,8 @@ para una zona: una cuadra está recorrida si el camino pintado la recorre.
 
 Después de la primera prueba en el teléfono, el jugador pidió tres cosas: esquinas más grandes,
 poder arrastrarlas y poder editar una zona ya creada. Entran en el FR-001 y el FR-022, y el cambio
-de borde sale de Out of Scope.
+de borde sale de Out of Scope. Después pidió dos más para el dibujo: partir un tramo tocándolo y
+borrar una esquina. Entran en el FR-001.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -178,8 +179,9 @@ queda en la lista con su porcentaje y sus días, y que una salida posterior ya n
 - **FR-001**: El jugador MUST poder crear una zona tocando sus esquinas sobre el mapa, una por una;
   la app las une con rectas. Hacen falta tres o más esquinas y bordes que no se crucen. Entre toque y
   toque el jugador MUST poder mover el mapa y cambiar el zoom. Cada esquina MUST verse grande y
-  poder arrastrarse con el dedo sin mover el mapa. El jugador MUST poder deshacer los cambios de a
-  uno, una esquina nueva o un arrastre, antes de confirmar.
+  poder arrastrarse con el dedo sin mover el mapa, y MUST poder borrarse apretándola un rato. Un
+  toque sobre un tramo del borde MUST partirlo con una esquina nueva en ese lugar. El jugador MUST
+  poder deshacer los cambios de a uno antes de confirmar.
 - **FR-002**: Cada zona MUST tener un nombre, que el jugador puede escribir; si no escribe ninguno,
   la app le pone uno con la fecha de creación.
 - **FR-003**: Cada zona MUST tener un "desde cuándo cuenta": un día que arranca en el de la creación
