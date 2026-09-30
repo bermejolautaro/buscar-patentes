@@ -56,7 +56,7 @@ import ar.lauta.buscarpatentes.domain.Antiguedad
 import ar.lauta.buscarpatentes.domain.Candidato
 import ar.lauta.buscarpatentes.domain.Geo
 import ar.lauta.buscarpatentes.domain.Prioridad
-import ar.lauta.buscarpatentes.domain.Polilinea
+import ar.lauta.buscarpatentes.domain.CaminoGuardado
 import ar.lauta.buscarpatentes.domain.Probabilidad
 import ar.lauta.buscarpatentes.mapa.EstadoDelMapa
 import ar.lauta.buscarpatentes.mapa.MapaDeFondo
@@ -330,14 +330,13 @@ fun PantallaPrincipal(
         // intersección de geometría.
         trazos = salidas.sortedBy { it.iniciadoEn }.map { salida ->
             // FR-031: el camino ajustado a las calles cuando existe, el crudo cuando no.
-            // Nunca los dos: serían dos líneas casi iguales encimadas.
-            val ajustado = salida.caminoAjustado?.let { Polilinea.decodificar(it) }
+            // Nunca los dos: serían dos líneas casi iguales encimadas. Un camino de antes de la
+            // 007 cuenta como "no existe" hasta que se reajuste (FR-004 de la 007).
             Trazo(
                 recorridoId = salida.id,
-                puntos = ajustado?.takeIf { it.isNotEmpty() }
-                    ?: puntosPorRecorrido[salida.id].orEmpty().map { it.latitud to it.longitud },
+                tramos = CaminoGuardado.leer(salida.caminoAjustado)
+                    .dibujo(puntosPorRecorrido[salida.id].orEmpty().map { it.latitud to it.longitud }),
                 escalon = Antiguedad.escalon(salida.finalizadoEn, salida.iniciadoEn, ahora),
-                ajustado = ajustado?.isNotEmpty() == true,
             )
         }
     }
@@ -363,7 +362,7 @@ fun PantallaPrincipal(
     LaunchedEffect(puntosGrabados, recorrido) {
         val id = recorrido ?: return@LaunchedEffect
         val puntos = contenedor.puntos.deRecorrido(id).map { it.latitud to it.longitud }
-        trazos = trazos.map { if (it.recorridoId == id) it.copy(puntos = puntos) else it }
+        trazos = trazos.map { if (it.recorridoId == id) it.copy(tramos = Geo.tramos(puntos)) else it }
     }
 
     // FR-032 y FR-035: el standby del ajuste a calles, **en su propio efecto**.

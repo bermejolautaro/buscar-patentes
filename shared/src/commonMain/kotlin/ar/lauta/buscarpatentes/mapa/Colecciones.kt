@@ -65,19 +65,17 @@ data class Marcador(
  */
 data class Trazo(
     val recorridoId: Long,
-    /** En orden. Cada par es latitud y longitud. */
-    val puntos: List<Pair<Double, Double>>,
+
+    /**
+     * Cada tramo es una línea continua, y entre uno y el siguiente va un hueco punteado. Los
+     * decide quien arma el trazo, con `CaminoGuardado.dibujo`: el camino ajustado o los puntos
+     * medidos, cortados donde se cortó la señal. Esta capa los dibuja igual vengan de donde
+     * vengan (D4 de la 007).
+     */
+    val tramos: List<List<Pair<Double, Double>>>,
 
     /** Hace cuánto se caminó. Solo se dibuja en [ModoMapa.ANTIGUEDAD]. */
     val escalon: Escalon,
-
-    /**
-     * True cuando estos puntos son el camino ajustado a las calles (FR-031).
-     *
-     * Un camino ajustado ya viene continuo y pegado al grafo de calles, así que **no se corta
-     * ni se puntea**: el servicio ya contestó qué pasó entre dos posiciones lejanas.
-     */
-    val ajustado: Boolean = false,
 )
 
 internal typealias Coleccion = FeatureCollection<Geometry, JsonObject>
@@ -118,7 +116,7 @@ private fun linea(puntos: List<Pair<Double, Double>>) =
  */
 internal fun coleccionTrazos(trazos: List<Trazo>): Coleccion = FeatureCollection(
     trazos.flatMap { trazo ->
-        tramosDe(trazo)
+        trazo.tramos
             .filter { it.size >= 2 }
             .map { tramo ->
                 Feature<Geometry, JsonObject>(
@@ -138,7 +136,7 @@ internal fun coleccionTrazos(trazos: List<Trazo>): Coleccion = FeatureCollection
  */
 internal fun coleccionHuecos(trazos: List<Trazo>): Coleccion = FeatureCollection(
     trazos.flatMap { trazo ->
-        Geo.huecos(tramosDe(trazo)).map { (desde, hasta) ->
+        Geo.huecos(trazo.tramos).map { (desde, hasta) ->
             Feature<Geometry, JsonObject>(
                 linea(listOf(desde, hasta)),
                 buildJsonObject { put(PROP_ESCALON, trazo.escalon.name) },
@@ -146,15 +144,6 @@ internal fun coleccionHuecos(trazos: List<Trazo>): Coleccion = FeatureCollection
         }
     },
 )
-
-/**
- * Los tramos de un trazo: uno solo si viene ajustado, cortados por salto si viene crudo.
- *
- * Un camino ajustado no se corta porque no tiene nada que ocultar: el servicio ya resolvió
- * por dónde se fue entre dos posiciones lejanas, siguiendo calles.
- */
-private fun tramosDe(trazo: Trazo): List<List<Pair<Double, Double>>> =
-    if (trazo.ajustado) listOf(trazo.puntos) else Geo.tramos(trazo.puntos)
 
 internal fun coleccion(marcadores: List<Marcador>): Coleccion = FeatureCollection(
     marcadores.map { featureDe(it, it.latitud, it.longitud) },

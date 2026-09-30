@@ -2,6 +2,7 @@ package ar.lauta.buscarpatentes.mapa
 
 import ar.lauta.buscarpatentes.domain.Dibujo
 import ar.lauta.buscarpatentes.domain.Escalon
+import ar.lauta.buscarpatentes.domain.Geo
 import ar.lauta.buscarpatentes.domain.Probabilidad
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -138,8 +139,8 @@ class ColeccionTrazosTest {
     @Test
     fun `un LineString por recorrido no uno solo con todos los puntos`() {
         val trazos = listOf(
-            Trazo(recorridoId = 1, puntos = caminata, escalon = Escalon.RECIENTE),
-            Trazo(recorridoId = 2, puntos = caminata, escalon = Escalon.VIEJO),
+            Trazo(recorridoId = 1, tramos = Geo.tramos(caminata), escalon = Escalon.RECIENTE),
+            Trazo(recorridoId = 2, tramos = Geo.tramos(caminata), escalon = Escalon.VIEJO),
         )
 
         // Uno solo cosería el final de una salida con el principio de la siguiente.
@@ -148,7 +149,7 @@ class ColeccionTrazosTest {
 
     @Test
     fun `orden GeoJSON longitud primero`() {
-        val puntos = coordenadas(coleccionTrazos(listOf(Trazo(1, caminata, escalon = Escalon.VIEJO))), 0)
+        val puntos = coordenadas(coleccionTrazos(listOf(Trazo(1, Geo.tramos(caminata), escalon = Escalon.VIEJO))), 0)
 
         // Invertirlo pondría el recorrido en el mar, que es exactamente el bug que este
         // archivo existe para atajar.
@@ -159,8 +160,8 @@ class ColeccionTrazosTest {
     @Test
     fun `el escalon de antiguedad viaja en el feature`() {
         val trazos = listOf(
-            Trazo(1, caminata, escalon = Escalon.RECIENTE),
-            Trazo(2, caminata, escalon = Escalon.VIEJO),
+            Trazo(1, Geo.tramos(caminata), escalon = Escalon.RECIENTE),
+            Trazo(2, Geo.tramos(caminata), escalon = Escalon.VIEJO),
         )
         val features = coleccionTrazos(trazos).features
 
@@ -174,9 +175,9 @@ class ColeccionTrazosTest {
         // nueva, y MapLibre dibuja en ese orden, así que la reciente queda encima donde se
         // superponen (FR-013).
         val trazos = listOf(
-            Trazo(1, caminata, escalon = Escalon.VIEJO),
-            Trazo(2, caminata, escalon = Escalon.MEDIO),
-            Trazo(3, caminata, escalon = Escalon.RECIENTE),
+            Trazo(1, Geo.tramos(caminata), escalon = Escalon.VIEJO),
+            Trazo(2, Geo.tramos(caminata), escalon = Escalon.MEDIO),
+            Trazo(3, Geo.tramos(caminata), escalon = Escalon.RECIENTE),
         )
         val features = coleccionTrazos(trazos).features
 
@@ -185,7 +186,7 @@ class ColeccionTrazosTest {
 
     @Test
     fun `un corte parte el recorrido en dos features y deja un hueco`() {
-        val trazos = listOf(Trazo(1, conCorte, escalon = Escalon.RECIENTE))
+        val trazos = listOf(Trazo(1, Geo.tramos(conCorte), escalon = Escalon.RECIENTE))
 
         assertEquals(2, coleccionTrazos(trazos).features.size)
         assertEquals(2, coordenadas(coleccionTrazos(trazos), 0).size)
@@ -194,7 +195,7 @@ class ColeccionTrazosTest {
 
     @Test
     fun `el hueco va del final de un tramo al principio del siguiente`() {
-        val hueco = coordenadas(coleccionHuecos(listOf(Trazo(1, conCorte, escalon = Escalon.VIEJO))), 0)
+        val hueco = coordenadas(coleccionHuecos(listOf(Trazo(1, Geo.tramos(conCorte), escalon = Escalon.VIEJO))), 0)
 
         assertEquals(2, hueco.size)
         assertEquals(-34.6037, hueco[0].latitude, 0.00001)
@@ -203,30 +204,31 @@ class ColeccionTrazosTest {
 
     @Test
     fun `un recorrido continuo no deja ningun hueco`() {
-        assertEquals(0, coleccionHuecos(listOf(Trazo(1, caminata, escalon = Escalon.VIEJO))).features.size)
+        assertEquals(0, coleccionHuecos(listOf(Trazo(1, Geo.tramos(caminata), escalon = Escalon.VIEJO))).features.size)
     }
 
     @Test
     fun `un tramo de un solo punto se saltea porque no hay linea que dibujar`() {
         // Empezó y terminó sin moverse: un punto, ninguna línea (edge case de la spec).
-        val solo = listOf(Trazo(1, listOf(-34.6032 to -58.3728), escalon = Escalon.VIEJO))
+        val solo = listOf(Trazo(1, Geo.tramos(listOf(-34.6032 to -58.3728)), escalon = Escalon.VIEJO))
         assertEquals(0, coleccionTrazos(solo).features.size)
 
         // Y el punto suelto que queda después de un corte tampoco se dibuja, pero el hueco
         // hasta él sí: es la desconexión, y existió.
-        val cortadoAlFinal = listOf(Trazo(1, conCorte.dropLast(1), escalon = Escalon.VIEJO))
+        val cortadoAlFinal = listOf(Trazo(1, Geo.tramos(conCorte.dropLast(1)), escalon = Escalon.VIEJO))
         assertEquals(1, coleccionTrazos(cortadoAlFinal).features.size)
         assertEquals(1, coleccionHuecos(cortadoAlFinal).features.size)
     }
 
     @Test
-    fun `un camino ajustado a las calles no se corta ni deja huecos`() {
-        // El servicio ya resolvió por dónde se fue entre dos posiciones lejanas, siguiendo
-        // calles. Cortarlo ahí puntearía un tramo que sí se conoce.
-        val ajustado = listOf(Trazo(1, conCorte, escalon = Escalon.RECIENTE, ajustado = true))
+    fun `los tramos se dibujan igual vengan del ajuste o de los puntos medidos`() {
+        // Desde la 007 el camino ajustado llega en tramos, y entre dos tramos hubo un corte de
+        // señal. La capa del mapa no distingue: una línea por tramo y un hueco entre cada par.
+        val tresTramos = listOf(caminata, caminata.map { (la, lo) -> la - 0.01 to lo }, caminata.map { (la, lo) -> la - 0.02 to lo })
+        val trazos = listOf(Trazo(1, tresTramos, escalon = Escalon.RECIENTE))
 
-        assertEquals(1, coleccionTrazos(ajustado).features.size)
-        assertEquals(4, coordenadas(coleccionTrazos(ajustado), 0).size)
-        assertEquals(0, coleccionHuecos(ajustado).features.size)
+        assertEquals(3, coleccionTrazos(trazos).features.size)
+        assertEquals(caminata.size, coordenadas(coleccionTrazos(trazos), 0).size)
+        assertEquals(2, coleccionHuecos(trazos).features.size)
     }
 }

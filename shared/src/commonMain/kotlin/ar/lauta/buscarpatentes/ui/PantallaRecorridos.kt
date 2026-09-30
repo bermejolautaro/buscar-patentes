@@ -39,7 +39,7 @@ import ar.lauta.buscarpatentes.data.PuntoDeTrayecto
 import ar.lauta.buscarpatentes.data.Recorrido
 import ar.lauta.buscarpatentes.data.RegistroDeCaptura
 import ar.lauta.buscarpatentes.domain.Antiguedad
-import ar.lauta.buscarpatentes.domain.Polilinea
+import ar.lauta.buscarpatentes.domain.CaminoGuardado
 import ar.lauta.buscarpatentes.domain.Probabilidad
 import ar.lauta.buscarpatentes.mapa.MapaDeFondo
 import ar.lauta.buscarpatentes.mapa.Marcador
@@ -356,15 +356,12 @@ private fun DetalleDeSalida(
                 // Solo el camino de **esta** salida. Es lo único dibujado, así que su escalón
                 // de antigüedad no compite con nada; se calcula igual para no inventar un dato.
                 trazos = listOf(
-                    salida.recorrido.caminoAjustado
-                        ?.let { Polilinea.decodificar(it) }
-                        ?.takeIf { it.isNotEmpty() }
-                        ?.let { Trazo(recorrido.id, it, escalonDe(recorrido), ajustado = true) }
-                        ?: Trazo(
-                            recorridoId = recorrido.id,
-                            puntos = salida.puntos.map { it.latitud to it.longitud },
-                            escalon = escalonDe(recorrido),
-                        ),
+                    Trazo(
+                        recorridoId = recorrido.id,
+                        tramos = CaminoGuardado.leer(recorrido.caminoAjustado)
+                            .dibujo(salida.puntos.map { it.latitud to it.longitud }),
+                        escalon = escalonDe(recorrido),
+                    ),
                 ),
                 // Acá importa dónde estuvo esa salida, no dónde está parado el jugador ahora.
                 // Y con el seguimiento apagado, el mapa encuadra lo que recibe: el camino

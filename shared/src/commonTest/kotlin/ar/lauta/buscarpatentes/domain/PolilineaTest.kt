@@ -104,4 +104,25 @@ class PolilineaTest {
         assertEquals(Polilinea.decodificar(real), Polilinea.decodificar(real))
         assertTrue(real.none { it == ';' })
     }
+
+    @Test
+    fun `codificar y decodificar dan las mismas posiciones`() {
+        val puntos = listOf(
+            -34.603722 to -58.381592,
+            -34.604515 to -58.382999,
+            -34.6 to -58.4,
+            0.000001 to -0.000001,
+        )
+        assertEquals(puntos, Polilinea.decodificar(Polilinea.codificar(puntos)))
+        assertEquals(Polilinea.decodificar(real), Polilinea.decodificar(Polilinea.codificar(Polilinea.decodificar(real))))
+        assertEquals("", Polilinea.codificar(emptyList()))
+    }
+
+    @Test
+    fun `codificar redondea al sexto decimal`() {
+        assertEquals(
+            listOf(-34.603723 to -58.381592),
+            Polilinea.decodificar(Polilinea.codificar(listOf(-34.6037225001 to -58.3815924))),
+        )
+    }
 }

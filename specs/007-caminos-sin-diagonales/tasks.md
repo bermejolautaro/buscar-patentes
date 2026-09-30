@@ -28,7 +28,7 @@ description: "Tareas de la 007: caminos sin diagonales"
 
 **Purpose**: la respuesta real del servicio que usan las pruebas.
 
-- [ ] T001 Crear `commonTest/ubicacion/RespuestaDeAjuste.kt` con dos constantes:
+- [X] T001 **Hecha**, con un cambio: la respuesta es la de la caminata entera **en un solo pedido**, como pedía la app antes de la 007. Pedidos por separado, cada tramo trae puntos sin emparejar pero ningún corte entre pedazos, y la prueba necesita las dos cosas. Que la caminata se parta en dos tramos de señal se prueba sin respuesta. Crear `commonTest/ubicacion/RespuestaDeAjuste.kt` con dos constantes:
   - **La caminata**: los puntos de la caminata inventada de D1 ([research.md](./research.md)), cerca del Obelisco. Son dos tramos en línea recta, de 13 y 11 puntos, con un salto de unos 680 m entre ellos.
   - **La respuesta**: la respuesta del servicio a **cada tramo por separado**, recortada a `shape`, `edges[].begin_shape_index`, `edges[].end_shape_index`, `matched_points[].type` y `matched_points[].edge_index`.
   Se genera corriendo el pedido de A2 ([contrato](./contracts/camino-ajustado.md)) desde la PC. **Solo coordenadas cercanas al Obelisco**: nada del jugador. Si una de las respuestas no trae un corte de pedazos ni puntos `unmatched`, correr los puntos hasta que los traiga: la prueba de T008 necesita las dos cosas.
@@ -41,12 +41,12 @@ description: "Tareas de la 007: caminos sin diagonales"
 
 **⚠️ CRITICAL**: T004 cambia `Trazo`, que usan el mapa principal y el detalle.
 
-- [ ] T002 [P] En `common/domain/Polilinea.kt`, sumar `fun codificar(puntos: List<Pair<Double, Double>>, precision: Double = PRECISION_VALHALLA): String`, el inverso de `decodificarUna`: diferencias acumuladas desde cero, zigzag y trozos de 5 bits. En `commonTest/domain/PolilineaTest.kt`, sumar la ida y vuelta: codificar y decodificar dan las mismas posiciones redondeadas a 1e6, con coordenadas negativas y una lista vacía.
-- [ ] T003 Crear `common/domain/CaminoAjustado.kt` con `sealed interface CaminoGuardado` y sus tres casos: `Pendiente`, `NoSePudo` y `Ajustado(tramos: List<List<Pair<Double, Double>>>)`. Suma dos funciones:
+- [X] T002 **Hecha**. [P] En `common/domain/Polilinea.kt`, sumar `fun codificar(puntos: List<Pair<Double, Double>>, precision: Double = PRECISION_VALHALLA): String`, el inverso de `decodificarUna`: diferencias acumuladas desde cero, zigzag y trozos de 5 bits. En `commonTest/domain/PolilineaTest.kt`, sumar la ida y vuelta: codificar y decodificar dan las mismas posiciones redondeadas a 1e6, con coordenadas negativas y una lista vacía.
+- [X] T003 **Hecha**. `CaminoGuardado` suma `dibujo(medidos)`: los tramos guardados si está ajustado, y si no `Geo.tramos(medidos)`. Lo usan las dos pantallas. Crear `common/domain/CaminoAjustado.kt` con `sealed interface CaminoGuardado` y sus tres casos: `Pendiente`, `NoSePudo` y `Ajustado(tramos: List<List<Pair<Double, Double>>>)`. Suma dos funciones:
   - **`leer(texto: String?)`**: `null` o sin prefijo `2:` da `Pendiente`; `2:` solo da `NoSePudo`; `2:` con tramos da `Ajustado`, con cada tramo decodificado por su lado y descartando los de menos de 2 posiciones.
   - **`escribir(tramos)`**: `2:` más los tramos codificados con `Polilinea.codificar` y unidos con `;`. Una lista vacía da `2:`.
   Crear `commonTest/domain/CaminoAjustadoTest.kt` con la lectura de cada caso del contrato A1 (un camino viejo de una pierna y otro de dos se leen `Pendiente`) y la ida y vuelta de `escribir` y `leer`. Depende de T002.
-- [ ] T004 Pasar `Trazo`, en `common/mapa/Colecciones.kt`, a `Trazo(recorridoId, tramos: List<List<Pair<Double, Double>>>, escalon)`.
+- [X] T004 **Hecha**. También la salida en curso de la pantalla principal, que al crecer reemplaza sus tramos con `Geo.tramos`. Pasar `Trazo`, en `common/mapa/Colecciones.kt`, a `Trazo(recorridoId, tramos: List<List<Pair<Double, Double>>>, escalon)`.
   - **Se va**: `puntos`, `ajustado` y `tramosDe`.
   - **El dibujo**: `coleccionTrazos` dibuja una línea por tramo, y `coleccionHuecos` un segmento punteado del final de cada tramo al principio del siguiente, con `Geo.huecos(trazo.tramos)`.
   - **Los que lo arman**:

@@ -355,7 +355,7 @@ fun MapaDeFondo(
     LaunchedEffect(marcadores, trazos) {
         if (encuadrado || (seguirAlJugador && conPermiso)) return@LaunchedEffect
         val posiciones = marcadores.map { Position(it.longitud, it.latitud) } +
-            trazos.flatMap { t -> t.puntos.map { (lat, lon) -> Position(lon, lat) } }
+            trazos.flatMap { t -> t.tramos.flatten().map { (lat, lon) -> Position(lon, lat) } }
         if (posiciones.isEmpty()) return@LaunchedEffect
         encuadrado = true
         mapa.irA(posiciones, RELLENO_ENCUADRE, animado = false)
