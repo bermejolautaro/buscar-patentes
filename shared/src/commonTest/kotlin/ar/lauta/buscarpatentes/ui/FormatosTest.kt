@@ -2,7 +2,9 @@ package ar.lauta.buscarpatentes.ui
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.ExperimentalTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
 
 /**
  * Los textos que reemplazan a `SimpleDateFormat` y `String.format` (D16 de la 006).
@@ -30,6 +32,32 @@ class FormatosTest {
         assertEquals("28 ene 23:59", fechaSinAnio(enero, buenosAires))
     }
 
+    /** Medianoche en Buenos Aires del día [dia] de [mes] de 2026. */
+    @OptIn(ExperimentalTime::class)
+    private fun dia(mes: Int, dia: Int): Long =
+        kotlinx.datetime.LocalDate(2026, mes, dia).atStartOfDayIn(buenosAires).toEpochMilliseconds()
+
+    @Test
+    fun `la duracion va en dias hasta un mes y despues en meses y dias`() {
+        val desde = dia(9, 1)
+        assertEquals("Desde hoy", duracion(desde, desde + 5 * HORA, buenosAires))
+        assertEquals("1 día", duracion(desde, dia(9, 2), buenosAires))
+        assertEquals("23 días", duracion(desde, dia(9, 24), buenosAires))
+        assertEquals("30 días", duracion(desde, dia(10, 1), buenosAires))
+        assertEquals("1 mes y 1 día", duracion(desde, dia(10, 2), buenosAires))
+        assertEquals("2 meses", duracion(desde, dia(11, 1), buenosAires))
+        assertEquals("2 meses y 4 días", duracion(desde, dia(11, 5), buenosAires))
+        // A las 23 del mismo día sigue siendo hoy: se cuentan días del calendario, no horas.
+        assertEquals("Desde hoy", duracion(desde, desde + 23 * HORA, buenosAires))
+    }
+
+    @Test
+    fun `la fecha corta y el comienzo del dia`() {
+        assertEquals("05/09/2026", fechaCorta(septiembre, buenosAires))
+        assertEquals("05/09", fechaCorta(septiembre, buenosAires, conAnio = false))
+        assertEquals(dia(9, 5), inicioDelDia(septiembre, buenosAires))
+    }
+
     @Test
     fun `los decimales redondean como format y llevan coma`() {
         assertEquals("-34,60374", decimales(-34.603741234, 5))
@@ -48,5 +76,9 @@ class FormatosTest {
     fun `el numero va con tres cifras`() {
         assertEquals("007", tresCifras(7))
         assertEquals("318", tresCifras(318))
+    }
+
+    private companion object {
+        const val HORA = 3_600_000L
     }
 }

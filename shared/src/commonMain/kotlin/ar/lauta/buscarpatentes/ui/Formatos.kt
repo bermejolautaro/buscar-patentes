@@ -5,7 +5,12 @@ import kotlin.math.pow
 import kotlin.math.roundToLong
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.daysUntil
+import kotlinx.datetime.monthsUntil
+import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 
 /**
@@ -31,6 +36,42 @@ private fun fecha(millis: Long, zona: TimeZone, conAnio: Boolean): String {
     val hora = "${dosCifras(f.hour)}:${dosCifras(f.minute)}"
     return if (conAnio) "${f.day} ${MESES[f.month.ordinal]} ${f.year}, $hora"
     else "${f.day} ${MESES[f.month.ordinal]} $hora"
+}
+
+/** "05/09/2026", o "05/09" sin el año: "desde cuándo cuenta" y el nombre de una zona nueva. */
+@OptIn(ExperimentalTime::class)
+fun fechaCorta(millis: Long, zona: TimeZone = TimeZone.currentSystemDefault(), conAnio: Boolean = true): String {
+    val f = Instant.fromEpochMilliseconds(millis).toLocalDateTime(zona).date
+    val dia = "${dosCifras(f.day)}/${dosCifras(f.month.ordinal + 1)}"
+    return if (conAnio) "$dia/${f.year}" else dia
+}
+
+/** El comienzo del día de [millis] en la hora del teléfono: así se guarda "desde cuándo cuenta" (D10). */
+@OptIn(ExperimentalTime::class)
+fun inicioDelDia(millis: Long, zona: TimeZone = TimeZone.currentSystemDefault()): Long =
+    Instant.fromEpochMilliseconds(millis).toLocalDateTime(zona).date.atStartOfDayIn(zona).toEpochMilliseconds()
+
+/**
+ * Cuánto lleva una zona, en días del calendario: "Desde hoy", "23 días", "2 meses y 4 días" (D10).
+ *
+ * Hasta los 30 días va en días. Después, en meses de calendario y los días que sobran.
+ */
+@OptIn(ExperimentalTime::class)
+fun duracion(desde: Long, hasta: Long, zona: TimeZone = TimeZone.currentSystemDefault()): String {
+    val inicio = Instant.fromEpochMilliseconds(desde).toLocalDateTime(zona).date
+    val fin = Instant.fromEpochMilliseconds(hasta).toLocalDateTime(zona).date
+    val dias = inicio.daysUntil(fin)
+    fun enDias(n: Int) = if (n == 1) "1 día" else "$n días"
+    return when {
+        dias <= 0 -> "Desde hoy"
+        dias <= 30 -> enDias(dias)
+        else -> {
+            val meses = inicio.monthsUntil(fin)
+            val resto = inicio.plus(meses, DateTimeUnit.MONTH).daysUntil(fin)
+            val enMeses = if (meses == 1) "1 mes" else "$meses meses"
+            if (resto == 0) enMeses else "$enMeses y ${enDias(resto)}"
+        }
+    }
 }
 
 /** "09:07". */

@@ -89,14 +89,14 @@ falta y los días. La pantalla principal resalta lo que falta.
 
 ### Tests for User Story 1
 
-- [ ] T008 [P] [US1] Crear `commonTest/domain/BordeTest.kt` para `Borde`:
+- [X] T008 [P] [US1] Crear `commonTest/domain/BordeTest.kt` para `Borde`:
   - con dos esquinas no es válido;
   - un moño, con los bordes cruzados, no es válido;
   - un cuadrado y un polígono cóncavo sí;
   - un punto adentro, uno afuera y uno adentro del hueco de un cóncavo;
   - el rectángulo con margen se agranda 200 m para cada lado, medidos con `Geo`;
   - la consulta de Overpass lleva punto decimal y 6 decimales.
-- [ ] T009 [P] [US1] Crear `commonTest/domain/CuadrasTest.kt` con vías **inventadas**, construidas en la prueba, para las garantías del contrato Z2:
+- [X] T009 [P] [US1] Crear `commonTest/domain/CuadrasTest.kt` con vías **inventadas**, construidas en la prueba, para las garantías del contrato Z2:
   - una calle recta que cruzan cinco calles da seis cuadras;
   - una calle partida en dos vías sin esquina da una cuadra;
   - una calle sin salida termina en su último nodo;
@@ -105,7 +105,7 @@ falta y los días. La pantalla principal resalta lo que falta.
   - las dos manos de una avenida, paralelas a 20 m y con el mismo nombre, son gemelas;
   - dos cuadras seguidas de la misma calle de una mano no lo son, y dos paralelas con distinto nombre tampoco.
   Sumar una prueba con `VIAS` (T001): se lee con `BuscarCuadras.leerVias` y arma más de cero cuadras, todas de 30 m o más.
-- [ ] T010 [P] [US1] Crear `commonTest/domain/CoberturaDeZonaTest.kt` para el contrato Z3.
+- [X] T010 [P] [US1] Crear `commonTest/domain/CoberturaDeZonaTest.kt` para el contrato Z3.
   - **Con los datos reales**: cuadras armadas de `VIAS` (T001) con un borde que envuelve toda la franja, y los tramos de `RESPUESTA` (`commonTest/ubicacion/RespuestaDeAjuste.kt`) leídos con `AjustarACalles.leerRespuesta` y `CaminoAjustado.pedazos`. Las cuadras caminadas por el primer tramo están recorridas, y las que ese tramo cruza en una esquina, no. Imprimir en el mensaje de falla el porcentaje cubierto de cada cuadra.
   - **Con cuadras inventadas**:
     - media cuadra una salida y la otra media otra salida dan recorrida;
@@ -114,7 +114,7 @@ falta y los días. La pantalla principal resalta lo que falta.
     - una pareja de gemelas cuenta una vez y la recorre cualquiera de las dos;
     - 99 recorridas de 100 dan 99%;
     - `completadaEn` es la fecha de la salida que recorrió la última cuadra, y es nula mientras falte una.
-- [ ] T011 [P] [US1] En `commonTest/ui/FormatosTest.kt`, sumar la duración (D10):
+- [X] T011 [P] [US1] En `commonTest/ui/FormatosTest.kt`, sumar la duración (D10):
   - 0 días da "Desde hoy";
   - 1 da "1 día";
   - 23 da "23 días";
@@ -126,19 +126,19 @@ falta y los días. La pantalla principal resalta lo que falta.
 
 ### Implementation for User Story 1
 
-- [ ] T012 [P] [US1] Crear `common/domain/Borde.kt`: `object Borde` con estas funciones:
+- [X] T012 [P] [US1] Crear `common/domain/Borde.kt`: `object Borde` con estas funciones:
   - `valido(esquinas)`: tres o más, y ningún par de lados no vecinos que se cruce;
   - `adentro(punto, esquinas)`: el método del rayo;
   - `rectangulo(esquinas, margenMetros = 200.0)`;
   - `consulta(rectangulo)`: el texto del contrato Z1, con el `decimales` de `ui/Formatos.kt` o un formato propio con punto;
   - `escribir(esquinas)` y `leer(texto)`, con `Polilinea` a 1e6.
   Los KDoc citan el D4 y el Z1. Hace pasar T008.
-- [ ] T013 [US1] Crear `common/domain/Cuadras.kt` con `data class Via(nodos: List<Long>, posiciones: List<Pair<Double, Double>>, nombre: String?, unaMano: Boolean)` y `data class CuadraArmada(nombre: String?, forma: List<Pair<Double, Double>>, gemelaDe: Int?)`, donde `gemelaDe` es el índice de la principal en la lista.
+- [X] T013 [US1] Crear `common/domain/Cuadras.kt` con `data class Via(nodos: List<Long>, posiciones: List<Pair<Double, Double>>, nombre: String?, unaMano: Boolean)` y `data class CuadraArmada(nombre: String?, forma: List<Pair<Double, Double>>, gemelaDe: Int?)`, donde `gemelaDe` es el índice de la principal en la lista.
   - **`object Cuadras`** con `armar(vias, borde): List<CuadraArmada>`, que sigue los pasos 1 a 5 del contrato Z2 con las constantes `LARGO_MINIMO_M = 30.0`, `PASO_M = 5.0`, `PARTE_ADENTRO = 0.5` y las del D3.
   - **Marcas**: `ponytail:` en el corte de 30 m, igual que en el D2.
   - **Distancias**: las de `Geo` que ya existen; si falta distancia de punto a segmento, sumarla a `common/domain/Geo.kt`.
   Depende de T012. Hace pasar T009, salvo la parte de `VIAS`.
-- [ ] T014 [US1] Crear `common/domain/CoberturaDeZona.kt` con:
+- [X] T014 [US1] Crear `common/domain/CoberturaDeZona.kt` con:
   - `data class CuadraParaContar(id, forma, gemelaDe: Long?, quitada)`;
   - `data class SalidaParaContar(iniciadoEn, tramos)`;
   - `data class Cobertura(recorridas: Set<Long>, total, porcentaje, faltan, completadaEn: Long?)`;
@@ -151,7 +151,7 @@ falta y los días. La pantalla principal resalta lo que falta.
   - `porcentaje` redondea hacia abajo.
 
   Depende de T013. Hace pasar T010.
-- [ ] T015 [US1] Crear `common/ubicacion/BuscarCuadras.kt`, con la forma y los comentarios de `AjustarACalles.kt`.
+- [X] T015 [US1] Crear `common/ubicacion/BuscarCuadras.kt`, con la forma y los comentarios de `AjustarACalles.kt`.
   - **`URL`**: la de Overpass, en una constante.
   - **`leerVias(texto): List<Via>?`**: lee el JSON del Z1 con `kotlinx-serialization-json`, sin plugin. Da `null` si no se entiende.
   - **`buscar(zona): Resultado?`**: pide `Borde.consulta(Borde.rectangulo(esquinas))` con `postear`, lee, arma con `Cuadras.armar` y cuenta las principales. `null` sin respuesta.
@@ -164,7 +164,7 @@ falta y los días. La pantalla principal resalta lo que falta.
   - **`salidasParaContar()`**: lee `recorridos.todosUnaVez()` y se queda con las terminadas y `CaminoGuardado.Ajustado`, pasadas a `SalidaParaContar`.
   - **`cobertura(zona, cuadras, salidas)`**: arma los `CuadraParaContar` y llama a `CoberturaDeZona.calcular` con `zona.cuentaDesde`.
   Depende de T004, T014 y T012.
-- [ ] T017 [P] [US1] En `common/ui/Formatos.kt`, sumar `fun duracion(desde: Long, hasta: Long, zona: TimeZone = TimeZone.currentSystemDefault()): String` (D10). Hace pasar T011.
+- [X] T017 [P] [US1] En `common/ui/Formatos.kt`, sumar `fun duracion(desde: Long, hasta: Long, zona: TimeZone = TimeZone.currentSystemDefault()): String` (D10). Hace pasar T011.
 - [ ] T018 [US1] Sumar el dibujo de las zonas en `common/mapa/Colecciones.kt`, siguiendo el contrato Z4.
   - **Tipos**:
     - `enum class ClaseDeCuadra { RECORRIDA, PENDIENTE, QUITADA }`;
