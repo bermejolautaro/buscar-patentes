@@ -151,10 +151,17 @@ abstract class RecorridoDao {
      * Las salidas que todavia esperan que se les ajuste el camino (FR-031, FR-032).
      *
      * Solo las terminadas: mientras el recorrido sigue en curso van a llegar puntos nuevos y
-     * ajustar seria trabajo tirado. La condicion `caminoAjustado IS NULL` **es** el standby:
-     * lo que no se pudo ajustar sin conexion sigue en la cola sin que nada lo administre.
+     * ajustar seria trabajo tirado. La condicion sobre `caminoAjustado` **es** el standby: lo
+     * que no se pudo ajustar sin conexion sigue en la cola sin que nada lo administre.
+     *
+     * Desde la 007 tambien entra un camino guardado con el criterio anterior, que no empieza con
+     * `CaminoGuardado.PREFIJO`: vuelve a la cola solo, sin una migracion ni una marca aparte
+     * (D3 de la 007). Un `2:` solo, lo que el servicio no pudo emparejar, no vuelve.
      */
-    @Query("SELECT * FROM recorrido WHERE caminoAjustado IS NULL AND estado = 'TERMINADO'")
+    @Query(
+        "SELECT * FROM recorrido WHERE estado = 'TERMINADO' " +
+            "AND (caminoAjustado IS NULL OR caminoAjustado NOT LIKE '2:%')",
+    )
     abstract suspend fun sinAjustar(): List<Recorrido>
 
     /**

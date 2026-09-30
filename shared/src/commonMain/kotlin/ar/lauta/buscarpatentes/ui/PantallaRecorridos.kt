@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -342,6 +343,34 @@ private fun DetalleDeSalida(
                 modifier = Modifier.padding(vertical = 8.dp),
             )
         } else {
+            // FR-006 a FR-009 de la 007: el camino ajustado o lo que midió el teléfono, en el
+            // mismo lugar. Arranca en el ajustado y no se recuerda: el otro es para comparar.
+            val camino = CaminoGuardado.leer(recorrido.caminoAjustado)
+            var verAjustado by remember(recorrido.id) { mutableStateOf(true) }
+            val medidos = salida.puntos.map { it.latitud to it.longitud }
+            val mostrado = if (verAjustado) camino else CaminoGuardado.Pendiente
+
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    when {
+                        camino is CaminoGuardado.NoSePudo -> "No se pudo ajustar"
+                        camino !is CaminoGuardado.Ajustado -> "Todavía sin ajustar"
+                        verAjustado -> "Ajustado a las calles"
+                        else -> "Lo que midió el teléfono"
+                    },
+                    fontSize = 13.sp,
+                )
+                Switch(
+                    checked = verAjustado && camino is CaminoGuardado.Ajustado,
+                    onCheckedChange = { verAjustado = it },
+                    enabled = camino is CaminoGuardado.Ajustado,
+                )
+            }
+
             MapaDeFondo(
                 marcadores = salida.patentes.map { r ->
                     Marcador(
@@ -355,11 +384,12 @@ private fun DetalleDeSalida(
                 },
                 // Solo el camino de **esta** salida. Es lo único dibujado, así que su escalón
                 // de antigüedad no compite con nada; se calcula igual para no inventar un dato.
+                // Cambiar de vista cambia los trazos y nada más: el mapa encuadra una sola vez, así
+                // que la cámara se queda donde está (FR-008 de la 007).
                 trazos = listOf(
                     Trazo(
                         recorridoId = recorrido.id,
-                        tramos = CaminoGuardado.leer(recorrido.caminoAjustado)
-                            .dibujo(salida.puntos.map { it.latitud to it.longitud }),
+                        tramos = mostrado.dibujo(medidos),
                         escalon = escalonDe(recorrido),
                     ),
                 ),

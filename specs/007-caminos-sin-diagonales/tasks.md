@@ -68,27 +68,27 @@ description: "Tareas de la 007: caminos sin diagonales"
 
 ### Tests for User Story 1
 
-- [ ] T005 [P] [US1] En `commonTest/domain/CaminoAjustadoTest.kt`, sumar las pruebas de `CaminoAjustado.armar` (contrato A4), con casos armados a mano:
+- [X] T005 **Hecha**. Los casos se comparan contra la lista exacta que tiene que salir; el chequeo de la garantía de A4 va sobre la respuesta real, en T006. [P] [US1] En `commonTest/domain/CaminoAjustadoTest.kt`, sumar las pruebas de `CaminoAjustado.armar` (contrato A4), con casos armados a mano:
   - dos pedazos con puntos sueltos en el medio;
   - dos pedazos **sin** puntos sueltos en el medio;
   - puntos sueltos al principio y al final;
   - ningún punto emparejado, que devuelve los medidos tal cual;
   - un punto `interpolated`, que cuenta como emparejado.
   En todos, un chequeo común de la garantía de A4: cada par de posiciones seguidas del tramo armado es de un mismo pedazo de `shape` o son dos puntos medidos consecutivos.
-- [ ] T006 [P] [US1] En `commonTest/ubicacion/AjustarACallesTest.kt`, sumar la lectura de las respuestas de T001 con la función de T008. Con el armado de cada tramo:
+- [X] T006 **Hecha**. Un empalme entre un punto medido y su pedazo mide como mucho 30 m, el radio máximo del pedido; nada más largo que eso une dos pedazos. [P] [US1] En `commonTest/ubicacion/AjustarACallesTest.kt`, sumar la lectura de las respuestas de T001 con la función de T008. Con el armado de cada tramo:
   - se cumple la garantía de A4;
   - el tramo arranca en el primer punto medido o en su emparejado, y termina en el último punto medido o en su emparejado: lo que no emparejó no desaparece.
   Con la caminata entera: `Geo.tramos` da dos tramos de señal, y el camino guardado tiene dos tramos, con un hueco entre ellos.
 
 ### Implementation for User Story 1
 
-- [ ] T007 [US1] En `common/domain/CaminoAjustado.kt`, implementar `fun armar(medidos: List<Pair<Double, Double>>, forma: List<Pair<Double, Double>>, aristas: List<IntRange>, emparejados: List<Int?>): List<Pair<Double, Double>>` según el contrato A4:
+- [X] T007 **Hecha**. Los extremos sueltos incluyen al punto emparejado de al lado, así el empalme con el pedazo es siempre el de un punto con su lugar en la calle. [US1] En `common/domain/CaminoAjustado.kt`, implementar `fun armar(medidos: List<Pair<Double, Double>>, forma: List<Pair<Double, Double>>, aristas: List<IntRange>, emparejados: List<Int?>): List<Pair<Double, Double>>` según el contrato A4:
   - `aristas[i]` va de `begin_shape_index` a `end_shape_index`;
   - `emparejados[i]` es el `edge_index` del punto medido `i`, o `null` si vino `unmatched`;
   - `forma` se parte en pedazos donde una arista no empieza en el índice donde terminó la anterior;
   - los empalmes entre pedazos van con los puntos medidos, del último del pedazo anterior al primero del siguiente, inclusive.
   Tienen que pasar T005.
-- [ ] T008 [US1] En `common/ubicacion/AjustarACalles.kt`:
+- [X] T008 **Hecha**, con un matiz sobre A2: si el servicio **rechaza** un tramo (no contesta 200, o contesta algo que no se entiende), ese tramo va con sus puntos medidos y el resto se guarda igual. Un tramo corto en una plaza no puede dejar sin ajustar la salida entera. Si rechaza todos, se reintenta, porque lo más probable es que esté caído. Sin red, se reintenta como siempre. [US1] En `common/ubicacion/AjustarACalles.kt`:
   - **Los pedidos**: `pendientes()` corta los puntos de cada salida con `Geo.tramos` y hace **un pedido por tramo de señal** de 2 puntos o más.
   - **La respuesta**: una función `internal` lee cada respuesta: `shape` con `Polilinea.decodificar`, `edges` y `matched_points` con kotlinx-serialization. Si un campo no está o no se entiende, la respuesta no sirve.
   - **Lo que se guarda**:
@@ -97,7 +97,7 @@ description: "Tareas de la 007: caminos sin diagonales"
     - si no, se guarda `CaminoGuardado.escribir(tramos armados)`.
   - **Se va**: `pedirCamino`, y con él la lectura de `shape` sola. El cuerpo de cada pedido sigue siendo `cuerpo(puntos)`.
   Tiene que pasar T006.
-- [ ] T009 [US1] En `common/data/Daos.kt`, `sinAjustar()` pasa a `SELECT * FROM recorrido WHERE estado = 'TERMINADO' AND (caminoAjustado IS NULL OR caminoAjustado NOT LIKE '2:%')`, con el comentario de que un camino viejo vuelve a la cola sin nada que lo administre (D3). Revisar que `guardarCaminoAjustado` siga siendo el único que escribe la columna.
+- [X] T009 **Hecha**. `guardarCaminoAjustado` sigue siendo el único que escribe la columna. [US1] En `common/data/Daos.kt`, `sinAjustar()` pasa a `SELECT * FROM recorrido WHERE estado = 'TERMINADO' AND (caminoAjustado IS NULL OR caminoAjustado NOT LIKE '2:%')`, con el comentario de que un camino viejo vuelve a la cola sin nada que lo administre (D3). Revisar que `guardarCaminoAjustado` siga siendo el único que escribe la columna.
 - [ ] T010 [US1] **Verificar**:
   - `./gradlew.bat :shared:testAndroidHostTest assembleDebug`;
   - compilar el iPhone en la nube (`gh workflow run ios.yml --ref 007-caminos-sin-diagonales`);
@@ -116,7 +116,7 @@ description: "Tareas de la 007: caminos sin diagonales"
 
 ### Implementation for User Story 2
 
-- [ ] T011 [US2] En `DetalleDeSalida`, en `common/ui/PantallaRecorridos.kt`, sumar sobre el mapa una fila con un texto y un `Switch` (D5 de [research.md](./research.md)):
+- [X] T011 **Hecha**, antes de verificar la US1: así la compilación del iPhone y la prueba en la calle cubren las dos stories de una vez. [US2] En `DetalleDeSalida`, en `common/ui/PantallaRecorridos.kt`, sumar sobre el mapa una fila con un texto y un `Switch` (D5 de [research.md](./research.md)):
   - `val camino = CaminoGuardado.leer(recorrido.caminoAjustado)`, y `var verAjustado by remember(recorrido.id) { mutableStateOf(true) }`;
   - **con `Ajustado`**: el `Switch` prendido dice "Ajustado a las calles" y dibuja los tramos guardados; apagado dice "Lo que midió el teléfono" y dibuja `Geo.tramos(puntos medidos)`;
   - **con `Pendiente`**, que incluye una salida en curso: el `Switch` apagado y deshabilitado, con "Todavía sin ajustar";
