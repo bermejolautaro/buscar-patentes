@@ -286,13 +286,13 @@ la verifica el quickstart.
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T029 [P] Correr `./gradlew :shared:testAndroidHostTest` y `:shared:compileKotlinIosSimulatorArm64`. Todo verde, sin warnings nuevos.
+- [X] T029 [P] Correr `./gradlew :shared:testAndroidHostTest` y `:shared:compileKotlinIosSimulatorArm64`. Todo verde, sin warnings nuevos.
 - [X] T030 [P] Actualizar `README.md`:
   - la tabla de pruebas, con `BordeTest`, `CuadrasTest`, `CoberturaDeZonaTest` y `MigracionTest`;
   - una sección corta "Zonas": qué hace, que las cuadras salen de OpenStreetMap vía Overpass una vez por zona, y dónde vive la URL;
   - la lista de specs, con la 008.
   En `TODO.md`, tachar el ítem de la zona con "(hecho en la 008)".
-- [ ] T031 Armar lo que el jugador instala.
+- [X] T031 Armar lo que el jugador instala.
   - **Android**: el APK debug a `/sdcard/Download/buscar-patentes.apk`, pisando el anterior y borrando cualquier otro `buscar-patentes*.apk`, sin tocar `NavegadorCamiones.apk`. Verificar el hash.
   - **iPhone**: `gh workflow run ios.yml --ref 008-zona-a-recorrer`, y el `.ipa` a `Downloads\buscar-patentes-ios\zonas`.
   Recordarle al jugador que saque un respaldo antes de instalar: la base pasa a la 8.
