@@ -258,6 +258,22 @@ object ColoresDeMapa {
     const val RECORRIDO = "#1A73E8"
 
     /**
+     * Una cuadra de una zona que falta recorrer (FR-008 y FR-010 de la 008).
+     *
+     * Naranja, el que la 004 dejó libre al pasar el recorrido a azul: no se confunde con lo
+     * caminado ni con la escala de antigüedad. En el mapa de una zona, lo recorrido va con el
+     * mismo azul del [RECORRIDO]: azul es "caminado" en todo el mapa.
+     * ponytail: se calibra al sol y de noche, contra las avenidas de los dos estilos.
+     */
+    const val PENDIENTE = "#F76707"
+
+    /** Una cuadra que el jugador quitó de su zona: gris, y con poca opacidad en el mapa. */
+    const val QUITADA = "#868E96"
+
+    /** El borde de una zona. Más oscuro que [PENDIENTE] para que no se lea como una cuadra. */
+    const val BORDE = "#D9480F"
+
+    /**
      * La escala de antigüedad, en tres escalones (FR-012a de la 004).
      *
      * **Tres colores distintos, no tres intensidades de uno.** Dos intensidades vecinas

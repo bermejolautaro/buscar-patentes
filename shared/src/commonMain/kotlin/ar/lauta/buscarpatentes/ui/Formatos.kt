@@ -51,6 +51,9 @@ fun fechaCorta(millis: Long, zona: TimeZone = TimeZone.currentSystemDefault(), c
 fun inicioDelDia(millis: Long, zona: TimeZone = TimeZone.currentSystemDefault()): Long =
     Instant.fromEpochMilliseconds(millis).toLocalDateTime(zona).date.atStartOfDayIn(zona).toEpochMilliseconds()
 
+/** Lo que dice [duracion] cuando todavía no pasó ningún día. */
+const val DESDE_HOY = "Desde hoy"
+
 /**
  * Cuánto lleva una zona, en días del calendario: "Desde hoy", "23 días", "2 meses y 4 días" (D10).
  *
@@ -63,7 +66,7 @@ fun duracion(desde: Long, hasta: Long, zona: TimeZone = TimeZone.currentSystemDe
     val dias = inicio.daysUntil(fin)
     fun enDias(n: Int) = if (n == 1) "1 día" else "$n días"
     return when {
-        dias <= 0 -> "Desde hoy"
+        dias <= 0 -> DESDE_HOY
         dias <= 30 -> enDias(dias)
         else -> {
             val meses = inicio.monthsUntil(fin)

@@ -32,6 +32,7 @@ import kotlinx.serialization.json.longOrNull
 import org.maplibre.compose.camera.CameraMoveReason
 import org.maplibre.compose.camera.CameraPosition
 import org.maplibre.compose.camera.CameraUpdate
+import org.maplibre.compose.expressions.dsl.asBoolean
 import org.maplibre.compose.expressions.dsl.asNumber
 import org.maplibre.compose.expressions.dsl.asString
 import org.maplibre.compose.expressions.dsl.case
@@ -255,6 +256,12 @@ fun MapaDeFondo(
     seguirAlJugador: Boolean = true,
     estado: EstadoDelMapa? = null,
     onTocarMarcador: (Long) -> Unit = {},
+    /** El borde y las cuadras de cada zona, ya decididos por quien llama (contrato Z4 de la 008). */
+    zonas: List<DibujoDeZona> = emptyList(),
+    /** Un toque que no cayó sobre nada: marca una esquina de una zona nueva (D9 de la 008). */
+    onTocarMapa: ((latitud: Double, longitud: Double) -> Unit)? = null,
+    /** Un toque sobre una cuadra, con su id (FR-012 de la 008). */
+    onTocarCuadra: ((Long) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val alcance = rememberCoroutineScope()
@@ -266,6 +273,9 @@ fun MapaDeFondo(
     val (resto, tocan) = remember(marcadores, zoomAcomodado) { coleccionesPatentes(marcadores, zoomAcomodado) }
     val coleccionTrazos = remember(trazos) { coleccionTrazos(trazos) }
     val coleccionHuecos = remember(trazos) { coleccionHuecos(trazos) }
+    val coleccionBordes = remember(zonas) { coleccionBordes(zonas) }
+    val coleccionCuadras = remember(zonas) { coleccionCuadras(zonas) }
+    val coleccionEsquinas = remember(zonas) { coleccionEsquinas(zonas) }
 
     val pines = remember {
         Pines(
@@ -299,6 +309,13 @@ fun MapaDeFondo(
         if (oscuro) Anchor.Above("highway_motorway_subtle") { CapasDeAvenidas() }
 
         Anchor.Top {
+            // Debajo de los trazos: lo pendiente es el hueco que dejan, y lo caminado se ve encima.
+            CapasDeZonas(
+                cuadras = rememberGeoJsonSource(GeoJsonData.Features(coleccionCuadras)),
+                bordes = rememberGeoJsonSource(GeoJsonData.Features(coleccionBordes)),
+                esquinas = rememberGeoJsonSource(GeoJsonData.Features(coleccionEsquinas)),
+                onTocarCuadra = onTocarCuadra,
+            )
             CapasDeTrazos(
                 trazos = rememberGeoJsonSource(GeoJsonData.Features(coleccionTrazos)),
                 huecos = rememberGeoJsonSource(GeoJsonData.Features(coleccionHuecos)),
@@ -352,10 +369,11 @@ fun MapaDeFondo(
     // En el mapa de una salida es lo que hace que el camino se vea entero. Una sola vez: la
     // primera en que hay algo que encuadrar.
     var encuadrado by remember { mutableStateOf(false) }
-    LaunchedEffect(marcadores, trazos) {
+    LaunchedEffect(marcadores, trazos, zonas) {
         if (encuadrado || (seguirAlJugador && conPermiso)) return@LaunchedEffect
         val posiciones = marcadores.map { Position(it.longitud, it.latitud) } +
-            trazos.flatMap { t -> t.tramos.flatten().map { (lat, lon) -> Position(lon, lat) } }
+            trazos.flatMap { t -> t.tramos.flatten().map { (lat, lon) -> Position(lon, lat) } } +
+            zonas.flatMap { z -> z.borde.map { (lat, lon) -> Position(lon, lat) } }
         if (posiciones.isEmpty()) return@LaunchedEffect
         encuadrado = true
         mapa.irA(posiciones, RELLENO_ENCUADRE, animado = false)
@@ -367,7 +385,22 @@ fun MapaDeFondo(
         cameraConstraints = CameraConstraints(maxZoom = ZOOM_MAXIMO),
         // FR-040: sin rotación. El norte arriba es información —el rumbo a la patente se dice
         // en puntos cardinales (FR-003)— y el gesto de dos dedos se disparaba solo al hacer zoom.
-        interactions = MapInteractions(MapInteractions.Standard) { camera { rotate { enabled = false } } },
+        interactions = MapInteractions(MapInteractions.Standard) {
+            camera { rotate { enabled = false } }
+            // D9 de la 008: el toque que ninguna capa consumió —ni un pin ni una cuadra— es una
+            // esquina de la zona que se está dibujando.
+            if (onTocarMapa != null) {
+                callbacks {
+                    click {
+                        onUnhandled { evento ->
+                            val posicion = evento.position ?: return@onUnhandled ClickResult.Pass
+                            onTocarMapa(posicion.latitude, posicion.longitude)
+                            ClickResult.Consume
+                        }
+                    }
+                }
+            }
+        },
         // Sin brújula (no hay rotación) ni escala: la franja de controles de la pantalla es
         // la única que habla.
         overlay = {},
@@ -433,6 +466,75 @@ private class Pines(
     val tocaMedia: PinPainter,
     val tocaAlta: PinPainter,
 )
+
+/**
+ * Las zonas (contrato Z4 de la 008): cada cuadra con el color de su clase, y el borde, continuo en
+ * el mapa de una zona y punteado en la pantalla principal.
+ *
+ * Las cuadras se tocan solo si hay [onTocarCuadra]: en la pantalla principal un toque sobre una
+ * cuadra pendiente tiene que seguir llegando al mapa.
+ */
+@Composable
+private fun CapasDeZonas(
+    cuadras: GeoJsonSource,
+    bordes: GeoJsonSource,
+    esquinas: GeoJsonSource,
+    onTocarCuadra: ((Long) -> Unit)?,
+) {
+    val alTocar: FeaturesClickHandler? = onTocarCuadra?.let { tocar ->
+        { tocadas ->
+            val id = tocadas.firstNotNullOfOrNull { it.properties?.get(PROP_ID)?.jsonPrimitive?.longOrNull }
+            if (id != null) {
+                tocar(id)
+                ClickResult.Consume
+            } else {
+                ClickResult.Pass
+            }
+        }
+    }
+    LineLayer(
+        id = "zonas-cuadras",
+        source = cuadras,
+        color = switch(
+            input = feature[PROP_CLASE].asString(),
+            case(ClaseDeCuadra.RECORRIDA.name, const(colorDe(ColoresDeMapa.RECORRIDO))),
+            case(ClaseDeCuadra.QUITADA.name, const(colorDe(ColoresDeMapa.QUITADA))),
+            fallback = const(colorDe(ColoresDeMapa.PENDIENTE)),
+        ),
+        width = const(6.dp),
+        opacity = switch(
+            input = feature[PROP_CLASE].asString(),
+            case(ClaseDeCuadra.QUITADA.name, const(0.5f)),
+            fallback = const(0.85f),
+        ),
+        cap = const(LineCap.Round),
+        join = const(LineJoin.Round),
+        onClick = alTocar,
+    )
+    LineLayer(
+        id = "zonas-borde-continuo",
+        source = bordes,
+        filter = feature[PROP_CONTINUO].asBoolean(),
+        color = const(colorDe(ColoresDeMapa.BORDE)),
+        width = const(2.dp),
+    )
+    LineLayer(
+        id = "zonas-borde-punteado",
+        source = bordes,
+        filter = !feature[PROP_CONTINUO].asBoolean(),
+        color = const(colorDe(ColoresDeMapa.BORDE)),
+        width = const(2.dp),
+        dasharray = const(listOf(3, 2)),
+    )
+    CircleLayer(
+        id = "zonas-esquinas",
+        source = esquinas,
+        color = const(colorDe(ColoresDeMapa.BORDE)),
+        radius = const(5.dp),
+        strokeColor = const(Color.White),
+        strokeWidth = const(1.5.dp),
+    )
+}
 
 /**
  * La capa del camino recorrido (FR-006 de la 003, FR-007 de la 004).

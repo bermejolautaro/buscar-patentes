@@ -9,6 +9,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
@@ -257,5 +258,32 @@ class ColeccionTrazosTest {
 
         val pendiente = trazoDe(1, caminata, CaminoGuardado.Pendiente, Escalon.RECIENTE, puntosReales = false)
         assertEquals(1, coleccionTrazos(listOf(pendiente)).features.size)
+    }
+
+    // --- Zonas (contrato Z4 de la 008) ---
+
+    private val esquinas = listOf(-34.603 to -58.383, -34.603 to -58.381, -34.605 to -58.381)
+
+    @Test
+    fun `el borde de una zona cierra contra la primera esquina`() {
+        val bordes = coleccionBordes(listOf(DibujoDeZona(esquinas, emptyList(), bordeContinuo = false)))
+
+        val linea = bordes.features.single().geometry as LineString
+        assertEquals(4, linea.coordinates.size)
+        assertEquals(linea.coordinates.first(), linea.coordinates.last())
+        assertFalse(bordes.features.single().properties[PROP_CONTINUO]!!.jsonPrimitive.boolean)
+    }
+
+    @Test
+    fun `cada cuadra lleva su id y su clase`() {
+        val cuadras = listOf(
+            CuadraDibujada(7, listOf(esquinas[0], esquinas[1]), ClaseDeCuadra.RECORRIDA),
+            CuadraDibujada(8, listOf(esquinas[1], esquinas[2]), ClaseDeCuadra.QUITADA),
+        )
+
+        val features = coleccionCuadras(listOf(DibujoDeZona(esquinas, cuadras, bordeContinuo = true))).features
+
+        assertEquals(listOf(7L, 8L), features.map { it.largo(PROP_ID) })
+        assertEquals(listOf("RECORRIDA", "QUITADA"), features.map { it.texto(PROP_CLASE) })
     }
 }

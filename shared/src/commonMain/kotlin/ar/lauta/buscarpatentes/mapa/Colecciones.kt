@@ -222,3 +222,54 @@ internal fun coleccionesPatentes(marcadores: List<Marcador>, zoom: Int): Pair<Co
     val dibujos = Acomodo.para(pines, zoom, PIN_ANCHO_DP.toDouble())
     return coleccionAcomodada(resto, dibujos) to coleccion(tocan)
 }
+
+// --- Zonas (008) ---
+
+internal const val PROP_CLASE = "clase"
+internal const val PROP_CONTINUO = "continuo"
+
+/** Qué dice cada cuadra de una zona en el mapa (contrato Z4). */
+enum class ClaseDeCuadra { RECORRIDA, PENDIENTE, QUITADA }
+
+data class CuadraDibujada(val id: Long, val forma: List<Pair<Double, Double>>, val clase: ClaseDeCuadra)
+
+/**
+ * Una zona sobre el mapa (contrato Z4). Quien la arma ya decidió qué cuadras van: en la pantalla
+ * principal, solo las pendientes; en el mapa de la zona, las tres clases.
+ */
+data class DibujoDeZona(
+    val borde: List<Pair<Double, Double>>,
+    val cuadras: List<CuadraDibujada>,
+    /** Continuo en el mapa de la zona, punteado en la pantalla principal. */
+    val bordeContinuo: Boolean,
+    /** Un punto en cada esquina, mientras se dibuja: con una sola esquina todavía no hay línea. */
+    val conEsquinas: Boolean = false,
+)
+
+/** Un `LineString` por zona, cerrado contra la primera esquina. */
+internal fun coleccionBordes(zonas: List<DibujoDeZona>): Coleccion = FeatureCollection(
+    zonas.filter { it.borde.size >= 2 }.map { zona ->
+        val cerrado = if (zona.borde.size >= 3) zona.borde + zona.borde.first() else zona.borde
+        Feature<Geometry, JsonObject>(linea(cerrado), buildJsonObject { put(PROP_CONTINUO, zona.bordeContinuo) })
+    },
+)
+
+/** Un `LineString` por cuadra, con su id para tocarla y su clase para pintarla. */
+internal fun coleccionCuadras(zonas: List<DibujoDeZona>): Coleccion = FeatureCollection(
+    zonas.flatMap { it.cuadras }.filter { it.forma.size >= 2 }.map { cuadra ->
+        Feature<Geometry, JsonObject>(
+            linea(cuadra.forma),
+            buildJsonObject {
+                put(PROP_ID, cuadra.id)
+                put(PROP_CLASE, cuadra.clase.name)
+            },
+        )
+    },
+)
+
+/** Las esquinas de las zonas que se están dibujando. */
+internal fun coleccionEsquinas(zonas: List<DibujoDeZona>): Coleccion = FeatureCollection(
+    zonas.filter { it.conEsquinas }.flatMap { zona ->
+        zona.borde.map { (lat, lon) -> Feature<Geometry, JsonObject>(punto(lat, lon), JsonObject(emptyMap())) }
+    },
+)

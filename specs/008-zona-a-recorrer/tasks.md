@@ -126,7 +126,7 @@ falta y los días. La pantalla principal resalta lo que falta.
 
 ### Implementation for User Story 1
 
-- [X] T012 [P] [US1] Crear `common/domain/Borde.kt`: `object Borde` con estas funciones:
+- [X] T012 [P] [US1] **Hecha**, con `consulta` en `BuscarCuadras` y no en `Borde`: es el pedido a Overpass, y su prueba está en `CuadrasTest`. Las cuentas en metros viven en `common/domain/Plano.kt`, que usan `Cuadras` y `CoberturaDeZona`. Crear `common/domain/Borde.kt`: `object Borde` con estas funciones:
   - `valido(esquinas)`: tres o más, y ningún par de lados no vecinos que se cruce;
   - `adentro(punto, esquinas)`: el método del rayo;
   - `rectangulo(esquinas, margenMetros = 200.0)`;
@@ -138,7 +138,7 @@ falta y los días. La pantalla principal resalta lo que falta.
   - **Marcas**: `ponytail:` en el corte de 30 m, igual que en el D2.
   - **Distancias**: las de `Geo` que ya existen; si falta distancia de punto a segmento, sumarla a `common/domain/Geo.kt`.
   Depende de T012. Hace pasar T009, salvo la parte de `VIAS`.
-- [X] T014 [US1] Crear `common/domain/CoberturaDeZona.kt` con:
+- [X] T014 [US1] **Hecha**, con el resultado llamado `CuentaDeZona`: `Cobertura` ya existía (la cuenta de descubiertas de la 005). Crear `common/domain/CoberturaDeZona.kt` con:
   - `data class CuadraParaContar(id, forma, gemelaDe: Long?, quitada)`;
   - `data class SalidaParaContar(iniciadoEn, tramos)`;
   - `data class Cobertura(recorridas: Set<Long>, total, porcentaje, faltan, completadaEn: Long?)`;
@@ -158,14 +158,14 @@ falta y los días. La pantalla principal resalta lo que falta.
   - **`pendientes()`**: con `hayConexion()`, recorre `contenedor.zonas.buscando()`. Con 0 o más de 2.000 principales llama a `marcarProblema` con el texto del D8; si no, a `activar`. Devuelve cuántas zonas cambiaron.
   - **Excepciones**: se tragan como en `AjustarACalles`, para que se reintente en la próxima apertura.
   Depende de T004, T013 y T012. Hace pasar la parte de `VIAS` de T009.
-- [ ] T016 [US1] Crear `common/data/Zonas.kt` con `object Zonas`, que concentra lo que la pantalla le pide a la base.
+- [X] T016 [US1] Crear `common/data/Zonas.kt` con `object Zonas`, que concentra lo que la pantalla le pide a la base.
   - **`crear(nombre, esquinas, cuentaDesde, ahora): Long`**: inserta en `BUSCANDO`. Si el nombre viene vacío, "Zona del dd/mm" con `fechaSinAnio`.
   - **`cambiarCuentaDesde(id, desde)`**: solo si la zona está activa y `desde` no es posterior a hoy.
   - **`salidasParaContar()`**: lee `recorridos.todosUnaVez()` y se queda con las terminadas y `CaminoGuardado.Ajustado`, pasadas a `SalidaParaContar`.
   - **`cobertura(zona, cuadras, salidas)`**: arma los `CuadraParaContar` y llama a `CoberturaDeZona.calcular` con `zona.cuentaDesde`.
   Depende de T004, T014 y T012.
 - [X] T017 [P] [US1] En `common/ui/Formatos.kt`, sumar `fun duracion(desde: Long, hasta: Long, zona: TimeZone = TimeZone.currentSystemDefault()): String` (D10). Hace pasar T011.
-- [ ] T018 [US1] Sumar el dibujo de las zonas en `common/mapa/Colecciones.kt`, siguiendo el contrato Z4.
+- [X] T018 [US1] Sumar el dibujo de las zonas en `common/mapa/Colecciones.kt`, siguiendo el contrato Z4.
   - **Tipos**:
     - `enum class ClaseDeCuadra { RECORRIDA, PENDIENTE, QUITADA }`;
     - `data class CuadraDibujada(id, forma, clase)`;
@@ -174,7 +174,7 @@ falta y los días. La pantalla principal resalta lo que falta.
     - `coleccionBordes(zonas)`: un `LineString` cerrado por zona, con la propiedad de continuo o punteado;
     - `coleccionCuadras(zonas)`: un `LineString` por cuadra, con `PROP_ID` y `PROP_CLASE`.
   - **Pruebas**, en `commonTest/mapa/ColeccionTest.kt`: el borde cierra contra la primera esquina, y cada cuadra lleva su id y su clase.
-- [ ] T019 [US1] Dibujar y tocar las zonas en `common/mapa/MapaDeFondo.kt` (D9).
+- [X] T019 [US1] Dibujar y tocar las zonas en `common/mapa/MapaDeFondo.kt` (D9).
   - **Parámetros nuevos**: `zonas: List<DibujoDeZona> = emptyList()`, `onTocarMapa: ((Double, Double) -> Unit)? = null` y `onTocarCuadra: ((Long) -> Unit)? = null`.
   - **Capas**:
     - las cuadras, en una `LineLayer` **debajo** de `CapasDeTrazos`, con el color por clase;
@@ -187,7 +187,7 @@ falta y los días. La pantalla principal resalta lo que falta.
     - Con la marca `ponytail:`, como el D9.
   - **Encuadre**: el existente también cuenta las esquinas de las zonas, así el mapa de una zona abre mostrándola entera.
   Depende de T018.
-- [ ] T020 [US1] La pantalla de zonas y cómo se llega.
+- [X] T020 [US1] La pantalla de zonas y cómo se llega.
   - **Navegación**: en `common/ui/AppBuscarPatentes.kt`, sumar `Destino.ZONAS`, con `BackHandler` como las otras.
   - **Ícono**: crear `shared/src/commonMain/composeResources/drawable/ic_zonas.xml`, un polígono con un recorrido adentro, del mismo tamaño y trazo que `ic_salidas.xml`.
   - **Botón**: en `common/ui/PantallaPrincipal.kt`, sumar un `FilledTonalIconButton` con `onZonas`, entre Salidas y Ajustes, con `contentDescription = "Zonas"`.
@@ -198,19 +198,19 @@ falta y los días. La pantalla principal resalta lo que falta.
     - La cuenta de cada zona sale de `Zonas.cobertura` con las salidas leídas una sola vez.
     - Al entrar, llama a `BuscarCuadras.pendientes()` y recarga si algo cambió.
   Depende de T016 y T017.
-- [ ] T021 [US1] El dibujo de una zona nueva, en `common/ui/PantallaZonas.kt` (FR-001 a FR-003).
+- [X] T021 [US1] El dibujo de una zona nueva, en `common/ui/PantallaZonas.kt` (FR-001 a FR-003).
   - **El mapa**: `MapaDeFondo` a pantalla completa, con `onTocarMapa` agregando esquinas y `zonas` mostrando el borde que se va armando. Lleva `seguirAlJugador = true` hasta el primer arrastre, como la pantalla principal.
   - **Botones**: **Deshacer**, **Cancelar** y **Listo**. **Listo** está habilitado solo con `Borde.valido`, y si no, una línea dice por qué: "Faltan esquinas" o "El borde se cruza".
   - **Con Listo**: se abre un diálogo con el campo de nombre, opcional, y "Desde cuándo cuenta: hoy". Al tocar la fecha se abre un `DatePickerDialog` de Material 3 con `selectableDates`, que no deja elegir días posteriores a hoy.
   - **Crear**: llama a `Zonas.crear` y a `BuscarCuadras.pendientes()`, y abre el detalle de la zona nueva.
   Depende de T019 y T020.
-- [ ] T022 [US1] El detalle de una zona en `common/ui/PantallaZonas.kt` (FR-007, FR-008).
+- [X] T022 [US1] El detalle de una zona en `common/ui/PantallaZonas.kt` (FR-007, FR-008).
   - **Arriba**: el nombre, el porcentaje grande, "faltan N cuadras de M", la duración y "Desde cuándo cuenta: dd/mm/aaaa". Tocar la fecha abre el mismo `DatePickerDialog` y llama a `Zonas.cambiarCuentaDesde`.
   - **Abajo**: el mapa con el borde continuo y las cuadras en sus tres clases.
   - **Mientras busca**: "Buscando las calles", o el `problema`, sin mapa de cuadras.
   - **Al volver a la lista**: la lista recarga.
   Depende de T020.
-- [ ] T023 [US1] Las zonas en la pantalla principal, en `common/ui/PantallaPrincipal.kt` (FR-010).
+- [X] T023 [US1] Las zonas en la pantalla principal, en `common/ui/PantallaPrincipal.kt` (FR-010).
   - **Qué se carga**: en el `LaunchedEffect` que arma `caminos`, cargar también `zonas.activas()` y `cuadrasDeActivas()`. `CaminoDeSalida` suma `iniciadoEn`.
   - **Qué se dibuja**: `remember(caminos, zonas)` calcula con `Zonas.cobertura` los `DibujoDeZona` de cada activa: el borde punteado y **solo las cuadras pendientes**, sin las quitadas.
   - **Cuándo**: se pasan a `MapaDeFondo` solo en `COBERTURA` y `ANTIGUEDAD`; con los recorridos apagados van vacías.
@@ -230,15 +230,15 @@ falta y los días. La pantalla principal resalta lo que falta.
 
 ### Tests for User Story 2
 
-- [ ] T024 [P] [US2] En `commonTest/domain/CuadrasTest.kt`, sumar `Cuadras.seleccion(tocada, cuadras, todaLaCalle)`:
+- [X] T024 [P] [US2] **Hecha en `commonTest/data/ZonasTest.kt`**, porque la selección necesita el nombre de la calle, que vive en `Cuadra` y no en el dominio. En `commonTest/domain/CuadrasTest.kt`, sumar `Cuadras.seleccion(tocada, cuadras, todaLaCalle)`:
   - una cuadra sola da su id y el de su gemela;
   - "toda la calle" da todas las cuadras de la zona con el mismo nombre, con sus gemelas;
   - una cuadra sin nombre con "toda la calle" da solo ella y su gemela.
 
 ### Implementation for User Story 2
 
-- [ ] T025 [US2] Hacer pasar T024 sumando `fun seleccion(tocada: Long, cuadras: List<CuadraParaContar>, nombres: Map<Long, String?>, todaLaCalle: Boolean): Set<Long>` en `common/domain/Cuadras.kt`, o la firma que resulte más simple con los tipos de T014. En `common/data/Zonas.kt`, sumar `quitar(zonaId, tocada, todaLaCalle)` y `sumar(zonaId, tocada, todaLaCalle)`: los dos usan `seleccion` y `marcarQuitadas`, y solo actúan si la zona está activa. Depende de T016.
-- [ ] T026 [US2] En el detalle de `common/ui/PantallaZonas.kt`, `onTocarCuadra` abre un diálogo, solo si la zona está activa (FR-012, FR-013).
+- [X] T025 [US2] **Hecha como `Zonas.seleccion` y `Zonas.quitar(zonaId, tocada, todaLaCalle, quitada)`**, una sola función para quitar y sumar. Hacer pasar T024 sumando `fun seleccion(tocada: Long, cuadras: List<CuadraParaContar>, nombres: Map<Long, String?>, todaLaCalle: Boolean): Set<Long>` en `common/domain/Cuadras.kt`, o la firma que resulte más simple con los tipos de T014. En `common/data/Zonas.kt`, sumar `quitar(zonaId, tocada, todaLaCalle)` y `sumar(zonaId, tocada, todaLaCalle)`: los dos usan `seleccion` y `marcarQuitadas`, y solo actúan si la zona está activa. Depende de T016.
+- [X] T026 [US2] En el detalle de `common/ui/PantallaZonas.kt`, `onTocarCuadra` abre un diálogo, solo si la zona está activa (FR-012, FR-013).
   - **Arriba**: el nombre de la calle, o "Calle sin nombre".
   - **Cuadra que cuenta**: **Quitar esta cuadra** y **Quitar toda la calle en la zona**.
   - **Cuadra quitada**: **Volver a sumar** y **Volver a sumar toda la calle**.
@@ -261,7 +261,7 @@ más. Las zonas se pueden borrar.
 La cuenta de la fecha de completada ya la prueba T010. Lo que agrega esta story es la escritura, y
 la verifica el quickstart.
 
-- [ ] T027 [US3] En `common/data/Zonas.kt`, sumar `revisar()`, `cerrar(id, ahora)` y `borrar(id)` (FR-014 a FR-018, D7).
+- [X] T027 [US3] En `common/data/Zonas.kt`, sumar `revisar()`, `cerrar(id, ahora)` y `borrar(id)` (FR-014 a FR-018, D7).
   - **`revisar()`**: para cada zona activa calcula la cobertura. Si `faltan == 0` y `total > 0`, llama a `zonas.terminar(id, COMPLETADA, completadaEn, 100, recorridas)`. Devuelve cuántas completó.
   - **`cerrar(id, ahora)`**: lo mismo, con `CERRADA`, `ahora` y el porcentaje del momento.
   - **`borrar(id)`**: `borrarConSusCuadras`.
@@ -270,7 +270,7 @@ la verifica el quickstart.
     - en `Zonas.quitar` y en `Zonas.sumar`;
     - en `Zonas.cambiarCuentaDesde`.
   Depende de T016 y T025.
-- [ ] T028 [US3] En `common/ui/PantallaZonas.kt`, lo que falta de la lista y del detalle.
+- [X] T028 [US3] En `common/ui/PantallaZonas.kt`, lo que falta de la lista y del detalle.
   - **Lista**: una sección "Terminadas" debajo de las activas. Cada una lleva su nombre y su resultado: "Completada en {duracion(cuentaDesde, terminadaEn)}", o "Cerrada con N% después de {duracion}".
   - **Detalle de una zona activa**: **Cerrar objetivo**, que confirma con un diálogo que dice que no se reabre y llama a `Zonas.cerrar`.
   - **Detalle de una zona terminada**:
