@@ -33,6 +33,5 @@
 
 - El servicio de ajuste a calles se nombra solo como "el servicio de ajuste", sin proveedor ni
   protocolo: cuál es y cómo se le pide queda para el plan.
-- Una decisión de UX quedó como supuesto y no como pregunta: en un tramo que el ajuste no pudo
-  pegar se dibujan los puntos medidos, no la línea punteada. Tiene un default razonable y se puede
-  revisar en `/speckit-clarify`.
+- En un tramo que el ajuste no pudo pegar se dibujan los puntos medidos, con la misma línea que el
+  resto: confirmado en `/speckit-clarify` (sesión 2026-09-29).

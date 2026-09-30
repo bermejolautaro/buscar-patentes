@@ -24,6 +24,13 @@ Esta feature tiene dos partes: que el camino ajustado deje de afirmar caminos fa
 jugador pueda comparar, en el detalle de una salida, lo que midió el teléfono contra lo que
 interpretó el ajuste.
 
+## Clarifications
+
+### Session 2026-09-29
+
+- Q: Cuando un tramo que el ajuste no pudo pegar se dibuja con los puntos medidos, ¿se ve distinto del resto del camino ajustado? → A: No. Misma línea continua y mismo color que el resto: no se nota dónde empalma.
+- Q: Al abrir el detalle de una salida, ¿qué camino se muestra primero? → A: Siempre el ajustado, cuando existe. El real se ve tocando el interruptor, y la elección no se recuerda entre visitas.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - El camino de una salida sigue las calles de punta a punta (Priority: P1)
@@ -114,7 +121,9 @@ interruptor explica por qué no hay versión ajustada.
   por una calle o un sendero. Todo tramo continuo del camino ajustado MUST seguir la red de calles.
 - **FR-002**: Donde el ajuste no pudo pegar un tramo a una calle, el sistema MUST dibujar ese
   tramo con los puntos que midió el teléfono, y el resto con el camino ajustado. Las partes MUST
-  empalmar sin rectas de unión.
+  empalmar sin rectas de unión, y el tramo medido MUST dibujarse con la misma línea y el mismo
+  color que el resto: en el mapa no se distingue dónde empalma. Para comparar está el
+  interruptor del detalle (FR-006).
 - **FR-003**: Los cortes de señal del FR-009 de la 003 MUST respetarse también en el camino
   ajustado: los dos lados de un corte se unen con la línea punteada del FR-009a de la 003, nunca
   con una línea continua ni con un camino inventado por el ajuste.
@@ -170,12 +179,12 @@ interruptor explica por qué no hay versión ajustada.
   que no sea un corte de señal, esa es otra causa y entra en esta feature.
 - **En un tramo sin pegar se muestran los puntos medidos, no una línea punteada.** La línea
   punteada significa "hubo un corte y no se sabe por dónde se fue"; en un tramo sin pegar sí se
-  sabe, porque el teléfono lo midió. Si el jugador prefiere distinguirlo, se decide en
-  `/speckit-clarify`.
+  sabe, porque el teléfono lo midió.
 - **Se sigue usando el mismo servicio de ajuste**, gratis y sin clave. Cambiar de servicio no es
   parte de esta feature.
-- **La vista por defecto del detalle es la ajustada** y no se recuerda la elección: la vista real
-  es para comparar, no para quedarse. Si el jugador la prefiere, recordarla es un cambio chico.
+- **La vista por defecto del detalle es la ajustada** y no se recuerda la elección (confirmado en
+  la sesión de aclaraciones): la vista real es para comparar, no para quedarse, y así el detalle
+  no contradice lo que muestra el mapa principal.
 - **El reajuste de las salidas viejas es una sola vez** y en segundo plano, con el mismo
   mecanismo de reintento que ya existe para los ajustes pendientes.
 - **El formato del respaldo no cambia** si se puede evitar: lo que viaja es la salida con sus
