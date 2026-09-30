@@ -19,7 +19,8 @@ Tienen que pasar, además de las de siempre:
 - `CoberturaDeZonaTest`: la cuenta del Z3;
 - `BordeTest`: tres esquinas o más, sin cruces, y qué queda adentro;
 - `FormatosTest`: la duración en días, y en meses y días;
-- `RespaldoTest`: un respaldo de la 7 que se restaura en la 8.
+- `MigracionTest`: la migración de la 7 a la 8, que suma las dos tablas sin tocar las salidas;
+- `RespaldoTest`: un respaldo de la 7 se acepta en la 8, y uno de la 9 se rechaza.
 
 El `.ipa` corre las mismas pruebas en el simulador del iPhone antes de armarse.
 
