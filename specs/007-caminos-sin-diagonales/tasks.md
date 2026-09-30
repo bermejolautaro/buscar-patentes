@@ -123,7 +123,7 @@ description: "Tareas de la 007: caminos sin diagonales"
   - **con `NoSePudo`**: lo mismo, con "No se pudo ajustar";
   - **la cámara no se mueve** al cambiar (FR-008): `MapaDeFondo` encuadra una sola vez. Si en el teléfono se mueve, no volver a encuadrar cuando cambian los trazos;
   - la fila no aparece si la salida no tiene puntos. Ahí sigue el texto de hoy.
-- [ ] T012 [US2] **Verificar**: pruebas y APK; compilar el iPhone; el usuario corre el quickstart §4 en los dos teléfonos.
+- [X] T012 **Hecha** junto con T020. [US2] **Verificar**: pruebas y APK; compilar el iPhone; el usuario corre el quickstart §4 en los dos teléfonos.
 
 **Checkpoint**: las dos stories andando en los dos teléfonos.
 
@@ -141,7 +141,7 @@ pinte solo calles, y un interruptor de puntos reales en la pantalla principal.
 - [X] T017 [US1] En `common/domain/CaminoAjustado.kt`, `armar` pasa a `pedazos(forma, aristas)`: solo los pedazos de calle, sin puntos medidos. El prefijo pasa a `3:`, así los `2:` vuelven a la cola. `ajustar()` guarda los pedazos de todos los tramos que el servicio contestó; un tramo rechazado no pinta nada. Pruebas en `CaminoAjustadoTest` y `AjustarACallesTest`.
 - [X] T018 [US1] [US2] En `common/mapa/Colecciones.kt`, `Trazo` suma `huecos` y aparece `trazoDe(...)`: pedazos sin huecos en la vista por defecto, nada si no se pudo, y puntos reales con cortes punteados en la otra vista o si todavía no se ajustó. Lo usan la pantalla principal y el detalle. Pruebas en `ColeccionTest`.
 - [X] T019 [US2] En `common/ui/PantallaPrincipal.kt`, un botón en la fila del mapa, junto al de las patentes, que alterna entre las calles pintadas (`ic_calles`) y los puntos reales (`ic_puntos_reales`). Arranca en calles y no se recuerda.
-- [ ] T020 **Verificar** con las mismas salidas: pruebas y APK; compilar el iPhone; el usuario mira la pantalla principal cerca de casa en las dos vistas y el detalle de una salida.
+- [X] T020 **Hecha** (2026-09-29): el usuario probó en el Android y dijo que funciona perfecto. Antes apareció un error: la consulta de la cola seguía buscando el prefijo `2:`, así que nada se reajustaba; ahora arma el texto con `CaminoGuardado.PREFIJO`. El iPhone queda con el `.ipa` de la misma versión. **Verificar** con las mismas salidas: pruebas y APK; compilar el iPhone; el usuario mira la pantalla principal cerca de casa en las dos vistas y el detalle de una salida.
 
 ---
 
@@ -149,7 +149,7 @@ pinte solo calles, y un interruptor de puntos reales en la pantalla principal.
 
 - [X] T013 **Hecha**. [P] En `TODO.md`, tachar los dos ítems con "(hecho en la 007)": el de las diagonales y el del interruptor entre los puntos reales y el camino ajustado.
 - [X] T014 **Hecha**. [P] En `README.md`, sumar `CaminoAjustadoTest` a la tabla de pruebas: el armado del camino ajustado sin rectas inventadas y el formato guardado (contrato A de la 007). Actualizar la fila de `ColeccionTest`: los trazos por tramos, vengan de donde vengan.
-- [ ] T015 Cierre:
+- [ ] T015 Parcial (2026-09-29): privacidad revisada (sin coordenadas de la zona, sin imágenes ni bases, solo el email `noreply`) y PR abierto. Falta el quickstart §5 con un respaldo entre teléfonos, que corre el usuario. Cierre:
   - correr el quickstart §5 de la 007: un respaldo del Android restaurado en el iPhone reajusta las salidas viejas;
   - revisar con el quickstart §8 de la 006 que no se suba nada del jugador (coordenadas, imágenes, emails);
   - abrir el PR a `main` con el resumen. El merge lo hace el usuario.
