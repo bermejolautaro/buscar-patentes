@@ -31,7 +31,7 @@ class BordeTest {
     )
 
     @Test
-    fun `el tramo tocado es el más cercano, y el último cierra contra la primera`() {
+    fun `el tramo tocado es el más cercano y el último cierra contra la primera`() {
         val esquinas = listOf(Punto(0.0, 0.0), Punto(100.0, 0.0), Punto(100.0, 100.0), Punto(0.0, 100.0))
         assertEquals(0, Borde.tramoTocado(Punto(50.0, 10.0), esquinas, 20.0))
         assertEquals(1, Borde.tramoTocado(Punto(95.0, 50.0), esquinas, 20.0))
