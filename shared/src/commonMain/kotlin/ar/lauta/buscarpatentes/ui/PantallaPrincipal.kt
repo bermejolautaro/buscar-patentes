@@ -69,6 +69,7 @@ import ar.lauta.buscarpatentes.domain.Geo
 import ar.lauta.buscarpatentes.domain.Prioridad
 import ar.lauta.buscarpatentes.domain.CaminoGuardado
 import ar.lauta.buscarpatentes.domain.Probabilidad
+import ar.lauta.buscarpatentes.domain.VistaDePatentes
 import ar.lauta.buscarpatentes.mapa.EstadoDelMapa
 import ar.lauta.buscarpatentes.mapa.MapaDeFondo
 import ar.lauta.buscarpatentes.mapa.Marcador
@@ -91,6 +92,7 @@ import ar.lauta.buscarpatentes.recursos.ic_calles
 import ar.lauta.buscarpatentes.recursos.ic_puntos_reales
 import ar.lauta.buscarpatentes.recursos.ic_cobertura
 import ar.lauta.buscarpatentes.recursos.ic_patentes
+import ar.lauta.buscarpatentes.recursos.ic_patentes_desde
 import ar.lauta.buscarpatentes.recursos.ic_patentes_ocultas
 import ar.lauta.buscarpatentes.recursos.ic_recentrar
 import ar.lauta.buscarpatentes.recursos.ic_recorridos_ocultos
@@ -190,18 +192,19 @@ fun PantallaPrincipal(
     // modo que el jugador no eligió.
     var modoMapa by remember { mutableStateOf(ModoMapa.COBERTURA) }
 
-    // Esconder las patentes para mirar solo por donde se anduvo.
+    // Qué patentes muestra el mapa: desde la que toca, todas o ninguna (009). Ninguna es para
+    // mirar solo por donde se anduvo.
     //
     // **No se persiste, a diferencia de [ModoMapa].** Un mapa que abre sin patentes se ve
     // igual que un mapa sin nada guardado, y el jugador que dejó el interruptor apagado hace
     // tres días no se acuerda: el próximo arranque parece pérdida de datos. El modo de los
     // recorridos puede recordarse porque su leyenda siempre está a la vista; esto vuelve solo
-    // a mostrarlas, que es el estado en el que la app es la app.
-    var patentesVisibles by remember { mutableStateOf(true) }
+    // a la vista de arranque, la que toca y las que vienen, y la leyenda dice desde cuál.
+    var vistaDePatentes by remember { mutableStateOf(VistaDePatentes.DESDE_LA_QUE_TOCA) }
 
     // FR-004 a FR-010 de la 005: el mapa filtrado por un número, desde la lupa de la barra.
     //
-    // `remember` y no `rememberSaveable`, por el FR-009 y la misma razón que [patentesVisibles]:
+    // `remember` y no `rememberSaveable`, por el FR-009 y la misma razón que [vistaDePatentes]:
     // un arranque con menos pines de los que hay se confunde con una pérdida de datos. Y se va
     // con la pantalla: salir a Salidas o Ajustes y volver lo encuentra cerrado.
     //
@@ -453,12 +456,8 @@ fun PantallaPrincipal(
                 // Esconderlas es no mandarlas: el mapa ya sabe dibujar una lista vacía, y
                 // filtrar acá deja el estado de la pantalla intacto —los marcadores siguen
                 // leídos y contados— para que volver a mostrarlas sea inmediato. El filtro por
-                // número de la 005 es lo mismo, a medias. Esconder gana: es lo más general.
-                marcadores = when {
-                    !patentesVisibles -> emptyList()
-                    filtro != null -> marcadores.filter { it.numero == filtro }
-                    else -> marcadores
-                },
+                // número de la 005 y la vista de la 009 son lo mismo, y se combinan en `muestra`.
+                marcadores = marcadores.filter { vistaDePatentes.muestra(it.numero, numeroActual, filtro) },
                 trazos = trazos,
                 modo = modoMapa,
                 estado = estadoDelMapa,
@@ -624,7 +623,8 @@ fun PantallaPrincipal(
 
                 LeyendaDelMapa(
                     modo = modoMapa,
-                    patentesVisibles = patentesVisibles,
+                    vista = vistaDePatentes,
+                    queToca = numeroActual,
                     filtro = filtro,
                     modifier = Modifier.padding(start = 16.dp, bottom = 4.dp),
                 )
@@ -661,19 +661,20 @@ fun PantallaPrincipal(
                     // Esconder las patentes. Al lado del interruptor de recorridos porque
                     // son las dos mitades de la misma pregunta —que se dibuja sobre el
                     // mapa—, y separadas de Salidas y Ajustes, que llevan a otra pantalla.
-                    FilledTonalIconButton(onClick = { patentesVisibles = !patentesVisibles }) {
+                    FilledTonalIconButton(onClick = { vistaDePatentes = vistaDePatentes.siguiente() }) {
                         Icon(
                             painter = painterResource(
-                                if (patentesVisibles) {
-                                    Res.drawable.ic_patentes
-                                } else {
-                                    Res.drawable.ic_patentes_ocultas
+                                when (vistaDePatentes) {
+                                    VistaDePatentes.DESDE_LA_QUE_TOCA -> Res.drawable.ic_patentes_desde
+                                    VistaDePatentes.TODAS -> Res.drawable.ic_patentes
+                                    VistaDePatentes.NINGUNA -> Res.drawable.ic_patentes_ocultas
                                 },
                             ),
-                            contentDescription = if (patentesVisibles) {
-                                "Esconder las patentes del mapa"
-                            } else {
-                                "Mostrar las patentes en el mapa"
+                            // Dice lo que hace el toque: pasar a la vista siguiente.
+                            contentDescription = when (vistaDePatentes) {
+                                VistaDePatentes.DESDE_LA_QUE_TOCA -> "Mostrar todas las patentes"
+                                VistaDePatentes.TODAS -> "Esconder las patentes del mapa"
+                                VistaDePatentes.NINGUNA -> "Mostrar las patentes desde la que toca"
                             },
                         )
                     }

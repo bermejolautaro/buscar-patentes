@@ -19,6 +19,7 @@ corren el mismo código de Kotlin Multiplatform y Compose Multiplatform.
 - Caminos sin diagonales, el mapa que pinta solo calles: [`specs/007-caminos-sin-diagonales/spec.md`](specs/007-caminos-sin-diagonales/spec.md)
 - Zona a recorrer: [`specs/008-zona-a-recorrer/spec.md`](specs/008-zona-a-recorrer/spec.md), y cómo se
   prueba en [`quickstart.md`](specs/008-zona-a-recorrer/quickstart.md)
+- Patentes desde la que toca, la vista de arranque del mapa: [`specs/009-patentes-desde-la-que-toca/spec.md`](specs/009-patentes-desde-la-que-toca/spec.md)
 - Reglas que no se negocian: [`.specify/memory/constitution.md`](.specify/memory/constitution.md)
 
 ## Estructura
@@ -129,6 +130,7 @@ Las pruebas comunes viven en `shared/src/commonTest` y corren en dos lados: en l
 | `CoberturaDeZonaTest` | Qué cuadras están recorridas: con la respuesta real del servicio de ajuste, lo caminado de esquina a esquina cuenta y lo cruzado en la esquina no; las salidas se suman, lo quitado no cuenta, y 99 de 100 no es 100% (contrato Z3 de la 008) |
 | `ZonasTest` | Qué se quita al tocar una cuadra: esa, o toda su calle, siempre con la otra mano de la avenida (FR-012 de la 008) |
 | `MigracionTest` | La base de la 7 a la 8: suma las zonas sin tocar las salidas (D7 de la 008) |
+| `VistaDePatentesTest` | Qué patentes muestra el mapa en cada vista del botón: desde la que toca, todas o ninguna, y la lupa que gana con un número menor (FR-002 y FR-006 de la 009) |
 | `ProbabilidadTest` | La cuenta de los votos sobre si una patente sigue estando (FR-037), y qué patentes conservan sus votos al migrar a la v7 |
 | `PrioridadTest` | El orden de la lista de la barra y el orden de caminar las paradas de un recorrido (FR-012, FR-015 de la 005) |
 | `IrTest` | Qué hace "Abrir en Google Maps" según cuántas paradas quedaron, y la URL con punto decimal (FR-019 de la 005) |
@@ -150,8 +152,9 @@ cada feature: [`001`](specs/001-captura-patentes/quickstart.md),
 [`004`](specs/004-planear-recorridos/quickstart.md),
 [`005`](specs/005-buscar-la-que-toca/quickstart.md),
 [`006`](specs/006-jugar-en-iphone/quickstart.md),
-[`007`](specs/007-caminos-sin-diagonales/quickstart.md) y
-[`008`](specs/008-zona-a-recorrer/quickstart.md).
+[`007`](specs/007-caminos-sin-diagonales/quickstart.md),
+[`008`](specs/008-zona-a-recorrer/quickstart.md) y
+[`009`](specs/009-patentes-desde-la-que-toca/quickstart.md).
 
 ## Zonas
 

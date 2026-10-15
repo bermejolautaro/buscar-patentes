@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ar.lauta.buscarpatentes.data.ModoMapa
+import ar.lauta.buscarpatentes.domain.VistaDePatentes
 import ar.lauta.buscarpatentes.mapa.colorDe
 
 /**
@@ -37,12 +38,14 @@ import ar.lauta.buscarpatentes.mapa.colorDe
  *
  * Desde la 005 dice también qué número filtra el mapa (FR-007): un mapa filtrado y un mapa con
  * pocas patentes guardadas se ven iguales, que es la misma confusión que la de las patentes
- * escondidas.
+ * escondidas. Desde la 009, también desde qué número muestra (FR-004).
  */
 @Composable
 fun LeyendaDelMapa(
     modo: ModoMapa,
-    patentesVisibles: Boolean = true,
+    vista: VistaDePatentes = VistaDePatentes.TODAS,
+    /** El número que toca, o null mientras la base no contestó. */
+    queToca: Int? = null,
     filtro: Int? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -72,9 +75,13 @@ fun LeyendaDelMapa(
 
             // Las patentes escondidas se dicen acá por la misma razón que los recorridos
             // apagados: un mapa sin pines y un mapa sin nada guardado se ven idénticos, y
-            // esa confusión es exactamente la que hace peligroso al interruptor.
-            if (filtro != null) Texto("· Solo la ${tresCifras(filtro)}")
-            if (!patentesVisibles) Texto("· Patentes ocultas")
+            // esa confusión es exactamente la que hace peligroso al interruptor. Con la lupa
+            // se ve un solo número, en cualquiera de las vistas que muestran (FR-006 de la 009).
+            when {
+                vista == VistaDePatentes.NINGUNA -> Texto("· Patentes ocultas")
+                filtro != null -> Texto("· Solo la ${tresCifras(filtro)}")
+                vista == VistaDePatentes.DESDE_LA_QUE_TOCA && queToca != null -> Texto("· Desde la ${tresCifras(queToca)}")
+            }
         }
     }
 }
