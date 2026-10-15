@@ -39,7 +39,7 @@ object Respaldo {
     const val FORMATO = 1
 
     /** La de `@Database` en [BaseDeDatos]. Un respaldo de una base más nueva no se puede abrir acá. */
-    const val VERSION_BASE = 7
+    const val VERSION_BASE = 8
 
     const val NO_ES = "Ese archivo no es un respaldo de la app."
     const val MAS_NUEVO = "Ese respaldo es de una versión más nueva de la app. Actualizala primero."

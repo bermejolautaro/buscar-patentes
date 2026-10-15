@@ -52,6 +52,15 @@ import ar.lauta.buscarpatentes.contenedor
 import ar.lauta.buscarpatentes.data.EstadoDelJuego
 import ar.lauta.buscarpatentes.data.ModoMapa
 import ar.lauta.buscarpatentes.data.RegistroDeCaptura
+import ar.lauta.buscarpatentes.data.Zona
+import ar.lauta.buscarpatentes.data.Zonas
+import ar.lauta.buscarpatentes.domain.Borde
+import ar.lauta.buscarpatentes.domain.CuadraParaContar
+import ar.lauta.buscarpatentes.domain.SalidaParaContar
+import ar.lauta.buscarpatentes.mapa.ClaseDeCuadra
+import ar.lauta.buscarpatentes.mapa.CuadraDibujada
+import ar.lauta.buscarpatentes.mapa.DibujoDeZona
+import ar.lauta.buscarpatentes.ubicacion.BuscarCuadras
 import ar.lauta.buscarpatentes.domain.Antiguedad
 import ar.lauta.buscarpatentes.domain.Escalon
 import ar.lauta.buscarpatentes.mapa.trazoDe
@@ -86,6 +95,7 @@ import ar.lauta.buscarpatentes.recursos.ic_patentes_ocultas
 import ar.lauta.buscarpatentes.recursos.ic_recentrar
 import ar.lauta.buscarpatentes.recursos.ic_recorridos_ocultos
 import ar.lauta.buscarpatentes.recursos.ic_salidas
+import ar.lauta.buscarpatentes.recursos.ic_zonas
 import ar.lauta.buscarpatentes.ubicacion.AjustarACalles
 import ar.lauta.buscarpatentes.ubicacion.LecturaUbicacion
 import kotlinx.coroutines.Deferred
@@ -105,6 +115,7 @@ import org.jetbrains.compose.resources.painterResource
 fun PantallaPrincipal(
     onAjustes: () -> Unit,
     onRecorridos: () -> Unit,
+    onZonas: () -> Unit,
 ) {
     val alcance = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
@@ -154,6 +165,24 @@ fun PantallaPrincipal(
     var puntosReales by remember { mutableStateOf(false) }
     val trazos = remember(caminos, puntosReales) {
         caminos.map { trazoDe(it.id, it.medidos, it.guardado, it.escalon, puntosReales) }
+    }
+
+    // FR-010 de la 008: de cada zona activa, el borde y lo que falta. Ningún número: el
+    // porcentaje vive adentro de la zona, y el FR-020a de la 004 sigue valiendo acá.
+    var zonasActivas by remember { mutableStateOf<List<Pair<Zona, List<CuadraParaContar>>>>(emptyList()) }
+    var salidasParaContar by remember { mutableStateOf<List<SalidaParaContar>>(emptyList()) }
+    val dibujosDeZonas = remember(zonasActivas, salidasParaContar) {
+        zonasActivas.map { (zona, cuadras) ->
+            val recorridas = Zonas.cuenta(zona, cuadras, salidasParaContar).recorridas
+            DibujoDeZona(
+                borde = Borde.leer(zona.borde),
+                // Solo lo que falta: lo recorrido ya lo pinta el trazo, y lo quitado no se busca.
+                cuadras = cuadras
+                    .filter { !it.quitada && it.id !in recorridas }
+                    .map { CuadraDibujada(it.id, it.forma, ClaseDeCuadra.PENDIENTE) },
+                bordeContinuo = false,
+            )
+        }
     }
 
     // FR-002 y FR-003: cuál de las tres preguntas contesta el mapa. Arranca en cobertura y se
@@ -341,6 +370,12 @@ fun PantallaPrincipal(
         // una prolijidad. MapLibre dibuja las features en el orden de la fuente, así que la
         // salida reciente queda encima de la vieja donde se pisan, sin calcular una sola
         // intersección de geometría.
+        salidasParaContar = Zonas.salidasParaContar(salidas)
+        val cuadrasPorZona = contenedor.zonas.cuadrasDeActivas().groupBy { it.zonaId }
+        zonasActivas = contenedor.zonas.activas().map { zona ->
+            zona to cuadrasPorZona[zona.id].orEmpty().map(Zonas::paraContar)
+        }
+
         caminos = salidas.sortedBy { it.iniciadoEn }.map { salida ->
             CaminoDeSalida(
                 id = salida.id,
@@ -386,8 +421,16 @@ fun PantallaPrincipal(
     //
     // Acá corre una sola vez por entrada a la pantalla, sin que nadie lo espere, y recién
     // cuando ajustó algo pide la relectura. Sin conexión no hace nada y no cuesta nada.
+    //
+    // La 008 suma acá la búsqueda de cuadras de las zonas nuevas, con la misma lógica. Un camino
+    // ajustado o unas cuadras nuevas pueden completar una zona, así que después se revisa.
     LaunchedEffect(Unit) {
-        if (AjustarACalles.pendientes() > 0) recarga++
+        val ajustadas = AjustarACalles.pendientes()
+        val buscadas = BuscarCuadras.pendientes()
+        if (ajustadas + buscadas > 0) {
+            Zonas.revisar()
+            recarga++
+        }
     }
 
     val cortada by salidaCortada.collectAsState()
@@ -419,6 +462,7 @@ fun PantallaPrincipal(
                 trazos = trazos,
                 modo = modoMapa,
                 estado = estadoDelMapa,
+                zonas = if (modoMapa == ModoMapa.APAGADO) emptyList() else dibujosDeZonas,
                 onTocarMarcador = { id ->
                     alcance.launch {
                         registroTocado = contenedor.registros.porId(id)
@@ -653,6 +697,12 @@ fun PantallaPrincipal(
                         Icon(
                             painter = painterResource(Res.drawable.ic_salidas),
                             contentDescription = "Salidas",
+                        )
+                    }
+                    FilledTonalIconButton(onClick = onZonas) {
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_zonas),
+                            contentDescription = "Zonas",
                         )
                     }
                     FilledTonalIconButton(onClick = onAjustes) {

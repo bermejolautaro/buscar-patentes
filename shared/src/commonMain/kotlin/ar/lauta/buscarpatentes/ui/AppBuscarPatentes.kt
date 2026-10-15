@@ -24,7 +24,7 @@ import ar.lauta.buscarpatentes.respaldo.Vencimiento
  * Eran cuatro hasta la 005: la pantalla de busqueda se retiro (FR-013), y su trabajo lo hace la
  * barra de arriba de la principal.
  */
-private enum class Destino { PRINCIPAL, RECORRIDOS, AJUSTES }
+private enum class Destino { PRINCIPAL, RECORRIDOS, ZONAS, AJUSTES }
 
 @OptIn(ExperimentalComposeUiApi::class) // el BackHandler de Compose Multiplatform
 @Composable
@@ -46,8 +46,12 @@ fun AppBuscarPatentes() {
             Destino.PRINCIPAL -> PantallaPrincipal(
                 onAjustes = { destino = Destino.AJUSTES },
                 onRecorridos = { destino = Destino.RECORRIDOS },
+                onZonas = { destino = Destino.ZONAS },
             )
             Destino.RECORRIDOS -> PantallaRecorridos(
+                onVolver = { destino = Destino.PRINCIPAL },
+            )
+            Destino.ZONAS -> PantallaZonas(
                 onVolver = { destino = Destino.PRINCIPAL },
             )
             Destino.AJUSTES -> PantallaAjustes(

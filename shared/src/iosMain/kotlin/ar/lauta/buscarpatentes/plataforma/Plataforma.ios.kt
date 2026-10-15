@@ -91,6 +91,9 @@ actual suspend fun postear(url: String, cuerpo: String): String? = suspendCancel
     val pedido = NSMutableURLRequest.requestWithURL(NSURL.URLWithString(url)!!).apply {
         setHTTPMethod("POST")
         setValue("application/json", forHTTPHeaderField = "Content-Type")
+        // Overpass rechaza con 406 un pedido sin identificación propia, y el servidor de Valhalla
+        // pide lo mismo en sus reglas de uso (D1 de la 008).
+        setValue("buscar-patentes", forHTTPHeaderField = "User-Agent")
         setHTTPBody((cuerpo as NSString).dataUsingEncoding(NSUTF8StringEncoding))
         setTimeoutInterval(ESPERA_S)
     }

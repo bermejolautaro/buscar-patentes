@@ -92,6 +92,22 @@ class InmutabilidadTest {
     }
 
     /**
+     * Las zonas leen las salidas y no las escriben (FR-019 de la 008). `ZonaDao` es el último DAO
+     * del archivo, así que todo lo que sigue a su declaración es suyo: ahí no puede aparecer ninguna
+     * de las dos tablas de una salida.
+     */
+    @Test
+    fun `las zonas no escriben en las salidas`() {
+        val zonas = fuente.substringAfter("abstract class ZonaDao", "")
+        assertTrue(zonas.contains("fun activar("), "No se encontró ZonaDao en el fuente")
+        val ofensoras = listOf("recorrido", "punto_de_trayecto").filter { Regex("""\b$it\b""").containsMatchIn(zonas) }
+        assertTrue(
+            ofensoras.isEmpty(),
+            "ZonaDao nombra $ofensoras. La zona solo lee las salidas, con RecorridoDao (Principio II).",
+        )
+    }
+
+    /**
      * El precalentado del GPS no puede volverse un `getLastLocation()` encubierto.
      *
      * Pedir la posición al tipear el primer dígito está bien: la lectura sigue siendo del

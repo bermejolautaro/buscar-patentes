@@ -247,3 +247,96 @@ data class Voto(
     /** Epoch millis del momento del voto: es el dato que dice a qué hora se pasó. */
     val votadoEn: Long,
 )
+
+/** En qué anda una zona (data-model de la 008). */
+enum class EstadoZona {
+    /** Sin cuadras todavía: esperando conexión, o con un [Zona.problema] que la deja sin uso. */
+    BUSCANDO,
+
+    /** Con sus cuadras. El porcentaje se calcula en vivo contra las salidas. */
+    ACTIVA,
+
+    /** Llegó al 100% sola (FR-014). Su resultado ya no cambia. */
+    COMPLETADA,
+
+    /** La cerró el jugador (FR-015). Su resultado ya no cambia. */
+    CERRADA,
+}
+
+/**
+ * Un pedazo del mapa que el jugador se propone recorrer entero (FR-001 a FR-003).
+ *
+ * No es evidencia: se crea, se cambia y se borra sin tocar el Principio II. Lo que sí es
+ * evidencia —las salidas— la zona solo lo lee (FR-019).
+ *
+ * Qué cuadras están recorridas **no se guarda** mientras la zona está activa: se calcula cada
+ * vez contra las salidas (D7 de la 008). Se congela en [Cuadra.recorridaAlTerminar] cuando la
+ * zona termina.
+ */
+@Entity(tableName = "zona")
+data class Zona(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+
+    /** El que escribió el jugador, o "Zona del dd/mm" (FR-002). */
+    val nombre: String,
+
+    /** Las esquinas en orden, como polilínea a 1e6. El borde se cierra solo contra la primera. */
+    val borde: String,
+
+    /** Epoch millis de la creación. */
+    val creadaEn: Long,
+
+    /**
+     * Epoch millis del comienzo del día desde el que cuentan las salidas (FR-003). Arranca en el
+     * día de la creación y el jugador lo puede correr para atrás mientras la zona está activa.
+     */
+    val cuentaDesde: Long,
+
+    val estado: EstadoZona = EstadoZona.BUSCANDO,
+
+    /**
+     * Solo en [EstadoZona.BUSCANDO], cuando la búsqueda terminó y la zona no sirve: no hay calles
+     * adentro, o son demasiadas (D8 de la 008). La zona queda para borrar.
+     */
+    val problema: String? = null,
+
+    /**
+     * Completada: la fecha de la última cuadra recorrida (D6). Cerrada: el momento del cierre.
+     * Null mientras está activa.
+     */
+    val terminadaEn: Long? = null,
+
+    /** El porcentaje congelado al terminar. Null mientras está activa. */
+    val porcentajeFinal: Int? = null,
+)
+
+/**
+ * Un tramo de calle entre dos esquinas, dentro de una zona (contrato Z2 de la 008).
+ *
+ * Se escribe una vez, cuando la búsqueda de cuadras termina, y no cambia aunque cambie el mapa
+ * de calles (FR-005). Después solo cambian [quitada] y, al terminar la zona, [recorridaAlTerminar].
+ */
+@Entity(tableName = "cuadra", indices = [Index("zonaId")])
+data class Cuadra(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+
+    val zonaId: Long,
+
+    /** El nombre de la calle. Null si el mapa no lo tiene. */
+    val nombre: String?,
+
+    /** La cuadra de esquina a esquina, como polilínea a 1e6. */
+    val forma: String,
+
+    /**
+     * El id de la principal, si esta cuadra es la otra mano de una avenida con bulevar (D3). La
+     * pareja cuenta como una sola cuadra.
+     */
+    val gemelaDe: Long? = null,
+
+    /** La quitó el jugador: no cuenta ni en las recorridas ni en el total (FR-013). */
+    val quitada: Boolean = false,
+
+    /** Solo con la zona terminada: si estaba recorrida en ese momento (FR-016). */
+    val recorridaAlTerminar: Boolean = false,
+)

@@ -1,22 +1,40 @@
 package ar.lauta.buscarpatentes.mapa
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import ar.lauta.buscarpatentes.data.ModoMapa
+import ar.lauta.buscarpatentes.domain.Borde
 import ar.lauta.buscarpatentes.domain.Escalon
+import ar.lauta.buscarpatentes.domain.Punto
 import ar.lauta.buscarpatentes.plataforma.Carpetas
 import ar.lauta.buscarpatentes.plataforma.Permiso
 import ar.lauta.buscarpatentes.plataforma.tienePermiso
@@ -32,6 +50,7 @@ import kotlinx.serialization.json.longOrNull
 import org.maplibre.compose.camera.CameraMoveReason
 import org.maplibre.compose.camera.CameraPosition
 import org.maplibre.compose.camera.CameraUpdate
+import org.maplibre.compose.expressions.dsl.asBoolean
 import org.maplibre.compose.expressions.dsl.asNumber
 import org.maplibre.compose.expressions.dsl.asString
 import org.maplibre.compose.expressions.dsl.case
@@ -255,6 +274,23 @@ fun MapaDeFondo(
     seguirAlJugador: Boolean = true,
     estado: EstadoDelMapa? = null,
     onTocarMarcador: (Long) -> Unit = {},
+    /** El borde y las cuadras de cada zona, ya decididos por quien llama (contrato Z4 de la 008). */
+    zonas: List<DibujoDeZona> = emptyList(),
+    /** Un toque que no cayó sobre nada: marca una esquina de una zona nueva (D9 de la 008). */
+    onTocarMapa: ((latitud: Double, longitud: Double) -> Unit)? = null,
+    /** Un toque sobre una cuadra, con su id (FR-012 de la 008). */
+    onTocarCuadra: ((Long) -> Unit)? = null,
+    /** Las esquinas que el dedo puede arrastrar, mientras se dibuja una zona (FR-001 de la 008). */
+    esquinasMovibles: List<Pair<Double, Double>> = emptyList(),
+    /**
+     * Una esquina arrastrada: su índice y dónde está ahora. [empieza] marca el primer aviso de cada
+     * arrastre, que es lo que deja deshacerlo de una vez.
+     */
+    onMoverEsquina: (indice: Int, latitud: Double, longitud: Double, empieza: Boolean) -> Unit = { _, _, _, _ -> },
+    /** Un toque sobre el tramo que sale de la esquina [indice]: la esquina nueva va después de ella. */
+    onPartirTramo: (indice: Int, latitud: Double, longitud: Double) -> Unit = { _, _, _ -> },
+    /** Una esquina apretada un rato: se borra. */
+    onBorrarEsquina: (indice: Int) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val alcance = rememberCoroutineScope()
@@ -266,6 +302,11 @@ fun MapaDeFondo(
     val (resto, tocan) = remember(marcadores, zoomAcomodado) { coleccionesPatentes(marcadores, zoomAcomodado) }
     val coleccionTrazos = remember(trazos) { coleccionTrazos(trazos) }
     val coleccionHuecos = remember(trazos) { coleccionHuecos(trazos) }
+    val coleccionBordes = remember(zonas) { coleccionBordes(zonas) }
+    val coleccionCuadras = remember(zonas) { coleccionCuadras(zonas) }
+    // El toque llega en un callback que el mapa arma una vez: tiene que leer lo último.
+    val esquinasActuales by rememberUpdatedState(esquinasMovibles)
+    val alPartir by rememberUpdatedState(onPartirTramo)
 
     val pines = remember {
         Pines(
@@ -299,6 +340,12 @@ fun MapaDeFondo(
         if (oscuro) Anchor.Above("highway_motorway_subtle") { CapasDeAvenidas() }
 
         Anchor.Top {
+            // Debajo de los trazos: lo pendiente es el hueco que dejan, y lo caminado se ve encima.
+            CapasDeZonas(
+                cuadras = rememberGeoJsonSource(GeoJsonData.Features(coleccionCuadras)),
+                bordes = rememberGeoJsonSource(GeoJsonData.Features(coleccionBordes)),
+                onTocarCuadra = onTocarCuadra,
+            )
             CapasDeTrazos(
                 trazos = rememberGeoJsonSource(GeoJsonData.Features(coleccionTrazos)),
                 huecos = rememberGeoJsonSource(GeoJsonData.Features(coleccionHuecos)),
@@ -352,26 +399,131 @@ fun MapaDeFondo(
     // En el mapa de una salida es lo que hace que el camino se vea entero. Una sola vez: la
     // primera en que hay algo que encuadrar.
     var encuadrado by remember { mutableStateOf(false) }
-    LaunchedEffect(marcadores, trazos) {
+    LaunchedEffect(marcadores, trazos, zonas) {
         if (encuadrado || (seguirAlJugador && conPermiso)) return@LaunchedEffect
         val posiciones = marcadores.map { Position(it.longitud, it.latitud) } +
-            trazos.flatMap { t -> t.tramos.flatten().map { (lat, lon) -> Position(lon, lat) } }
+            trazos.flatMap { t -> t.tramos.flatten().map { (lat, lon) -> Position(lon, lat) } } +
+            zonas.flatMap { z -> z.borde.map { (lat, lon) -> Position(lon, lat) } }
         if (posiciones.isEmpty()) return@LaunchedEffect
         encuadrado = true
         mapa.irA(posiciones, RELLENO_ENCUADRE, animado = false)
     }
 
-    MaplibreMap(
-        modifier = modifier,
-        state = mapa,
-        cameraConstraints = CameraConstraints(maxZoom = ZOOM_MAXIMO),
-        // FR-040: sin rotación. El norte arriba es información —el rumbo a la patente se dice
-        // en puntos cardinales (FR-003)— y el gesto de dos dedos se disparaba solo al hacer zoom.
-        interactions = MapInteractions(MapInteractions.Standard) { camera { rotate { enabled = false } } },
-        // Sin brújula (no hay rotación) ni escala: la franja de controles de la pantalla es
-        // la única que habla.
-        overlay = {},
-    )
+    Box(modifier) {
+        MaplibreMap(
+            modifier = Modifier.fillMaxSize(),
+            state = mapa,
+            cameraConstraints = CameraConstraints(maxZoom = ZOOM_MAXIMO),
+            // FR-040: sin rotación. El norte arriba es información —el rumbo a la patente se dice
+            // en puntos cardinales (FR-003)— y el gesto de dos dedos se disparaba solo al hacer zoom.
+            interactions = MapInteractions(MapInteractions.Standard) {
+                camera { rotate { enabled = false } }
+                // D9 de la 008: el toque que ninguna capa consumió —ni un pin ni una cuadra— es una
+                // esquina de la zona que se está dibujando. Sobre un tramo del borde, lo parte.
+                if (onTocarMapa != null) {
+                    callbacks {
+                        click {
+                            onUnhandled { evento ->
+                                val posicion = evento.position ?: return@onUnhandled ClickResult.Pass
+                                val tramo = mapa.tramoTocado(esquinasActuales, posicion)
+                                if (tramo != null) {
+                                    alPartir(tramo, posicion.latitude, posicion.longitude)
+                                } else {
+                                    onTocarMapa(posicion.latitude, posicion.longitude)
+                                }
+                                ClickResult.Consume
+                            }
+                        }
+                    }
+                }
+            },
+            // Sin brújula (no hay rotación) ni escala: la franja de controles de la pantalla es
+            // la única que habla.
+            overlay = {},
+        )
+        EsquinasMovibles(mapa, esquinasMovibles, onMoverEsquina, onBorrarEsquina)
+    }
+}
+
+/** El punto de una esquina, y el lugar alrededor que agarra el dedo. */
+private val PUNTO_ESQUINA = 20.dp
+private val TOQUE_ESQUINA = 44.dp
+
+/** Hasta dónde de un tramo del borde un toque lo parte. La mitad del toque de una esquina. */
+private val TOQUE_TRAMO = 22.dp
+
+/** El tramo de [esquinas] que tocó el dedo en [toque], medido en la pantalla (FR-001 de la 008). */
+private fun MapState.tramoTocado(esquinas: List<Pair<Double, Double>>, toque: Position): Int? {
+    fun enPantalla(p: Position) = screenLocationFromPosition(p)?.let { Punto(it.x.value.toDouble(), it.y.value.toDouble()) }
+    val dedo = enPantalla(toque) ?: return null
+    val puntos = esquinas.map { (lat, lon) -> enPantalla(Position(lon, lat)) ?: return null }
+    return Borde.tramoTocado(dedo, puntos, TOQUE_TRAMO.value.toDouble())
+}
+
+/**
+ * Las esquinas de la zona que se dibuja, encima del mapa (FR-001 de la 008). Van en Compose y no en
+ * una capa del mapa porque el mapa no deja arrastrar lo que dibuja. Cada una sigue su posición
+ * cuando se mueve la cámara, y el dedo que la arrastra no le llega al mapa, que se queda quieto.
+ */
+@Composable
+private fun EsquinasMovibles(
+    mapa: MapState,
+    esquinas: List<Pair<Double, Double>>,
+    onMover: (indice: Int, latitud: Double, longitud: Double, empieza: Boolean) -> Unit,
+    onBorrar: (indice: Int) -> Unit,
+) {
+    // Leer la cámara acá recompone las esquinas cada vez que se mueve.
+    mapa.cameraPosition
+    val alMover by rememberUpdatedState(onMover)
+    val alBorrar by rememberUpdatedState(onBorrar)
+    val vibrar = LocalHapticFeedback.current
+    val color = remember { colorDe(ColoresDeMapa.BORDE) }
+    esquinas.forEachIndexed { i, (lat, lon) ->
+        // Null mientras el mapa no está listo.
+        val centro = mapa.screenLocationFromPosition(Position(lon, lat)) ?: return@forEachIndexed
+        key(i) {
+            val centroActual by rememberUpdatedState(centro)
+            Box(
+                Modifier
+                    .offset(centro.x - TOQUE_ESQUINA / 2, centro.y - TOQUE_ESQUINA / 2)
+                    .size(TOQUE_ESQUINA)
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onLongPress = {
+                                vibrar.performHapticFeedback(HapticFeedbackType.LongPress)
+                                alBorrar(i)
+                            },
+                        )
+                    }
+                    .pointerInput(Unit) {
+                        var dedo = DpOffset.Zero
+                        var empieza = true
+                        detectDragGestures(
+                            onDragStart = {
+                                dedo = centroActual
+                                empieza = true
+                            },
+                            onDrag = { cambio, arrastre ->
+                                cambio.consume()
+                                dedo = DpOffset(dedo.x + arrastre.x.toDp(), dedo.y + arrastre.y.toDp())
+                                mapa.positionFromScreenLocation(dedo)?.let {
+                                    alMover(i, it.latitude, it.longitude, empieza)
+                                    empieza = false
+                                }
+                            },
+                        )
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(
+                    Modifier
+                        .size(PUNTO_ESQUINA)
+                        .background(color, CircleShape)
+                        .border(2.dp, Color.White, CircleShape),
+                )
+            }
+        }
+    }
 }
 
 /**
@@ -433,6 +585,66 @@ private class Pines(
     val tocaMedia: PinPainter,
     val tocaAlta: PinPainter,
 )
+
+/**
+ * Las zonas (contrato Z4 de la 008): cada cuadra con el color de su clase, y el borde, continuo en
+ * el mapa de una zona y punteado en la pantalla principal.
+ *
+ * Las cuadras se tocan solo si hay [onTocarCuadra]: en la pantalla principal un toque sobre una
+ * cuadra pendiente tiene que seguir llegando al mapa.
+ */
+@Composable
+private fun CapasDeZonas(
+    cuadras: GeoJsonSource,
+    bordes: GeoJsonSource,
+    onTocarCuadra: ((Long) -> Unit)?,
+) {
+    val alTocar: FeaturesClickHandler? = onTocarCuadra?.let { tocar ->
+        { tocadas ->
+            val id = tocadas.firstNotNullOfOrNull { it.properties?.get(PROP_ID)?.jsonPrimitive?.longOrNull }
+            if (id != null) {
+                tocar(id)
+                ClickResult.Consume
+            } else {
+                ClickResult.Pass
+            }
+        }
+    }
+    LineLayer(
+        id = "zonas-cuadras",
+        source = cuadras,
+        color = switch(
+            input = feature[PROP_CLASE].asString(),
+            case(ClaseDeCuadra.RECORRIDA.name, const(colorDe(ColoresDeMapa.RECORRIDO))),
+            case(ClaseDeCuadra.QUITADA.name, const(colorDe(ColoresDeMapa.QUITADA))),
+            fallback = const(colorDe(ColoresDeMapa.PENDIENTE)),
+        ),
+        width = const(6.dp),
+        opacity = switch(
+            input = feature[PROP_CLASE].asString(),
+            case(ClaseDeCuadra.QUITADA.name, const(0.5f)),
+            fallback = const(0.85f),
+        ),
+        cap = const(LineCap.Round),
+        join = const(LineJoin.Round),
+        onClick = alTocar,
+    )
+    LineLayer(
+        id = "zonas-borde-continuo",
+        source = bordes,
+        filter = feature[PROP_CONTINUO].asBoolean(),
+        color = const(colorDe(ColoresDeMapa.BORDE)),
+        width = const(2.dp),
+    )
+    LineLayer(
+        id = "zonas-borde-punteado",
+        source = bordes,
+        filter = !feature[PROP_CONTINUO].asBoolean(),
+        color = const(colorDe(ColoresDeMapa.BORDE)),
+        width = const(2.dp),
+        dasharray = const(listOf(3, 2)),
+    )
+}
 
 /**
  * La capa del camino recorrido (FR-006 de la 003, FR-007 de la 004).

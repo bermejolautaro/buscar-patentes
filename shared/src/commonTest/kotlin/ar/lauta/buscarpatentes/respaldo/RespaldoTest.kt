@@ -112,6 +112,11 @@ class RespaldoTest {
         abrir(baseNueva).use { it.execSQL("PRAGMA user_version = 99") }
         assertEquals(Respaldo.MAS_NUEVO, motivo(baseNueva))
 
+        // La 9 es la primera que esta app no conoce: desde la 008 la base va por la 8.
+        val laSiguiente = respaldoDe(baseDeOrigen("siguiente"))
+        abrir(laSiguiente).use { it.execSQL("PRAGMA user_version = ${Respaldo.VERSION_BASE + 1}") }
+        assertEquals(Respaldo.MAS_NUEVO, motivo(laSiguiente))
+
         val cortado = respaldoDe(baseDeOrigen("cortado"))
         val bytes = leer(cortado)
         SystemFileSystem.sink(cortado).buffered().use { it.write(bytes, 0, bytes.size * 6 / 10) }
@@ -161,7 +166,7 @@ class RespaldoTest {
         val p = Path(raiz, "$nombre.db")
         escribir(Path(fotosDeOrigen, "100.jpg"), foto)
         abrir(p).use { con ->
-            ESQUEMA.forEach(con::execSQL)
+            ESQUEMA_7.forEach(con::execSQL)
             con.execSQL("PRAGMA user_version = 7")
             val registro = con.prepare(
                 "INSERT INTO registro_de_captura (numero, patenteTexto, formato, latitud, longitud, precisionMetros, " +
@@ -214,7 +219,7 @@ class RespaldoTest {
         val destino = carpeta("destino")
         val base = Path(destino, BaseDeDatos.ARCHIVO)
         abrir(base).use { con ->
-            ESQUEMA.forEach(con::execSQL)
+            ESQUEMA_7.forEach(con::execSQL)
             con.execSQL("PRAGMA user_version = 7")
             con.execSQL(
                 "INSERT INTO registro_de_captura VALUES (1, 999, NULL, 'MERCOSUR', -31.4, -64.2, 5.0, 0, 1700000000000, 'PENDIENTE', NULL, NULL, 0)",
@@ -254,22 +259,23 @@ class RespaldoTest {
     private fun escribir(p: Path, bytes: ByteArray) = SystemFileSystem.sink(p).buffered().use { it.write(bytes) }
 
     private fun leer(p: Path): ByteArray = SystemFileSystem.source(p).buffered().use { it.readByteArray() }
-
-    private companion object {
-        /** El de Room en la versión 7 (ver `ConstruirBase.kt` del Android). */
-        val ESQUEMA = listOf(
-            "CREATE TABLE registro_de_captura (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, numero INTEGER NOT NULL, " +
-                "patenteTexto TEXT, formato TEXT NOT NULL, latitud REAL NOT NULL, longitud REAL NOT NULL, " +
-                "precisionMetros REAL NOT NULL, precisionDegradada INTEGER NOT NULL, capturadoEn INTEGER NOT NULL, " +
-                "estado TEXT NOT NULL, fotoRuta TEXT, recorridoId INTEGER, probabilidadInicial INTEGER NOT NULL DEFAULT 0)",
-            "CREATE TABLE estado_del_juego (id INTEGER NOT NULL PRIMARY KEY, numeroActual INTEGER NOT NULL, " +
-                "avisosActivos INTEGER NOT NULL, modoMapa TEXT NOT NULL DEFAULT 'COBERTURA')",
-            "CREATE TABLE recorrido (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, iniciadoEn INTEGER NOT NULL, " +
-                "finalizadoEn INTEGER, estado TEXT NOT NULL, caminoAjustado TEXT)",
-            "CREATE TABLE punto_de_trayecto (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, recorridoId INTEGER NOT NULL, " +
-                "latitud REAL NOT NULL, longitud REAL NOT NULL, precisionMetros REAL NOT NULL, registradoEn INTEGER NOT NULL)",
-            "CREATE TABLE voto (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, registroId INTEGER NOT NULL, " +
-                "valor INTEGER NOT NULL, votadoEn INTEGER NOT NULL)",
-        )
-    }
 }
+
+/**
+ * El esquema de Room en la versión 7 (ver `ConstruirBase.kt` del Android). Lo usa también
+ * `MigracionTest`, que lo migra a la 8.
+ */
+internal val ESQUEMA_7 = listOf(
+    "CREATE TABLE registro_de_captura (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, numero INTEGER NOT NULL, " +
+        "patenteTexto TEXT, formato TEXT NOT NULL, latitud REAL NOT NULL, longitud REAL NOT NULL, " +
+        "precisionMetros REAL NOT NULL, precisionDegradada INTEGER NOT NULL, capturadoEn INTEGER NOT NULL, " +
+        "estado TEXT NOT NULL, fotoRuta TEXT, recorridoId INTEGER, probabilidadInicial INTEGER NOT NULL DEFAULT 0)",
+    "CREATE TABLE estado_del_juego (id INTEGER NOT NULL PRIMARY KEY, numeroActual INTEGER NOT NULL, " +
+        "avisosActivos INTEGER NOT NULL, modoMapa TEXT NOT NULL DEFAULT 'COBERTURA')",
+    "CREATE TABLE recorrido (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, iniciadoEn INTEGER NOT NULL, " +
+        "finalizadoEn INTEGER, estado TEXT NOT NULL, caminoAjustado TEXT)",
+    "CREATE TABLE punto_de_trayecto (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, recorridoId INTEGER NOT NULL, " +
+        "latitud REAL NOT NULL, longitud REAL NOT NULL, precisionMetros REAL NOT NULL, registradoEn INTEGER NOT NULL)",
+    "CREATE TABLE voto (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, registroId INTEGER NOT NULL, " +
+        "valor INTEGER NOT NULL, votadoEn INTEGER NOT NULL)",
+)
