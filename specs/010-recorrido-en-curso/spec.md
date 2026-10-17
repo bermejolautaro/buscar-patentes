@@ -17,28 +17,30 @@ Hoy pasan tres cosas que le juegan en contra en la calle:
   rápida, donde se toca todo el tiempo.
 - **No se ve cuánto lleva.** Ni el tiempo, ni la distancia, ni nada que diga "esto está grabando"
   fuera del ícono del botón.
-- **Cerrar la app la corta.** En el iPhone, sacar la app deslizándola desde el selector de apps
-  mata la grabación. Al abrirla otra vez, la salida se cierra con lo que tenía y la pantalla dice
-  "La salida se cortó" (FR-028 de la 006). Lo que se camine después es otra salida, si el jugador
-  se acuerda de empezarla.
+- **Una salida cortada no avisa.** Si la app se cierra, la salida deja de grabar en silencio, y el
+  jugador se entera recién cuando vuelve a abrirla.
 
 ### Lo que se averiguó sobre seguir grabando con la app cerrada
+
+El jugador pidió averiguar si una salida puede seguir grabando cuando la app se cierra desde el
+selector de apps. Hoy se corta: al abrirla otra vez, la salida se cierra con lo que tenía y la
+pantalla dice "La salida se cortó" (FR-028 de la 006).
 
 - **iPhone, la app cerrada por el jugador**: no se puede. Cuando el jugador la saca deslizándola,
   el sistema no la vuelve a abrir para darle ubicaciones hasta que el jugador la abre a mano. Es una
   regla del sistema, y desarrolladores reportan que en iOS 26 se cumple también para los avisos de
   ubicación que antes sí la reabrían.
-- **iPhone, la app cerrada por el sistema** (para liberar memoria, con la pantalla apagada): sí se
-  puede. Con las APIs de ubicación de iOS 17 en adelante, el sistema la vuelve a abrir en segundo
-  plano y la grabación sigue, si la app la retoma apenas arranca. La grabación de hoy usa la API
-  vieja, que no la reabre.
+- **iPhone, la app cerrada por el sistema** (para liberar memoria, con la pantalla apagada): se
+  podría. Con las APIs de ubicación de iOS 17 en adelante, el sistema la vuelve a abrir en segundo
+  plano, y la grabación sigue si la app la retoma apenas arranca.
 - **Android**: la grabación es un servicio en primer plano con su notificación, y sacar la app de
   recientes no lo detiene en un Android de fábrica. Algunas capas de fabricante, como HyperOS, matan
-  todo igual si la app no tiene permiso de inicio automático o tiene el ahorro de batería activo.
-  Eso se verifica en el teléfono de pruebas.
+  todo igual.
 
-Lo que sí se puede en los dos: **que cerrar la app no corte la salida**. Al volver a abrirla, la
-salida sigue siendo la misma, con un hueco donde no hubo grabación.
+Lo único que resolvería el caso del jugador sería retomar la misma salida al volver a abrir la app.
+El jugador decidió que no vale la pena: si se cierra, la salida se corta como hasta ahora, y empieza
+otra. Lo que sí pide es **enterarse en el momento**, con una notificación, para empezar otra enseguida
+y no caminar media hora sin grabar.
 
 ## Clarifications
 
@@ -47,41 +49,22 @@ salida sigue siendo la misma, con un hueco donde no hubo grabación.
 - Q: ¿De dónde sale el peso para las calorías? → A: El jugador lo carga en Ajustes. Mientras no lo
   cargue, la app no muestra calorías: ningún número inventado.
 - Q: ¿La barra de arriba muestra también las calorías en vivo? → A: Sí: tiempo, km y calorías.
+- Q: ¿Qué hace la app si se cierra con una salida en curso? → A: Lo mismo que hoy: la salida se
+  corta, y el jugador empieza otra. No hay forma buena de evitarlo en el iPhone, y retomarla no le
+  interesa. Sale del alcance todo lo de seguir grabando o retomar.
+- Q: ¿Se avisa cuando la salida se corta sin que el jugador la termine? → A: Sí, con una
+  notificación, por ejemplo al cerrar la app deslizándola.
+- Q: ¿Las calorías son solo las de caminar o el total, con lo que el cuerpo gasta en reposo? → A:
+  Solo las activas, las de caminar. Salen de los km y el peso: estar quieto no suma.
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - No perder la salida al cerrar la app sin querer (Priority: P1)
-
-El jugador está en una salida y cierra la app sin querer. Cuando la vuelve a abrir, la salida sigue
-abierta y grabando: es la misma, no una nueva, y lo que pasó con la app cerrada queda como un hueco.
-
-**Why this priority**: es lo único de la lista que hoy pierde datos. Lo demás es comodidad.
-
-**Independent Test**: empezar una salida, caminar una cuadra, cerrar la app desde el selector de
-apps, caminar otra cuadra, abrirla y caminar una tercera. Terminar la salida.
-
-**Acceptance Scenarios**:
-
-1. **Given** una salida en curso, **When** el jugador cierra la app desde el selector de apps y la
-   vuelve a abrir, **Then** la salida sigue en curso, el botón de recorrido sigue en "terminar" y
-   la grabación sigue.
-2. **Given** esa salida retomada, **When** el jugador la termina, **Then** queda una sola salida
-   con las tres cuadras: la primera y la tercera grabadas, y un hueco punteado entre las dos (FR-009a
-   de la 004).
-3. **Given** la app retomó una salida, **When** se abre la pantalla principal, **Then** dice una vez
-   que siguió la misma salida y que lo de la app cerrada no se grabó.
-4. **Given** una salida en curso en el iPhone y la pantalla apagada, **When** el sistema cierra la
-   app para liberar memoria, **Then** la grabación sigue sola, sin que el jugador abra la app.
-5. **Given** una salida en curso en el Android, **When** el jugador saca la app de recientes,
-   **Then** la notificación de la salida sigue y la grabación no se corta.
-
----
-
-### User Story 2 - No terminar la salida sin querer (Priority: P1)
+### User Story 1 - No terminar la salida sin querer (Priority: P1)
 
 El jugador toca el botón de recorrido con una salida en curso. Antes de terminarla, la app pregunta.
 
-**Why this priority**: es el otro modo de perder una salida, y el más fácil de arreglar.
+**Why this priority**: es el único modo de perder una salida que esta feature puede evitar, y el más
+fácil de arreglar.
 
 **Independent Test**: con una salida en curso, tocar el botón y cancelar; tocarlo otra vez y
 confirmar.
@@ -101,6 +84,32 @@ confirmar.
 
 ---
 
+### User Story 2 - Enterarse de que la salida se cortó (Priority: P1)
+
+El jugador cierra la app sin querer en medio de una salida. Al rato, el teléfono muestra una
+notificación: la salida se cortó, y abriendo la app se empieza otra.
+
+**Why this priority**: es lo que evita caminar sin grabar, ahora que una salida cortada no se retoma.
+
+**Independent Test**: empezar una salida, cerrar la app desde el selector de apps y esperar con el
+teléfono bloqueado.
+
+**Acceptance Scenarios**:
+
+1. **Given** una salida en curso, **When** el jugador cierra la app deslizándola, **Then** en menos
+   de 2 minutos aparece una notificación que dice que la salida se cortó y que abriendo la app se
+   empieza otra.
+2. **Given** esa notificación, **When** el jugador la toca, **Then** se abre la app en la pantalla
+   principal, con la salida cortada guardada y lista para empezar otra.
+3. **Given** una salida en curso, **When** el sistema cierra la app por su cuenta, **Then** aparece
+   la misma notificación.
+4. **Given** una salida en curso, **When** el jugador la termina con el botón, **Then** no aparece
+   ninguna notificación.
+5. **Given** una salida en curso con el jugador quieto, mirando el mapa o parado en una esquina,
+   **When** pasan 10 minutos, **Then** no aparece ninguna notificación: la salida no se cortó.
+
+---
+
 ### User Story 3 - Ver cuánto lleva la salida (Priority: P2)
 
 Mientras hay una salida en curso, la barra de arriba de la pantalla principal muestra cuánto tiempo
@@ -116,13 +125,11 @@ decidir si sigue o vuelve.
 1. **Given** sin salida en curso, **When** se mira la barra, **Then** se ve como hoy.
 2. **Given** una salida empezada hace 42 minutos y el peso cargado, **When** se mira la barra,
    **Then** dice "0:42", los km caminados con un decimal y las calorías aproximadas, por ejemplo
-   "0:42 · 2,1 km · ~150 kcal".
+   "0:42 · 2,1 km · ~75 kcal".
 3. **Given** la misma salida sin el peso cargado, **When** se mira la barra, **Then** dice "0:42 ·
    2,1 km", sin calorías.
 4. **Given** la salida en curso, **When** pasa un minuto, **Then** el tiempo sube solo, sin tocar
    nada.
-5. **Given** una salida retomada después de cerrar la app (US1), **When** se mira la barra,
-   **Then** el tiempo cuenta desde que empezó la salida, y los km no suman nada del hueco.
 
 ---
 
@@ -141,7 +148,7 @@ calorías gastadas, en la lista de Salidas y en su detalle.
    **Then** dice su duración, sus km, sus calorías aproximadas y sus patentes.
 2. **Given** una caminata de 2 km medidos en un mapa, **When** se mira la salida, **Then** dice
    entre 1,8 y 2,3 km.
-3. **Given** la salida en curso, **When** se mira la confirmación de terminar (US2), **Then** dice
+3. **Given** la salida en curso, **When** se mira la confirmación de terminar (US1), **Then** dice
    también los km y las calorías.
 4. **Given** el peso del jugador, **When** cambia, **Then** las calorías de todas las salidas se
    recalculan con el peso nuevo.
@@ -152,114 +159,110 @@ calorías gastadas, en la lista de Salidas y en su detalle.
 
 ### Edge Cases
 
-- **La app cerrada mucho tiempo**: si el jugador vuelve a abrirla al otro día, la salida sigue abierta
-  igual. Una salida olvidada se termina a mano, y la confirmación dice cuánto lleva, que es lo que
-  delata que quedó abierta.
-- **El teléfono se reinicia o se apaga** con una salida en curso: es lo mismo que cerrar la app. Al
-  abrirla, sigue la misma salida.
-- **Sin permiso de ubicación al reabrir**: la salida sigue abierta pero no graba, y la pantalla lo
-  dice, como hoy al empezar sin permiso.
-- **Una salida sin puntos o con uno solo**: 0,0 km y las calorías del tiempo nada más.
+- **Una salida sin puntos o con uno solo**: 0,0 km y 0 kcal.
+- **Una salida larga y quieta**, de mucho tiempo y pocos metros, tiene pocas calorías: las activas no
+  suman por estar parado.
 - **Saltos del GPS**: un punto que cae lejos y vuelve no suma km. Lo que la precisión ya descarta
   (FR-036 de la 003) no cuenta.
-- **El hueco de una desconexión o de la app cerrada** no suma km: no se sabe por dónde se fue.
+- **El hueco de una desconexión** no suma km: no se sabe por dónde se fue (FR-009a de la 004).
+- **Una salida cortada** porque se cerró la app tiene los km y las calorías de lo que alcanzó a
+  grabar, hasta su último punto.
 - **Las salidas viejas**, de antes de esta feature, también muestran sus km y calorías: salen de los
   puntos que ya tienen.
+- **Un peso fuera de lo razonable** (0, negativo, o más de 300 kg) no se acepta.
+- **Sin permiso de notificaciones**: no hay aviso, y al abrir la app la pantalla principal dice que la
+  salida se cortó, como hoy.
+- **En el Android** sacar la app de recientes no suele cortar la salida (Contexto). Si el teléfono
+  mata el proceso igual, el aviso es el mismo que en el iPhone.
+- **El teléfono se apaga o se queda sin batería** con una salida en curso: no hay forma de avisar en
+  el momento. Al abrir la app, la pantalla principal lo dice, como hoy.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-**Cerrar la app no corta la salida**
-
-- **FR-001**: Si al abrir la app hay una salida en curso, la app MUST retomarla: la misma salida,
-  grabando otra vez. Reemplaza al FR-028 de la 006, que la cerraba.
-- **FR-002**: El tiempo con la app cerrada MUST quedar como un hueco de la salida, igual que un corte
-  de señal: no se dibuja como caminado ni suma km.
-- **FR-003**: Al retomar una salida, la pantalla principal MUST decirlo una vez: que sigue la misma
-  salida y que lo de la app cerrada no se grabó.
-- **FR-004**: En el iPhone, si el sistema cierra la app con una salida en curso, la grabación MUST
-  seguir sola, sin que el jugador la abra.
-- **FR-005**: En el iPhone, si el jugador cierra la app con una salida en curso y el sistema le da
-  tiempo a la app de enterarse, la app MUST dejar una notificación que diga que la grabación quedó
-  frenada y que abrirla la sigue.
-- **FR-006**: En el Android, sacar la app de recientes MUST NOT terminar la salida ni frenar la
-  grabación. Si el teléfono mata el proceso igual, vale el FR-001.
-
 **Terminar con confirmación**
 
-- **FR-007**: Terminar una salida en curso MUST pedir confirmación, desde la pantalla principal y
-  desde Salidas. La confirmación MUST decir cuánto lleva la salida: tiempo, km y calorías.
-- **FR-008**: Mientras la confirmación está abierta, la salida MUST seguir grabando. Cancelar o tocar
+- **FR-001**: Terminar una salida en curso MUST pedir confirmación, desde la pantalla principal y
+  desde Salidas. La confirmación MUST decir cuánto lleva la salida: el tiempo, los km y, con el peso
+  cargado, las calorías.
+- **FR-002**: Mientras la confirmación está abierta, la salida MUST seguir grabando. Cancelar o tocar
   afuera MUST dejarla como estaba.
-- **FR-009**: Empezar una salida MUST NOT pedir confirmación.
+- **FR-003**: Empezar una salida MUST NOT pedir confirmación.
 
 **La salida en la barra de arriba**
 
-- **FR-010**: Con una salida en curso, la barra de arriba de la pantalla principal MUST mostrar el
-  tiempo que lleva (horas y minutos) y los km caminados, con un decimal. Sin salida en curso, la
-  barra MUST verse como hoy.
-- **FR-011**: El tiempo MUST actualizarse solo, al menos una vez por minuto, y contar desde que
-  empezó la salida, también si se retomó.
-- **FR-012**: Lo que la barra ya muestra (el número, la cuenta, la lupa, la lista) MUST seguir igual.
+- **FR-004**: Con una salida en curso, la barra de arriba de la pantalla principal MUST mostrar el
+  tiempo que lleva (horas y minutos), los km caminados con un decimal y, con el peso cargado, las
+  calorías aproximadas. Sin salida en curso, la barra MUST verse como hoy.
+- **FR-005**: El tiempo MUST actualizarse solo, al menos una vez por minuto, y los km y las calorías
+  con cada punto que se graba.
+- **FR-006**: Lo que la barra ya muestra (el número, la cuenta, la lupa, la lista) MUST seguir igual.
 
 **Km y calorías**
 
-- **FR-013**: Cada salida MUST mostrar los km caminados en la lista de Salidas, en su detalle y en la
+- **FR-007**: Cada salida MUST mostrar los km caminados en la lista de Salidas, en su detalle y en la
   confirmación de terminar. Los km MUST salir de los puntos grabados, sin contar los huecos ni los
   puntos que la precisión descarta.
-- **FR-014**: Con el peso cargado, cada salida MUST mostrar un aproximado de las calorías gastadas
-  en los mismos lugares, dicho como aproximado. Salen de los km, el tiempo y el peso del jugador.
-- **FR-015**: El peso del jugador MUST poder cargarse, cambiarse y borrarse en Ajustes. Sin peso
+- **FR-008**: Con el peso cargado, cada salida MUST mostrar un aproximado de las calorías gastadas
+  en los mismos lugares, dicho como aproximado. Son las calorías activas, las de caminar: salen de
+  los km y del peso del jugador, y el tiempo quieto no suma.
+- **FR-009**: El peso del jugador MUST poder cargarse, cambiarse y borrarse en Ajustes. Sin peso
   cargado, la app MUST NOT mostrar calorías en ningún lado, y el detalle de una salida MUST decir que
   se ven cargando el peso.
-- **FR-016**: Los km y las calorías MUST calcularse en el momento a partir de lo guardado, así las
+- **FR-010**: Los km y las calorías MUST calcularse en el momento a partir de lo guardado, así las
   salidas viejas también los tienen y cambiar el peso las recalcula a todas.
-- **FR-017**: Con el peso cargado, la barra de arriba MUST mostrar también las calorías
-  aproximadas de la salida en curso, al lado del tiempo y los km (FR-010).
+
+**El aviso de una salida cortada**
+
+- **FR-011**: Si una salida en curso deja de grabar sin que el jugador la termine, porque la app se
+  cerró de cualquier forma, el teléfono MUST mostrar una notificación en menos de 2 minutos. Dice que
+  la salida se cortó y que abriendo la app se empieza otra.
+- **FR-012**: Tocar esa notificación MUST abrir la app en la pantalla principal.
+- **FR-013**: Terminar la salida con el botón MUST NOT dejar ninguna notificación pendiente, y una
+  salida que sigue grabando MUST NOT avisar nada, aunque el jugador esté quieto.
+- **FR-014**: Sin permiso de notificaciones, el aviso MUST quedar en lo de hoy: la pantalla
+  principal lo dice al volver a abrir la app.
 
 **Para todo**
 
-- **FR-018**: Nada de esto MUST modificar los puntos ni las patentes de una salida (Principio II).
-  Retomar una salida le agrega puntos; no reescribe los que tenía.
-- **FR-019**: Todo esto MUST funcionar igual en el Android y en el iPhone, salvo lo que el FR-004 al
-  FR-006 dicen por teléfono (regla de la 006).
+- **FR-015**: Nada de esto MUST modificar los puntos ni las patentes de una salida (Principio II).
+- **FR-016**: Cerrar la app con una salida en curso MUST seguir cortándola con lo grabado, como hoy
+  (FR-028 de la 006). No se retoma.
+- **FR-017**: Todo esto MUST funcionar igual en el Android y en el iPhone (regla de la 006). En el
+  Android, una salida que sigue grabando después de sacar la app de recientes no se cortó, y no
+  avisa.
 
 ### Key Entities
 
-- **Salida** (ya existe): suma lo que se calcula sobre ella, sin guardarlo: km, calorías y tiempo.
+- **Salida** (ya existe): suma lo que se calcula sobre ella, sin guardarlo: km y calorías.
 - **Peso del jugador**: un número en kg, opcional, una preferencia más como el modo del mapa.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: Cerrar la app en medio de una salida y volver a abrirla deja **una** salida, no dos, y
-  sigue grabando sin ningún toque extra.
-- **SC-002**: Ninguna salida termina con un solo toque.
-- **SC-003**: Con una salida en curso, el tiempo, los km y las calorías se leen en la pantalla
+- **SC-001**: Ninguna salida termina con un solo toque.
+- **SC-002**: Con una salida en curso, el tiempo, los km y las calorías se leen en la pantalla
   principal sin abrir nada.
-- **SC-004**: En una caminata de 2 km medidos en un mapa, la app dice entre 1,8 y 2,3 km.
-- **SC-005**: En el iPhone, con la pantalla apagada, una salida de una hora no se corta aunque el
-  sistema cierre la app.
+- **SC-003**: En una caminata de 2 km medidos en un mapa, la app dice entre 1,8 y 2,3 km.
+- **SC-004**: Cerrar la app con una salida en curso deja una notificación en menos de 2 minutos.
+- **SC-005**: En una salida de una hora que termina con el botón, con ratos quieto, no aparece
+  ninguna notificación.
 
 ## Assumptions
 
 - **El teléfono de juego es el iPhone** (006). El Android sigue siendo el de pruebas.
-- **Las salidas se caminan.** Las calorías son las de caminar: una fórmula estándar que suma lo que
-  cuesta moverse por cada km y lo que cuesta estar de pie por cada minuto, por kg de peso. Se dicen
-  como aproximado ("~150 kcal") y no pretenden más.
+- **Las salidas se caminan.** Las calorías son las activas de caminar en llano, con una fórmula
+  estándar por km y kg de peso. Se dicen como aproximado ("~75 kcal") y no pretenden más.
 - **Los km salen de los puntos medidos**, no del camino ajustado a las calles de la 007: lo medido
   existe desde el primer punto, también en una salida en curso.
-- Retomar una salida no pide permisos nuevos: usa los que ya pidió al empezarla.
-- El iPhone de juego tiene iOS 17 o más, que es lo que piden las APIs del FR-004. Se verifica en el
-  plan; si no, el FR-004 queda afuera y el resto sigue.
 
 ## Out of Scope
 
-- **Seguir grabando en el iPhone después de que el jugador cierra la app.** El sistema no lo permite.
-  Lo que se hace es retomar al abrirla (FR-001) y avisar (FR-005).
-- **Pausar una salida.** Cerrar la app no la pausa: deja un hueco.
+- **Seguir grabando o retomar la salida después de que se cierra la app.** Se averiguó y el jugador
+  lo descartó (Contexto). Lo que queda es el aviso (US2).
+- **Pausar una salida.**
 - **Ritmo, velocidad, pasos o metas de km.** Nadie lo pidió.
 - **Mandar los datos a Salud o a Google Fit.**
 - **Terminar sola una salida olvidada.**

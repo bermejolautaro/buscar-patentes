@@ -32,7 +32,7 @@
 ## Notes
 
 - El Contexto nombra el servicio en primer plano del Android y las APIs de ubicación de iOS 17: es lo
-  que el jugador pidió investigar, y explica por qué el FR-004 al FR-006 son distintos en cada
-  teléfono. Los requisitos y los criterios de éxito no dependen de esos nombres.
+  que el jugador pidió investigar, y lo que llevó a descartar retomar la salida. Los requisitos y los
+  criterios de éxito no dependen de esos nombres.
 - Las dos marcas se contestaron el 2026-10-17: el peso se carga en Ajustes y sin él no hay
   calorías (FR-015), y la barra muestra también las calorías (FR-017).
