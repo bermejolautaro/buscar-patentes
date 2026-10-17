@@ -56,6 +56,11 @@ y no caminar media hora sin grabar.
   notificación, por ejemplo al cerrar la app deslizándola.
 - Q: ¿Las calorías son solo las de caminar o el total, con lo que el cuerpo gasta en reposo? → A:
   Solo las activas, las de caminar. Salen de los km y el peso: estar quieto no suma.
+- Q: ¿Las salidas ya terminadas van a tener calorías? → A: Sí, todas, también las de antes de esta
+  feature: los km y las calorías se calculan con los puntos guardados (FR-010).
+- Q: ¿Cómo se ven las estadísticas por día, semana y mes? → A: Los totales del período elegido, con
+  flechas para ir al anterior, y abajo un gráfico de barras de km de los últimos 7 días, 8 semanas
+  o 12 meses, según la pestaña.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -157,6 +162,36 @@ calorías gastadas, en la lista de Salidas y en su detalle.
 
 ---
 
+### User Story 5 - Ver cuánto se caminó por día, semana y mes (Priority: P3)
+
+Desde Salidas, el jugador abre las estadísticas. Elige día, semana o mes, y ve los totales del
+período: cuántas salidas hizo, cuánto tiempo caminó, cuántos km, cuántas calorías y cuántas patentes
+anotó. Con las flechas va al período anterior. Abajo, un gráfico de barras compara los km de ese
+período con los anteriores.
+
+**Why this priority**: como los km y las calorías, es un dato lindo que no cambia cómo se juega. Se
+apoya en lo de la US4.
+
+**Independent Test**: con salidas de varios días guardadas, abrir las estadísticas y recorrer las
+tres pestañas y las flechas.
+
+**Acceptance Scenarios**:
+
+1. **Given** dos salidas hoy, de 1,5 y 2 km, **When** el jugador abre las estadísticas en "día",
+   **Then** ve 2 salidas, el tiempo sumado de las dos, 3,5 km, las calorías (con el peso cargado) y
+   las patentes anotadas hoy.
+2. **Given** la pestaña "semana", **When** se mira, **Then** suma de lunes a domingo de la semana
+   actual, y la flecha lleva a la semana anterior.
+3. **Given** la pestaña "mes", **When** se mira, **Then** suma el mes calendario actual.
+4. **Given** cualquier pestaña, **When** se mira el gráfico, **Then** hay una barra de km por cada
+   uno de los últimos 7 días, 8 semanas o 12 meses, terminando en el período elegido, que se ve
+   resaltado.
+5. **Given** un período sin salidas, **When** se mira, **Then** muestra todo en cero, sin error.
+6. **Given** el período actual, **When** el jugador busca la flecha hacia adelante, **Then** no
+   puede ir a un período que todavía no pasó.
+
+---
+
 ### Edge Cases
 
 - **Una salida sin puntos o con uno solo**: 0,0 km y 0 kcal.
@@ -174,6 +209,11 @@ calorías gastadas, en la lista de Salidas y en su detalle.
   salida se cortó, como hoy.
 - **En el Android** sacar la app de recientes no suele cortar la salida (Contexto). Si el teléfono
   mata el proceso igual, el aviso es el mismo que en el iPhone.
+- **Una salida que cruza la medianoche** cuenta entera en el día en que empezó, y lo mismo para la
+  semana y el mes.
+- **La salida en curso** cuenta en las estadísticas con lo que lleva hasta ahora.
+- **Las patentes anotadas fuera de una salida** también cuentan en su día: son patentes del jugador,
+  estén o no en una salida.
 - **El teléfono se apaga o se queda sin batería** con una salida en curso: no hay forma de avisar en
   el momento. Al abrir la app, la pantalla principal lo dice, como hoy.
 
@@ -224,12 +264,30 @@ calorías gastadas, en la lista de Salidas y en su detalle.
 - **FR-014**: Sin permiso de notificaciones, el aviso MUST quedar en lo de hoy: la pantalla
   principal lo dice al volver a abrir la app.
 
+**Estadísticas**
+
+- **FR-015**: La app MUST tener una pantalla de estadísticas, que se abre desde Salidas, con tres
+  pestañas: día, semana y mes.
+- **FR-016**: Para el período elegido, la pantalla MUST mostrar la cantidad de salidas, el tiempo
+  caminado (la suma de sus duraciones), los km, las calorías (solo con el peso cargado, FR-009) y
+  las patentes anotadas.
+- **FR-017**: La pantalla MUST arrancar en el período actual (hoy, esta semana, este mes) y dejar ir
+  a los anteriores con una flecha, y volver hacia adelante hasta el actual. La semana MUST ir de
+  lunes a domingo, y el mes MUST ser el calendario, en la hora del teléfono.
+- **FR-018**: Debajo de los totales, la pantalla MUST mostrar un gráfico de barras de km: una barra
+  por cada uno de los últimos 7 días, 8 semanas o 12 meses, según la pestaña, terminando en el
+  período elegido y con ese resaltado.
+- **FR-019**: Una salida MUST contar en el período en que empezó. Una patente MUST contar en el
+  período en que se anotó.
+- **FR-020**: Las estadísticas MUST calcularse con lo guardado, igual que el FR-010: no se guarda
+  nada nuevo.
+
 **Para todo**
 
-- **FR-015**: Nada de esto MUST modificar los puntos ni las patentes de una salida (Principio II).
-- **FR-016**: Cerrar la app con una salida en curso MUST seguir cortándola con lo grabado, como hoy
+- **FR-021**: Nada de esto MUST modificar los puntos ni las patentes de una salida (Principio II).
+- **FR-022**: Cerrar la app con una salida en curso MUST seguir cortándola con lo grabado, como hoy
   (FR-028 de la 006). No se retoma.
-- **FR-017**: Todo esto MUST funcionar igual en el Android y en el iPhone (regla de la 006). En el
+- **FR-023**: Todo esto MUST funcionar igual en el Android y en el iPhone (regla de la 006). En el
   Android, una salida que sigue grabando después de sacar la app de recientes no se cortó, y no
   avisa.
 
@@ -249,6 +307,9 @@ calorías gastadas, en la lista de Salidas y en su detalle.
 - **SC-004**: Cerrar la app con una salida en curso deja una notificación en menos de 2 minutos.
 - **SC-005**: En una salida de una hora que termina con el botón, con ratos quieto, no aparece
   ninguna notificación.
+- **SC-006**: Los km de una semana en las estadísticas son la suma exacta de los km de sus salidas en
+  la lista de Salidas.
+- **SC-007**: Con un año de salidas guardadas, las estadísticas abren en menos de un segundo.
 
 ## Assumptions
 
@@ -264,5 +325,7 @@ calorías gastadas, en la lista de Salidas y en su detalle.
   lo descartó (Contexto). Lo que queda es el aviso (US2).
 - **Pausar una salida.**
 - **Ritmo, velocidad, pasos o metas de km.** Nadie lo pidió.
+- **Estadísticas por zona, por año o con rangos elegidos a mano.** Día, semana y mes alcanzan.
+- **Gráficos de otra cosa que km.** El resto se lee en los totales.
 - **Mandar los datos a Salud o a Google Fit.**
 - **Terminar sola una salida olvidada.**
