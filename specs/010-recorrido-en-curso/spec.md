@@ -20,6 +20,12 @@ Hoy pasan tres cosas que le juegan en contra en la calle:
 - **Una salida cortada no avisa.** Si la app se cierra, la salida deja de grabar en silencio, y el
   jugador se entera recién cuando vuelve a abrirla.
 
+La 004 dejó la pantalla de Salidas sin ningún total acumulado, ni de distancia (su FR-020a): "qué
+calles recorrí" lo contesta el mapa, y un contador sería una respuesta más pobre. Esta feature
+contesta otras preguntas, "cuánto caminé" y "cuánto gasté", y las contesta así: cada fila de la lista
+dice los km **de esa salida**, y los totales por día, semana y mes viven en una pantalla aparte, la
+de estadísticas. La lista sigue sin totales arriba.
+
 ### Lo que se averiguó sobre seguir grabando con la app cerrada
 
 El jugador pidió averiguar si una salida puede seguir grabando cuando la app se cierra desde el
@@ -84,8 +90,8 @@ confirmar.
    hasta ahora.
 4. **Given** sin salida en curso, **When** el jugador toca el botón, **Then** la salida empieza sin
    preguntar nada.
-5. **Given** una salida en curso, **When** el jugador la termina desde la pantalla de Salidas,
-   **Then** también pregunta.
+5. **Given** una salida en curso, **When** el jugador la borra desde Salidas, **Then** pregunta
+   como hoy: borrar ya tiene su confirmación, y en Salidas no hay otra forma de terminarla.
 
 ---
 
@@ -223,9 +229,9 @@ tres pestañas y las flechas.
 
 **Terminar con confirmación**
 
-- **FR-001**: Terminar una salida en curso MUST pedir confirmación, desde la pantalla principal y
-  desde Salidas. La confirmación MUST decir cuánto lleva la salida: el tiempo, los km y, con el peso
-  cargado, las calorías.
+- **FR-001**: Terminar una salida en curso desde la pantalla principal MUST pedir confirmación. La
+  confirmación MUST decir cuánto lleva la salida: el tiempo, los km y, con el peso cargado, las
+  calorías. Borrarla desde Salidas sigue con la confirmación que ya tiene.
 - **FR-002**: Mientras la confirmación está abierta, la salida MUST seguir grabando. Cancelar o tocar
   afuera MUST dejarla como estaba.
 - **FR-003**: Empezar una salida MUST NOT pedir confirmación.
@@ -242,7 +248,8 @@ tres pestañas y las flechas.
 **Km y calorías**
 
 - **FR-007**: Cada salida MUST mostrar los km caminados en la lista de Salidas, en su detalle y en la
-  confirmación de terminar. Los km MUST salir de los puntos grabados, sin contar los huecos ni los
+  confirmación de terminar. Son los km de esa salida: la lista MUST seguir sin totales acumulados
+  arriba (FR-020a de la 004), que viven en las estadísticas. Los km MUST salir de los puntos grabados, sin contar los huecos ni los
   puntos que la precisión descarta.
 - **FR-008**: Con el peso cargado, cada salida MUST mostrar un aproximado de las calorías gastadas
   en los mismos lugares, dicho como aproximado. Son las calorías activas, las de caminar: salen de
