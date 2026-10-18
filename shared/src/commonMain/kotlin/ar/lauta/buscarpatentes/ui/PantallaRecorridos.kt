@@ -40,6 +40,8 @@ import ar.lauta.buscarpatentes.data.PuntoDeTrayecto
 import ar.lauta.buscarpatentes.data.Recorrido
 import ar.lauta.buscarpatentes.data.RegistroDeCaptura
 import ar.lauta.buscarpatentes.domain.Antiguedad
+import ar.lauta.buscarpatentes.domain.Caminata
+import ar.lauta.buscarpatentes.domain.ResumenDeCaminata
 import ar.lauta.buscarpatentes.domain.CaminoGuardado
 import ar.lauta.buscarpatentes.domain.Probabilidad
 import ar.lauta.buscarpatentes.mapa.MapaDeFondo
@@ -89,9 +91,11 @@ fun PantallaRecorridos(onVolver: () -> Unit) {
     var recarga by remember { mutableStateOf(0) }
 
     LaunchedEffect(enCurso, recarga) {
-        numeroActual = contenedor.estadoDelJuego.leer()?.numeroActual ?: 0
+        val estado = contenedor.estadoDelJuego.leer()
+        numeroActual = estado?.numeroActual ?: 0
         // FR-037: una sola consulta de votos para todas las salidas, agrupada por registro.
         val votosPorRegistro = contenedor.votos.todos().groupBy { it.registroId }
+        val ahora = ahora()
         salidas = contenedor.recorridos.todosUnaVez().map { recorrido ->
             val puntos = contenedor.puntos.deRecorrido(recorrido.id)
             val patentes = contenedor.registros.deRecorrido(recorrido.id)
@@ -99,6 +103,14 @@ fun PantallaRecorridos(onVolver: () -> Unit) {
                 recorrido = recorrido,
                 puntos = puntos,
                 patentes = patentes,
+                // US4 de la 010: se calcula sobre lo guardado, así las salidas viejas también.
+                caminata = Caminata.resumen(
+                    recorrido.iniciadoEn,
+                    recorrido.finalizadoEn,
+                    puntos.map { it.latitud to it.longitud },
+                    estado?.pesoKg,
+                    ahora,
+                ),
                 probabilidades = patentes.associate { r ->
                     r.id to Probabilidad.de(
                         votosPorRegistro[r.id].orEmpty().map { it.valor },
@@ -208,6 +220,9 @@ private data class ResumenDeSalida(
     val puntos: List<PuntoDeTrayecto>,
     val patentes: List<RegistroDeCaptura>,
 
+    /** Tiempo, km y calorías (US4 de la 010). Las calorías son null sin peso cargado. */
+    val caminata: ResumenDeCaminata,
+
     /** La probabilidad de cada patente de esta salida, por id de registro (FR-037). */
     val probabilidades: Map<Long, Int>,
 )
@@ -254,14 +269,16 @@ private fun ListaDeSalidas(salidas: List<ResumenDeSalida>?, onAbrir: (Long) -> U
 }
 
 /**
- * Una fila: cuándo fue, cuánto duró, cuántas patentes (FR-017, FR-018).
+ * Una fila: cuándo fue, cuánto duró, cuántos km, cuántas calorías y cuántas patentes (FR-017 y
+ * FR-018 de la 004, FR-007 de la 010).
  *
  * Compacta y de altura pareja, y ninguna de las dos cosas es estética: una lista de filas
  * dispares no se puede barrer con la vista, y una fila que se despliega convierte a la lista
  * en un acordeón que hay que administrar.
  *
- * **No lleva ninguna medida de cuánto se caminó.** Qué calles se recorrieron lo contesta el
- * mapa, y un número al lado sería una respuesta peor a la misma pregunta (FR-018).
+ * Hasta la 010 no llevaba ninguna medida de cuánto se caminó: qué calles se recorrieron lo
+ * contesta el mapa. Los km y las calorías contestan otra pregunta, cuánto se caminó y cuánto se
+ * gastó, y son **de esta salida**. Los totales viven en las estadísticas, no en la lista.
  */
 @Composable
 private fun FilaDeSalida(salida: ResumenDeSalida, onAbrir: () -> Unit) {
@@ -293,6 +310,8 @@ private fun FilaDeSalida(salida: ResumenDeSalida, onAbrir: () -> Unit) {
                                 duracion(recorrido)
                             },
                         )
+                        append(" · ")
+                        append(caminata(salida.caminata))
                         append(" · ")
                         append(
                             when (salida.patentes.size) {
@@ -331,9 +350,17 @@ private fun DetalleDeSalida(
                 "En curso"
             } else {
                 duracion(recorrido)
-            },
+            } + " · " + caminata(salida.caminata),
             fontSize = 13.sp,
         )
+        // FR-009 de la 010: sin peso no hay calorías, y acá se dice cómo verlas.
+        if (salida.caminata.kcal == null) {
+            Text(
+                "Cargá tu peso en Ajustes para ver las calorías.",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
         if (salida.puntos.isEmpty()) {
             // FR-010b de la 003: una salida sin puntos lo dice, y no abre un mapa vacío.

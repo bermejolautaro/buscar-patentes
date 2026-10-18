@@ -70,7 +70,7 @@ estadísticas (D6).
 
 **Independent Test**: [quickstart](./quickstart.md) §2.
 
-- [ ] T008 [US1] En `shared/src/commonMain/kotlin/ar/lauta/buscarpatentes/ui/PantallaPrincipal.kt`:
+- [X] T008 [US1] En `shared/src/commonMain/kotlin/ar/lauta/buscarpatentes/ui/PantallaPrincipal.kt`:
   - el resumen de la salida en curso: su `iniciadoEn`, leído al empezar; los puntos del efecto que ya relee el trazo con cada punto, ahora también guardados para la cuenta; y el peso, leído con el estado del juego;
   - `onRecorrido` con salida en curso abre un `AlertDialog` "¿Terminar la salida?" con "Lleva 0:42 · 2,1 km · ~75 kcal";
   - **Terminar** llama a `Grabacion.terminar()`; **Seguir** o tocar afuera lo cierran sin tocar nada (FR-001, FR-002);
@@ -87,11 +87,11 @@ estadísticas (D6).
 
 **Independent Test**: [quickstart](./quickstart.md) §4 y §5.
 
-- [ ] T009 [US2] En `shared/src/iosMain/kotlin/ar/lauta/buscarpatentes/plataforma/Grabacion.ios.kt`, el aviso del contrato C5 (D4):
+- [X] T009 [US2] En `shared/src/iosMain/kotlin/ar/lauta/buscarpatentes/plataforma/Grabacion.ios.kt`, el aviso del contrato C5 (D4):
   - al empezar, un ciclo en el `alcance` que cada 30 s borra la entregada `salida-cortada` y programa otra para dentro de 75 s, con el mismo identificador;
   - al terminar, cancela el ciclo y borra la pendiente y la entregada (FR-013);
   - el texto de C5.
-- [ ] T010 [US2] En `shared/src/iosMain/kotlin/ar/lauta/buscarpatentes/MainViewController.kt`, al arrancar, borrar la notificación **pendiente** `salida-cortada`: si la app vuelve antes de los 75 s, no tiene que sonar después. La entregada queda, y el cartel de hoy sigue (FR-022).
+- [X] T010 [US2] En `shared/src/iosMain/kotlin/ar/lauta/buscarpatentes/MainViewController.kt`, al arrancar, borrar la notificación **pendiente** `salida-cortada`: si la app vuelve antes de los 75 s, no tiene que sonar después. La entregada queda, y el cartel de hoy sigue (FR-022).
 - [ ] T011 [US2] Verificar el Android (D5, quickstart §5) con el jugador: sacar la app de recientes con una salida en curso y leer por adb si el servicio sigue y si la app quedó detenida a la fuerza. Si HyperOS la mata **sin** forzar la detención, sumar acá una tarea nueva con el mismo aviso hecho con `AlarmManager`.
 
 **Checkpoint**: una salida cortada avisa en el iPhone (SC-004) y no avisa de más (SC-005).
@@ -104,8 +104,8 @@ estadísticas (D6).
 
 **Independent Test**: [quickstart](./quickstart.md) §3.
 
-- [ ] T012 [P] [US3] En `shared/src/commonMain/kotlin/ar/lauta/buscarpatentes/ui/BarraDelJuego.kt`, un parámetro `salidaEnCurso: String? = null`: con valor, una línea más en la tarjeta, debajo de la cuenta, con el color primario. Sin valor, la barra queda como hoy (FR-004, FR-006).
-- [ ] T013 [US3] En `shared/src/commonMain/kotlin/ar/lauta/buscarpatentes/ui/PantallaPrincipal.kt`:
+- [X] T012 [P] [US3] En `shared/src/commonMain/kotlin/ar/lauta/buscarpatentes/ui/BarraDelJuego.kt`, un parámetro `salidaEnCurso: String? = null`: con valor, una línea más en la tarjeta, debajo de la cuenta, con el color primario. Sin valor, la barra queda como hoy (FR-004, FR-006).
+- [X] T013 [US3] En `shared/src/commonMain/kotlin/ar/lauta/buscarpatentes/ui/PantallaPrincipal.kt`:
   - un ciclo de 20 s mientras hay salida, que refresca `ahora`;
   - pasarle a la barra `horasYMinutos` y `caminata` del resumen de T008, por ejemplo "0:42 · 2,1 km · ~75 kcal" (FR-005).
 
@@ -119,7 +119,7 @@ estadísticas (D6).
 
 **Independent Test**: [quickstart](./quickstart.md) §6.
 
-- [ ] T014 [US4] En `shared/src/commonMain/kotlin/ar/lauta/buscarpatentes/ui/PantallaRecorridos.kt`:
+- [X] T014 [US4] En `shared/src/commonMain/kotlin/ar/lauta/buscarpatentes/ui/PantallaRecorridos.kt`:
   - el peso, leído con las salidas;
   - el resumen de cada una, con `Caminata.resumen` sobre `salida.puntos`;
   - la fila: "1 h 5 min · 3,2 km · ~110 kcal · 4 patentes" (contrato C3);
