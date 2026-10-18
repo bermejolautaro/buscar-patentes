@@ -72,9 +72,16 @@ actual object Grabacion {
                 manager.startUpdatingLocation()
             }
             postergador = alcance.launch {
-                while (true) {
-                    postergarAviso()
-                    delay(CADA_CUANTO_SE_POSTERGA_MS)
+                // El `finally` corre después de la última reprogramación, aunque `terminar` llegue
+                // en el medio de una: así no queda ningún aviso pendiente de una salida terminada.
+                // Si la app muere, no corre, y el aviso suena: es lo que se busca.
+                try {
+                    while (enCursoMutable.value == id) {
+                        postergarAviso()
+                        delay(CADA_CUANTO_SE_POSTERGA_MS)
+                    }
+                } finally {
+                    borrarAviso(entregado = true)
                 }
             }
         }

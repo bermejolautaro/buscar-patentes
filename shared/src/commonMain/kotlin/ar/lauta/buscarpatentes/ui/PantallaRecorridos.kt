@@ -151,8 +151,11 @@ fun PantallaRecorridos(onVolver: () -> Unit) {
     ) {
         if (viendoEstadisticas) {
             BarraSuperior("Estadísticas", onVolver = { viendoEstadisticas = false })
+            val paraSumar = remember(salidas) {
+                salidas.orEmpty().map { SalidaParaSumar(it.recorrido.iniciadoEn, it.caminata) }
+            }
             PantallaEstadisticas(
-                salidas = salidas.orEmpty().map { SalidaParaSumar(it.recorrido.iniciadoEn, it.caminata) },
+                salidas = paraSumar,
                 patentes = capturas,
                 conPeso = conPeso,
             )
