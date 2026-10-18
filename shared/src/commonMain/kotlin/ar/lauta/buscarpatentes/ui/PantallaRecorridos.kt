@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
@@ -42,6 +43,7 @@ import ar.lauta.buscarpatentes.data.RegistroDeCaptura
 import ar.lauta.buscarpatentes.domain.Antiguedad
 import ar.lauta.buscarpatentes.domain.Caminata
 import ar.lauta.buscarpatentes.domain.ResumenDeCaminata
+import ar.lauta.buscarpatentes.domain.SalidaParaSumar
 import ar.lauta.buscarpatentes.domain.CaminoGuardado
 import ar.lauta.buscarpatentes.domain.Probabilidad
 import ar.lauta.buscarpatentes.mapa.MapaDeFondo
@@ -79,6 +81,11 @@ fun PantallaRecorridos(onVolver: () -> Unit) {
     /** Qué salida está abierta en el detalle. Null es la lista. */
     var abierta by remember { mutableStateOf<Long?>(null) }
 
+    // US5 de la 010: las estadísticas son otro adentro de esta pantalla, como el detalle.
+    var viendoEstadisticas by remember { mutableStateOf(false) }
+    var capturas by remember { mutableStateOf<List<Long>>(emptyList()) }
+    var conPeso by remember { mutableStateOf(false) }
+
     // FR-024: la salida que el jugador pidió borrar, esperando confirmación. Arrancar dos
     // recorridos sin querer es fácil, y hasta ahora no había forma de deshacerlo.
     var aBorrar by remember { mutableStateOf<ResumenDeSalida?>(null) }
@@ -93,6 +100,8 @@ fun PantallaRecorridos(onVolver: () -> Unit) {
     LaunchedEffect(enCurso, recarga) {
         val estado = contenedor.estadoDelJuego.leer()
         numeroActual = estado?.numeroActual ?: 0
+        conPeso = estado?.pesoKg != null
+        capturas = contenedor.registros.todosUnaVez().map { it.capturadoEn }
         // FR-037: una sola consulta de votos para todas las salidas, agrupada por registro.
         val votosPorRegistro = contenedor.votos.todos().groupBy { it.registroId }
         val ahora = ahora()
@@ -126,7 +135,9 @@ fun PantallaRecorridos(onVolver: () -> Unit) {
     // FR-022 y contrato C5: el gesto de retroceso vuelve a la lista, no a la pantalla
     // principal. `MainActivity` tiene el suyo para eso; el de acá es más interno y gana
     // mientras haya una salida abierta.
-    BackHandler(enabled = salidaAbierta != null) { abierta = null }
+    BackHandler(enabled = salidaAbierta != null || viendoEstadisticas) {
+        if (viendoEstadisticas) viendoEstadisticas = false else abierta = null
+    }
 
     // Dos de las tres causas del modo oscuro roto se cierran acá (D1):
     // `background` pinta el fondo del tema, que antes no pintaba nadie y dejaba ver la
@@ -138,11 +149,19 @@ fun PantallaRecorridos(onVolver: () -> Unit) {
             .background(MaterialTheme.colorScheme.background)
             .safeDrawingPadding(),
     ) {
-        if (salidaAbierta == null) {
+        if (viendoEstadisticas) {
+            BarraSuperior("Estadísticas", onVolver = { viendoEstadisticas = false })
+            PantallaEstadisticas(
+                salidas = salidas.orEmpty().map { SalidaParaSumar(it.recorrido.iniciadoEn, it.caminata) },
+                patentes = capturas,
+                conPeso = conPeso,
+            )
+        } else if (salidaAbierta == null) {
             BarraSuperior("Salidas", onVolver)
             ListaDeSalidas(
                 salidas = salidas,
                 onAbrir = { abierta = it },
+                onEstadisticas = { viendoEstadisticas = true },
             )
         } else {
             BarraSuperior(fechaLarga(salidaAbierta.recorrido), onVolver = { abierta = null })
@@ -236,7 +255,7 @@ private data class ResumenDeSalida(
  * pregunta ya respondida, y peor.
  */
 @Composable
-private fun ListaDeSalidas(salidas: List<ResumenDeSalida>?, onAbrir: (Long) -> Unit) {
+private fun ListaDeSalidas(salidas: List<ResumenDeSalida>?, onAbrir: (Long) -> Unit, onEstadisticas: () -> Unit) {
     Column(Modifier.padding(16.dp)) {
         when {
             salidas == null -> Text("Cargando…", modifier = Modifier.padding(top = 8.dp))
@@ -251,12 +270,19 @@ private fun ListaDeSalidas(salidas: List<ResumenDeSalida>?, onAbrir: (Long) -> U
                 // FR-020: la pregunta que el jugador trae al entrar acá, contestada sin que
                 // toque nada. Es la única de las dos que el mapa no contesta.
                 val ultima = salidas.maxOf { it.recorrido.iniciadoEn }
-                Text(
-                    "Última salida: " + Antiguedad.hace(ultima, ahora()),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 8.dp),
-                )
+                Row(
+                    Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "Última salida: " + Antiguedad.hace(ultima, ahora()),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    // FR-015 de la 010: los totales viven allá, no en esta lista (FR-020a de la 004).
+                    FilledTonalButton(onClick = onEstadisticas) { Text("Estadísticas") }
+                }
 
                 LazyColumn {
                     items(salidas, key = { it.recorrido.id }) { salida ->
@@ -474,6 +500,5 @@ private fun fechaLarga(recorrido: Recorrido): String =
 
 private fun duracion(recorrido: Recorrido): String {
     val fin = recorrido.finalizadoEn ?: return "Terminado"
-    val minutos = (fin - recorrido.iniciadoEn) / 60_000
-    return if (minutos < 60) "$minutos min" else "${minutos / 60} h ${minutos % 60} min"
+    return tiempoDeSalida(fin - recorrido.iniciadoEn)
 }

@@ -136,24 +136,26 @@ estadísticas (D6).
 
 **Independent Test**: [quickstart](./quickstart.md) §7.
 
-- [ ] T015 [P] [US5] Escribir `shared/src/commonTest/kotlin/ar/lauta/buscarpatentes/domain/EstadisticasTest.kt` con el contrato C4:
+- [X] T015 [P] [US5] Escribir `shared/src/commonTest/kotlin/ar/lauta/buscarpatentes/domain/EstadisticasTest.kt` con el contrato C4:
   - **períodos**: la semana empieza el lunes, también un domingo a la noche; el mes, el día 1; el anterior de enero es diciembre del año anterior;
   - **qué cuenta**: una salida que cruza la medianoche cuenta en el día en que empezó; una patente fuera de una salida cuenta;
   - **sumas**: los totales suman salidas, duración, metros, kcal y patentes, y sin peso las kcal dan null;
   - **barras**: son 7, 8 o 12 y terminan en el período elegido; el siguiente del actual no existe.
-- [ ] T016 [US5] Crear `shared/src/commonMain/kotlin/ar/lauta/buscarpatentes/domain/Estadisticas.kt` (D7, data-model):
+- [X] T016 [US5] Crear `shared/src/commonMain/kotlin/ar/lauta/buscarpatentes/domain/Estadisticas.kt` (D7, data-model):
   - `enum TipoDePeriodo { DIA, SEMANA, MES }`;
   - `data class Periodo(tipo, inicio: LocalDate)` con `actual(tipo, ahora, zona)`, `anterior()`, `siguiente()` y si contiene un instante;
   - `TotalesDelPeriodo` y `totales(periodo, salidas, patentes, zona)`;
   - `barras(periodo, …)`.
 
   T015 pasa.
-- [ ] T017 [US5] Crear `shared/src/commonMain/kotlin/ar/lauta/buscarpatentes/ui/PantallaEstadisticas.kt`:
+- [X] T017 [US5] Crear `shared/src/commonMain/kotlin/ar/lauta/buscarpatentes/ui/PantallaEstadisticas.kt`:
   - tres pestañas, Día, Semana y Mes, y el título del período, por ejemplo "Hoy", "Semana del 12/10" u "Octubre 2026";
   - flechas, con la de adelante apagada en el actual;
   - los totales (FR-016);
   - las barras como `Box` en una `Row`, alto proporcional a los km y la del período elegido resaltada (FR-018), con la etiqueta corta de cada una.
-- [ ] T018 [US5] En `shared/src/commonMain/kotlin/ar/lauta/buscarpatentes/ui/PantallaRecorridos.kt`, un botón "Estadísticas" arriba de la lista, que abre la pantalla de T017 como un estado más adentro de Salidas, con su `BackHandler` (FR-015).
+
+  Arranca en la pestaña Semana, y tocar una barra lleva a ese período.
+- [X] T018 [US5] En `shared/src/commonMain/kotlin/ar/lauta/buscarpatentes/ui/PantallaRecorridos.kt`, un botón "Estadísticas" arriba de la lista, que abre la pantalla de T017 como un estado más adentro de Salidas, con su `BackHandler` (FR-015).
 
 **Checkpoint**: las cinco historias completas.
 
@@ -161,8 +163,8 @@ estadísticas (D6).
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T019 Correr `./gradlew :shared:testAndroidHostTest :app:assembleDebug`. Todo verde, sin warnings nuevos.
-- [ ] T020 [P] `README.md`:
+- [X] T019 Correr `./gradlew :shared:testAndroidHostTest :app:assembleDebug`. Todo verde, sin warnings nuevos.
+- [X] T020 [P] `README.md`:
   - la 010 en la lista de specs y en los quickstarts;
   - `CaminataTest` y `EstadisticasTest` en la tabla de pruebas;
   - una línea en la sección de Salidas sobre km, calorías y estadísticas.

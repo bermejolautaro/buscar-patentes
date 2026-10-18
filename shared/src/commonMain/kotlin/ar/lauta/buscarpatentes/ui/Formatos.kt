@@ -106,6 +106,12 @@ fun horasYMinutos(ms: Long): String {
     return "${minutos / 60}:${dosCifras((minutos % 60).toInt())}"
 }
 
+/** Cuánto duró una salida, o varias: "42 min", "1 h 5 min". */
+fun tiempoDeSalida(ms: Long): String {
+    val minutos = ms / 60_000
+    return if (minutos < 60) "$minutos min" else "${minutos / 60} h ${minutos % 60} min"
+}
+
 /** "2,1 km". */
 fun kilometros(metros: Double): String = "${decimales(metros / 1000, 1)} km"
 

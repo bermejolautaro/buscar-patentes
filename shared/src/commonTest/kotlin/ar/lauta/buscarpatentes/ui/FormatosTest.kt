@@ -86,6 +86,8 @@ class FormatosTest {
         assertEquals("0:42", horasYMinutos(42 * MINUTO))
         assertEquals("1:05", horasYMinutos(65 * MINUTO))
         assertEquals("26:13", horasYMinutos(26 * HORA + 13 * MINUTO))
+        assertEquals("42 min", tiempoDeSalida(42 * MINUTO))
+        assertEquals("1 h 5 min", tiempoDeSalida(65 * MINUTO))
     }
 
     @Test
