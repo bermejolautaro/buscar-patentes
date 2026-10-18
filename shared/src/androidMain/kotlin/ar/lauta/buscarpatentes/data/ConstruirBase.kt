@@ -169,6 +169,13 @@ private object Migraciones {
             }
         }
 
+        /** El peso del jugador de la 010. El SQL es común ([SQL_8_9]). */
+        private val MIGRACION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                SQL_8_9.forEach { db.execSQL(it) }
+            }
+        }
+
         // Sin instancia guardada: la guarda el contenedor, que la cambia al restaurar un respaldo.
         fun construir(context: Context): BaseDeDatos =
             Room.databaseBuilder(
@@ -184,6 +191,7 @@ private object Migraciones {
                     MIGRACION_5_6,
                     MIGRACION_6_7,
                     MIGRACION_7_8,
+                    MIGRACION_8_9,
                 )
                 .build()
 }

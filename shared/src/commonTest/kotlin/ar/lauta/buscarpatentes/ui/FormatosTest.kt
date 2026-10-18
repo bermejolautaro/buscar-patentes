@@ -1,5 +1,6 @@
 package ar.lauta.buscarpatentes.ui
 
+import ar.lauta.buscarpatentes.domain.ResumenDeCaminata
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.ExperimentalTime
@@ -78,7 +79,27 @@ class FormatosTest {
         assertEquals("318", tresCifras(318))
     }
 
+    @Test
+    fun `el tiempo de una salida en horas y minutos`() {
+        assertEquals("0:00", horasYMinutos(59_999))
+        assertEquals("0:07", horasYMinutos(7 * MINUTO))
+        assertEquals("0:42", horasYMinutos(42 * MINUTO))
+        assertEquals("1:05", horasYMinutos(65 * MINUTO))
+        assertEquals("26:13", horasYMinutos(26 * HORA + 13 * MINUTO))
+    }
+
+    @Test
+    fun `los km con un decimal y las calorias con su aproximado`() {
+        assertEquals("0,0 km", kilometros(0.0))
+        assertEquals("2,1 km", kilometros(2_100.0))
+        assertEquals("12,4 km", kilometros(12_449.0))
+        assertEquals("~75 kcal", calorias(75))
+        assertEquals("2,1 km · ~75 kcal", caminata(ResumenDeCaminata(duracionMs = 0, metros = 2_100.0, kcal = 75)))
+        assertEquals("2,1 km", caminata(ResumenDeCaminata(duracionMs = 0, metros = 2_100.0, kcal = null)))
+    }
+
     private companion object {
         const val HORA = 3_600_000L
+        const val MINUTO = 60_000L
     }
 }

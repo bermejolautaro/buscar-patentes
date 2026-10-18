@@ -1,5 +1,6 @@
 package ar.lauta.buscarpatentes.ui
 
+import ar.lauta.buscarpatentes.domain.ResumenDeCaminata
 import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.roundToLong
@@ -98,6 +99,22 @@ fun decimales(valor: Double, cifras: Int, separador: Char = ','): String {
     if (cifras == 0) return "$signo$parteEntera"
     return "$signo$parteEntera$separador${(total % escala).toString().padStart(cifras, '0')}"
 }
+
+/** El tiempo de una salida en curso, en horas y minutos: "0:42", "26:13" (contrato C3 de la 010). */
+fun horasYMinutos(ms: Long): String {
+    val minutos = ms / 60_000
+    return "${minutos / 60}:${dosCifras((minutos % 60).toInt())}"
+}
+
+/** "2,1 km". */
+fun kilometros(metros: Double): String = "${decimales(metros / 1000, 1)} km"
+
+/** "~75 kcal": la tilde dice que es un aproximado. */
+fun calorias(kcal: Int): String = "~$kcal kcal"
+
+/** "2,1 km · ~75 kcal", o solo los km sin peso cargado (FR-009 de la 010). */
+fun caminata(resumen: ResumenDeCaminata): String =
+    listOfNotNull(kilometros(resumen.metros), resumen.kcal?.let(::calorias)).joinToString(" · ")
 
 /** El número de una patente como se lee: tres cifras, con ceros a la izquierda. */
 fun tresCifras(numero: Int): String = numero.toString().padStart(3, '0')

@@ -25,28 +25,28 @@ Nada: sin dependencias nuevas.
 **Purpose**: las cuentas, los textos y el peso. Los usan la confirmación, la barra, Salidas y las
 estadísticas (D6).
 
-- [ ] T001 [P] Escribir `shared/src/commonTest/kotlin/ar/lauta/buscarpatentes/domain/CaminataTest.kt` con el contrato C1 y C2:
+- [X] T001 [P] Escribir `shared/src/commonTest/kotlin/ar/lauta/buscarpatentes/domain/CaminataTest.kt` con el contrato C1 y C2:
   - metros: sin puntos y con uno, 0; tres puntos en línea suman sus dos distancias; un salto de más de 250 m en el medio no suma;
   - kcal: 70 kg y 2.100 m dan 75; 70 kg y 0 m dan 0; 80 kg y 5.000 m dan 200; sin peso, null;
   - resumen: la duración de una terminada es `finalizadoEn - iniciadoEn`, y la de una en curso llega hasta `ahora`.
-- [ ] T002 Crear `shared/src/commonMain/kotlin/ar/lauta/buscarpatentes/domain/Caminata.kt` (D1, D2, D6):
+- [X] T002 Crear `shared/src/commonMain/kotlin/ar/lauta/buscarpatentes/domain/Caminata.kt` (D1, D2, D6):
   - `object Caminata` con `metros(puntos: List<Pair<Double, Double>>)`, que suma `Geo.distanciaMetros` adentro de cada tramo de `Geo.tramos`;
   - `kcal(metros, pesoKg: Int?): Int?`, que da `0,5 × peso × km` redondeado a 5, o null sin peso;
   - `data class ResumenDeCaminata(duracionMs: Long, metros: Double, kcal: Int?)` y `resumen(iniciadoEn, finalizadoEn: Long?, puntos, pesoKg, ahora)`.
 
   T001 pasa.
-- [ ] T003 [P] Sumar a `shared/src/commonTest/kotlin/ar/lauta/buscarpatentes/ui/FormatosTest.kt` los textos del contrato C3: `0:07`, `0:42`, `1:05`, `26:13`; `0,0 km`, `2,1 km`; `~75 kcal`; la línea con y sin calorías.
-- [ ] T004 En `shared/src/commonMain/kotlin/ar/lauta/buscarpatentes/ui/Formatos.kt`:
+- [X] T003 [P] Sumar a `shared/src/commonTest/kotlin/ar/lauta/buscarpatentes/ui/FormatosTest.kt` los textos del contrato C3: `0:07`, `0:42`, `1:05`, `26:13`; `0,0 km`, `2,1 km`; `~75 kcal`; la línea con y sin calorías.
+- [X] T004 En `shared/src/commonMain/kotlin/ar/lauta/buscarpatentes/ui/Formatos.kt`:
   - `horasYMinutos(ms)`;
   - `km(metros)`, con `decimales(…, 1)`;
   - `kcal(n)`;
   - `caminata(resumen)`, que da "2,1 km · ~75 kcal", o solo los km sin peso.
 
   T003 pasa.
-- [ ] T005 [P] Sumar a `shared/src/commonTest/kotlin/ar/lauta/buscarpatentes/data/MigracionTest.kt` la prueba de la 8 a la 9:
+- [X] T005 [P] Sumar a `shared/src/commonTest/kotlin/ar/lauta/buscarpatentes/data/MigracionTest.kt` la prueba de la 8 a la 9:
   - sobre el esquema 7 más `SQL_7_8`, con una fila en `estado_del_juego`, `SQL_8_9` suma `pesoKg` en null;
   - no cambia ninguna otra columna de esa fila, ni las salidas.
-- [ ] T006 La columna del peso (D3, data-model):
+- [X] T006 La columna del peso (D3, data-model):
   - `pesoKg: Int? = null` en `EstadoDelJuego` de `shared/src/commonMain/kotlin/ar/lauta/buscarpatentes/data/Entidades.kt`;
   - `fijarPeso(pesoKg: Int?)` en `EstadoDelJuegoDao` de `data/Daos.kt`;
   - `version = 9` en `data/BaseDeDatos.kt`;
@@ -55,7 +55,7 @@ estadísticas (D6).
   - `VERSION_BASE = 9` en `respaldo/Respaldo.kt`, y el comentario de `RespaldoTest` que dice cuál es la primera versión desconocida.
 
   T005 pasa.
-- [ ] T007 En `shared/src/commonMain/kotlin/ar/lauta/buscarpatentes/ui/PantallaAjustes.kt`, el peso (FR-009):
+- [X] T007 En `shared/src/commonMain/kotlin/ar/lauta/buscarpatentes/ui/PantallaAjustes.kt`, el peso (FR-009):
   - un campo numérico "Peso (kg)" al lado del número que toca, que guarda con `fijarPeso`;
   - vacío lo borra; fuera de 1 a 300 no se guarda y lo dice;
   - una línea: "Se usa solo para estimar las calorías de las salidas."

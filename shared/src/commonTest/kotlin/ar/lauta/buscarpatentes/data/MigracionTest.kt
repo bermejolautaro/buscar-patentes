@@ -16,7 +16,8 @@ import kotlinx.io.files.SystemFileSystem
 import kotlinx.io.files.SystemTemporaryDirectory
 
 /**
- * La migración de la 7 a la 8 (T006 de la 008): suma las zonas y no toca nada de lo que había.
+ * Las migraciones: de la 7 a la 8 suma las zonas (T006 de la 008), y de la 8 a la 9 el peso del
+ * jugador (T005 de la 010). Ninguna toca nada de lo que había.
  *
  * Room no se abre acá. Que el SQL sea el que Room espera lo garantiza haberlo copiado de su
  * `createAllTables`, y lo confirma la app al abrir una base migrada (quickstart §2).
@@ -47,6 +48,27 @@ class MigracionTest {
             )
             con.execSQL("INSERT INTO cuadra (zonaId, nombre, forma, quitada, recorridaAlTerminar) VALUES (1, NULL, 'abc', 0, 0)")
             assertEquals(1L, con.numero("SELECT COUNT(*) FROM cuadra"))
+            assertEquals(antes, volcado(con))
+        }
+    }
+
+    @Test
+    fun `la 9 suma el peso en null sin tocar el estado del juego ni las salidas`() {
+        abrir().use { con ->
+            ESQUEMA_7.forEach(con::execSQL)
+            SQL_7_8.forEach(con::execSQL)
+            con.execSQL("INSERT INTO estado_del_juego VALUES (1, 316, 1, 'ANTIGUEDAD')")
+            con.execSQL("INSERT INTO recorrido VALUES (1, 1789970000000, 1789975000000, 'TERMINADO', '3:abc')")
+            val antes = volcado(con)
+
+            SQL_8_9.forEach(con::execSQL)
+
+            assertEquals(
+                listOf("1, 316, 1, ANTIGUEDAD, null"),
+                con.lista("SELECT id, numeroActual, avisosActivos, modoMapa, pesoKg FROM estado_del_juego") { s ->
+                    (0 until s.getColumnCount()).joinToString { if (s.isNull(it)) "null" else s.getText(it) }
+                },
+            )
             assertEquals(antes, volcado(con))
         }
     }
