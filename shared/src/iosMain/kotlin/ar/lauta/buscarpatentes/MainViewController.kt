@@ -7,6 +7,7 @@ import ar.lauta.buscarpatentes.data.AlmacenFotos
 import ar.lauta.buscarpatentes.data.construirBase
 import ar.lauta.buscarpatentes.mapa.ConfigMapa
 import ar.lauta.buscarpatentes.plataforma.Carpetas
+import ar.lauta.buscarpatentes.plataforma.Grabacion
 import ar.lauta.buscarpatentes.plataforma.Ubicacion
 import ar.lauta.buscarpatentes.plataforma.ahora
 import ar.lauta.buscarpatentes.plataforma.salidaCortada
@@ -51,6 +52,9 @@ fun iniciar() {
     runBlocking {
         if (contenedor.recorridos.cerrarLosAbiertos(ahora()) > 0) salidaCortada.value = true
     }
+    // T010 de la 010: si la app vuelve antes de que suene el aviso de la salida cortada, ya no
+    // tiene que sonar. El que ya sonó queda.
+    Grabacion.borrarAviso(entregado = false)
 
     // Core Location entrega lo que mide en el hilo donde se creó el manager: este, el principal.
     Ubicacion.manager

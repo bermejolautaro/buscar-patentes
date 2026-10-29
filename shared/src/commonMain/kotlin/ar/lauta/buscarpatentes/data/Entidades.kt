@@ -162,6 +162,12 @@ data class EstadoDelJuego(
      * exactamente lo que el Principio IV prohíbe.
      */
     val modoMapa: ModoMapa = ModoMapa.COBERTURA,
+
+    /**
+     * El peso del jugador en kg, de 1 a 300, para estimar las calorías de las salidas (FR-009 de la
+     * 010). Null mientras no lo carga: sin peso la app no muestra ninguna caloría.
+     */
+    val pesoKg: Int? = null,
 ) {
     companion object {
         const val ID_UNICO = 1

@@ -61,6 +61,7 @@ fun PantallaAjustes(onVolver: () -> Unit) {
     val alcance = rememberCoroutineScope()
 
     var numero by remember { mutableStateOf("") }
+    var peso by remember { mutableStateOf("") }
     var espacioMapa by remember { mutableStateOf<Long?>(null) }
     var espacioFotos by remember { mutableStateOf(0L) }
     var fotosPasadasDeTecho by remember { mutableStateOf(false) }
@@ -124,6 +125,7 @@ fun PantallaAjustes(onVolver: () -> Unit) {
         val estado = contenedor.estadoDelJuego.leer()
             ?: EstadoDelJuego().also { contenedor.estadoDelJuego.guardar(it) }
         numero = estado.numeroActual.toString()
+        peso = estado.pesoKg?.toString() ?: ""
         espacioMapa = CacheDeMapa.espacioOcupado()
         espacioFotos = contenedor.fotos.espacioOcupado()
         fotosPasadasDeTecho = contenedor.fotos.superoElTecho()
@@ -165,6 +167,35 @@ fun PantallaAjustes(onVolver: () -> Unit) {
                 },
                 modifier = Modifier.padding(top = 8.dp),
                 singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            )
+
+            // FR-009 de la 010: el peso, solo para las calorías. Vacío lo borra, y sin peso no
+            // se muestra ninguna. Fuera de rango no se guarda: queda el último que valía.
+            val pesoFueraDeRango = peso.toIntOrNull()?.let { it !in PESO_MINIMO..PESO_MAXIMO } ?: false
+            Text("Tu peso", fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 20.dp))
+            Text("Se usa solo para estimar las calorías de las salidas.", fontSize = 13.sp)
+            OutlinedTextField(
+                value = peso,
+                onValueChange = { nuevo ->
+                    if (nuevo.length <= 3 && nuevo.all { it.isDigit() }) {
+                        peso = nuevo
+                        val kg = nuevo.toIntOrNull()
+                        when {
+                            kg == null -> alcance.launch { contenedor.estadoDelJuego.fijarPeso(null) }
+                            kg in PESO_MINIMO..PESO_MAXIMO -> alcance.launch { contenedor.estadoDelJuego.fijarPeso(kg) }
+                        }
+                    }
+                },
+                modifier = Modifier.padding(top = 8.dp),
+                singleLine = true,
+                suffix = { Text("kg") },
+                isError = pesoFueraDeRango,
+                supportingText = if (pesoFueraDeRango) {
+                    { Text("Entre $PESO_MINIMO y $PESO_MAXIMO kg") }
+                } else {
+                    null
+                },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             )
 
@@ -321,3 +352,6 @@ private fun enMegas(bytes: Long?): String =
     if (bytes == null) "…" else "${decimales(bytes / 1024.0 / 1024.0, 1)} MB"
 
 private fun ConfigMapaMb(): Long = ConfigMapa.CACHE_MAXIMO_BYTES / 1024 / 1024
+
+private const val PESO_MINIMO = 1
+private const val PESO_MAXIMO = 300

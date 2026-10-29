@@ -84,10 +84,12 @@ fun BarraDelJuego(
     onTocarFila: (Long) -> Unit = {},
     /** Al pie de la lista, con dos o más patentes (US4, C2). */
     onArmarRecorrido: () -> Unit = {},
+    /** Lo que lleva la salida en curso, o null sin salida: la barra queda como antes (US3 de la 010). */
+    salidaEnCurso: String? = null,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier) {
-        Tarjeta(numero, cuenta, filtrando, onAbrirFiltro, onFiltrar, onCerrarFiltro, onTocarBarra)
+        Tarjeta(numero, cuenta, filtrando, onAbrirFiltro, onFiltrar, onCerrarFiltro, onTocarBarra, salidaEnCurso)
         if (listaAbierta) Lista(filas, sinPosicion, onTocarFila, onArmarRecorrido)
     }
 }
@@ -116,6 +118,7 @@ private fun Tarjeta(
     onFiltrar: (Int) -> Unit,
     onCerrarFiltro: () -> Unit,
     onTocarBarra: () -> Unit,
+    salidaEnCurso: String?,
 ) {
     // FR-004: hasta la 004 tocar la barra no hacía nada, y el jugador lo notó. La lupa, la `X`
     // y el campo reciben sus propios toques; el resto de la tarjeta despliega la lista.
@@ -133,6 +136,10 @@ private fun Tarjeta(
                     Text(tresCifras(numero), fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 }
                 if (numero != null) Text(Cobertura.descubiertas(cuenta), fontSize = 13.sp)
+                // En el color de la app: dice de un vistazo que se está grabando.
+                if (salidaEnCurso != null) {
+                    Text(salidaEnCurso, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
+                }
             }
 
             if (filtrando) {

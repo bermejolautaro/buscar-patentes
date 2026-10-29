@@ -9,10 +9,10 @@ import androidx.room.TypeConverters
 /**
  * La base del juego, la misma en los dos teléfonos (D6 de la 006).
  *
- * Cada sistema la arma con su builder: el Android con las migraciones 1→8 (`androidMain`), el
+ * Cada sistema la arma con su builder: el Android con las migraciones 1→9 (`androidMain`), el
  * iPhone con el driver de SQLite incluido. La 8 suma las zonas de la 008 y es la primera
  * migración que corre en los dos: el SQL vive en común ([SQL_7_8]), y el iPhone la usa al abrir
- * un respaldo de la 7.
+ * un respaldo de la 7. La 9 suma el peso del jugador de la 010 ([SQL_8_9]).
  */
 @Database(
     entities = [
@@ -24,7 +24,7 @@ import androidx.room.TypeConverters
         Zona::class,
         Cuadra::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = false,
 )
 @TypeConverters(Convertidores::class)

@@ -112,7 +112,7 @@ class RespaldoTest {
         abrir(baseNueva).use { it.execSQL("PRAGMA user_version = 99") }
         assertEquals(Respaldo.MAS_NUEVO, motivo(baseNueva))
 
-        // La 9 es la primera que esta app no conoce: desde la 008 la base va por la 8.
+        // La 10 es la primera que esta app no conoce: desde la 010 la base va por la 9.
         val laSiguiente = respaldoDe(baseDeOrigen("siguiente"))
         abrir(laSiguiente).use { it.execSQL("PRAGMA user_version = ${Respaldo.VERSION_BASE + 1}") }
         assertEquals(Respaldo.MAS_NUEVO, motivo(laSiguiente))
