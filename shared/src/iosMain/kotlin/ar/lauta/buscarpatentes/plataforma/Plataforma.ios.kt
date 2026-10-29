@@ -33,9 +33,14 @@ import platform.UniformTypeIdentifiers.UTTypeData
 import platform.UserNotifications.UNAuthorizationOptionAlert
 import platform.UserNotifications.UNAuthorizationOptionSound
 import platform.UserNotifications.UNMutableNotificationContent
+import platform.UserNotifications.UNNotification
+import platform.UserNotifications.UNNotificationPresentationOptionBanner
+import platform.UserNotifications.UNNotificationPresentationOptionSound
+import platform.UserNotifications.UNNotificationPresentationOptions
 import platform.UserNotifications.UNNotificationRequest
 import platform.UserNotifications.UNTimeIntervalNotificationTrigger
 import platform.UserNotifications.UNUserNotificationCenter
+import platform.UserNotifications.UNUserNotificationCenterDelegateProtocol
 import platform.darwin.NSObject
 
 // La costura del iPhone (contrato P de la 006).
@@ -138,6 +143,37 @@ actual fun programarAvisoDeVencimiento(vence: Long) {
 }
 
 private const val UN_DIA_MS = 24L * 60 * 60 * 1000
+
+/** Sin disparador: se entrega enseguida. Con la app abierta la muestra [ponerDelegadoDeNotificaciones]. */
+actual fun notificar(id: Int, titulo: String, texto: String) {
+    val contenido = UNMutableNotificationContent().apply {
+        setTitle(titulo)
+        setBody(texto)
+    }
+    UNUserNotificationCenter.currentNotificationCenter()
+        .addNotificationRequest(UNNotificationRequest.requestWithIdentifier("zona-$id", contenido, null), null)
+}
+
+/**
+ * Sin esto, iOS no muestra las notificaciones de la app que está abierta, y la felicitación de una
+ * zona llega casi siempre con la app abierta: al terminar la salida que la completa (D2 de la 011).
+ */
+fun ponerDelegadoDeNotificaciones() {
+    UNUserNotificationCenter.currentNotificationCenter().delegate = delegadoDeNotificaciones
+}
+
+/** El centro de notificaciones no retiene a su delegado: lo retiene esta variable. */
+private val delegadoDeNotificaciones = DelegadoDeNotificaciones()
+
+private class DelegadoDeNotificaciones : NSObject(), UNUserNotificationCenterDelegateProtocol {
+    override fun userNotificationCenter(
+        center: UNUserNotificationCenter,
+        willPresentNotification: UNNotification,
+        withCompletionHandler: (UNNotificationPresentationOptions) -> Unit,
+    ) {
+        withCompletionHandler(UNNotificationPresentationOptionBanner or UNNotificationPresentationOptionSound)
+    }
+}
 
 actual fun mandarRespaldo(ruta: String) = mostrarHoja(listOf(NSURL.fileURLWithPath(ruta)))
 

@@ -342,12 +342,14 @@ abstract class ZonaDao {
 
     /**
      * Congela el resultado de una zona que termina (FR-014 a FR-016). Solo una activa: una zona
-     * terminada no se vuelve a terminar, y su resultado queda como estaba.
+     * terminada no se vuelve a terminar, y su resultado queda como estaba. True si la terminó esta
+     * llamada: es lo que hace que una zona se felicite una sola vez (FR-007 de la 011).
      */
     @Transaction
-    open suspend fun terminar(id: Long, estado: EstadoZona, en: Long, porcentaje: Int, recorridas: List<Long>) {
-        if (marcarTerminada(id, estado, en, porcentaje) == 0) return
+    open suspend fun terminar(id: Long, estado: EstadoZona, en: Long, porcentaje: Int, recorridas: List<Long>): Boolean {
+        if (marcarTerminada(id, estado, en, porcentaje) == 0) return false
         recorridas.chunked(MAXIMO_POR_SENTENCIA).forEach { marcarRecorridas(it) }
+        return true
     }
 
     @Query("DELETE FROM cuadra WHERE zonaId = :id")

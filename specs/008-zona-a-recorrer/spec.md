@@ -291,7 +291,8 @@ queda en la lista con su porcentaje y sus días, y que una salida posterior ya n
 - **El máximo de 2.000 cuadras** alcanza para varios barrios juntos, y acota el tiempo de la cuenta
   en el teléfono.
 - **Solo cuentan las salidas ajustadas.** Es el mismo camino que pinta el mapa por defecto desde la
-  007; los puntos medidos sin ajustar no dicen qué calle se caminó.
+  007; los puntos medidos sin ajustar no dicen qué calle se caminó. *La 011 lo cambia: cuenta lo
+  ajustado o lo medido, porque el ajuste pegaba un pasaje caminado a la diagonal de al lado.*
 - **Las zonas no son evidencia.** Se pueden borrar y cambiar sin tocar el Principio II, que protege
   las patentes y los puntos medidos.
 
