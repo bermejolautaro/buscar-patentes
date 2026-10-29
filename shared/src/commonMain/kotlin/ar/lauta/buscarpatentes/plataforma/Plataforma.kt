@@ -88,6 +88,12 @@ expect fun perfilDeAprovisionamiento(): ByteArray?
  */
 expect fun programarAvisoDeVencimiento(vence: Long)
 
+/**
+ * Una notificación ahora mismo, que se ve también con la app abierta (D2 de la 011). [id] separa
+ * una de otra: dos con el mismo id, la segunda reemplaza a la primera. Sin permiso, nada.
+ */
+expect fun notificar(id: Int, titulo: String, texto: String)
+
 /** P5: la hoja de compartir del sistema con el archivo de un respaldo, para sacarlo del teléfono. */
 expect fun mandarRespaldo(ruta: String)
 

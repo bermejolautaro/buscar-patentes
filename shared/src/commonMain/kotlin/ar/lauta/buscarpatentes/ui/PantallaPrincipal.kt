@@ -107,6 +107,7 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import org.jetbrains.compose.resources.painterResource
 
 /**
@@ -386,7 +387,7 @@ fun PantallaPrincipal(
         // una prolijidad. MapLibre dibuja las features en el orden de la fuente, así que la
         // salida reciente queda encima de la vieja donde se pisan, sin calcular una sola
         // intersección de geometría.
-        salidasParaContar = Zonas.salidasParaContar(salidas)
+        salidasParaContar = Zonas.salidasParaContar(salidas, puntosPorRecorrido)
         val cuadrasPorZona = contenedor.zonas.cuadrasDeActivas().groupBy { it.zonaId }
         zonasActivas = contenedor.zonas.activas().map { zona ->
             zona to cuadrasPorZona[zona.id].orEmpty().map(Zonas::paraContar)
@@ -431,6 +432,26 @@ fun PantallaPrincipal(
         // 010: los mismos puntos son los km de la barra. Cuándo empezó se lee una vez por salida.
         if (iniciadaEn == null) iniciadaEn = contenedor.recorridos.enCurso()?.iniciadoEn
         puntosEnCurso = puntos
+    }
+
+    // FR-004 de la 011: al terminar una salida, lo que midió ya cuenta para las zonas. Se revisan
+    // enseguida, sin esperar a la próxima entrada: la felicitación de la salida que completa una
+    // zona llega al terminarla. Primero sin red, y después del ajuste, que puede tardar.
+    var habiaSalida by remember { mutableStateOf(false) }
+    LaunchedEffect(recorrido) {
+        if (recorrido != null) {
+            habiaSalida = true
+            return@LaunchedEffect
+        }
+        if (!habiaSalida) return@LaunchedEffect
+        habiaSalida = false
+        // Cada teléfono cierra la salida en la base por su lado: se la espera, con techo.
+        withTimeoutOrNull(ESPERA_DEL_CIERRE_MS) {
+            while (contenedor.recorridos.enCurso() != null) delay(250)
+        }
+        Zonas.revisar()
+        if (AjustarACalles.pendientes() > 0) Zonas.revisar()
+        recarga++
     }
 
     // FR-005 de la 010: el tiempo de la barra sube solo mientras hay salida.
@@ -954,6 +975,9 @@ fun PantallaPrincipal(
         )
     }
 }
+
+/** Cuánto se espera a que la base cierre la salida terminada antes de revisar las zonas. */
+private const val ESPERA_DEL_CIERRE_MS = 5_000L
 
 /** Cada cuánto sube el tiempo de la barra. Muestra minutos: más seguido no cambia nada. */
 private const val CADA_CUANTO_SUBE_EL_TIEMPO_MS = 20_000L
