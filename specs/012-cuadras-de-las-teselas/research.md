@@ -53,6 +53,11 @@ Las teselas no traen nodos. En una tesela del centro, de las 838 puntas de las 5
 - **7 no tocan nada**: calles sin salida.
 - **208 están en el borde de la tesela**.
 
+Con solo esas puntas, la franja del centro armaba 30 de las 55 cuadras que daba Overpass. Faltaba
+lo que esa medición no miraba: **dos calles que se cruzan de lado a lado sin compartir el punto**.
+La tesela simplifica cada calle por su lado, y a una calle recta le saca el punto del cruce aunque
+ahí la corte otra. Uruguay pasaba por Sarmiento sin cortarla. Con los cruces, 50 de 55.
+
 **Decision**:
 
 1. **Coordenadas globales.** Se pasa todo a una grilla común de zoom 14: `x × 4096 + px`. Las teselas
@@ -62,8 +67,9 @@ Las teselas no traen nodos. En una tesela del centro, de las 838 puntas de las 5
 3. **Nodos.** Los puntos idénticos son el mismo nodo. Los puntos que crea el recorte, sobre el borde,
    se juntan con los de la otra tesela a menos de 2 unidades: los dos lados recortan tramos apenas
    distintos.
-4. **Esquinas en T.** Una punta suelta que cae a menos de 2 unidades de un tramo de otra calle del
-   mismo nivel (`layer`) parte ese tramo ahí, y es una esquina.
+4. **Cruces.** Dos tramos de calles distintas del mismo nivel (`layer`) que se cruzan, o la punta de
+   uno que cae a menos de 2 unidades del otro, se cortan ahí, con un nodo en común. Un puente sobre
+   una calle va en otro nivel y no se corta.
 
 Las cadenas de `Cuadras.armar` siguen por los nodos de grado 2, así que una calle partida en el borde
 de la tesela vuelve a ser una sola cuadra.
@@ -72,7 +78,12 @@ de la tesela vuelve a ser una sola cuadra.
 
 `transportation_name` trae las calles con nombre, unidas en líneas largas, sobre la misma grilla.
 Cada pedazo de calle toma el nombre de la línea que pasa a menos de 2 unidades de la mayoría de sus
-puntos. Sin ninguna, queda sin nombre, como una calle sin nombre en Overpass.
+muestras. Sin ninguna, queda sin nombre, como una calle sin nombre en Overpass.
+
+**Las muestras son del medio de cada tramo, no sus puntas.** En una esquina la calle que cruza
+queda a la misma distancia, y en una cuadrícula casi todos los puntos de una calle son esquinas: con
+las puntas, 36 cuadras de la zona del jugador quedaban sin nombre, entre ellas las dos manos de las
+avenidas, que sin nombre no se aparean. Darle más distancia al nombre no cambiaba nada.
 
 ## D6. Bajar bytes
 
@@ -89,3 +100,19 @@ franja con su margen, en base64 (`RespuestaDeTeselas.kt`). Las pruebas que la us
 
 La comparación contra Overpass (SC-002) se hace una vez, fuera del repo, con el borde de la zona
 completada del jugador y las cuadras que ya tiene guardadas.
+
+## D8. Resultado contra la zona del jugador
+
+Con el borde de la zona completada del jugador, seis teselas, comparando por las dos puntas con las
+429 cuadras que salieron de Overpass en septiembre:
+
+| | Overpass | Teselas |
+|---|---|---|
+| Cuadras | 429 | 428 |
+| Las de Overpass que salen igual | | **425 (99%)** |
+| Con el mismo nombre | | 424 de 425 |
+| Parejas de manos de avenida | 9 | 7 (las otras 2 están entre las 4 que faltan) |
+| Tiempo, en la PC | | 0,3 a 0,4 s |
+
+Las cuatro que faltan son de dos avenidas y una calle donde las teselas cortan en otro lugar. Los
+datos son de dos fechas distintas: septiembre en Overpass y noviembre en las teselas.

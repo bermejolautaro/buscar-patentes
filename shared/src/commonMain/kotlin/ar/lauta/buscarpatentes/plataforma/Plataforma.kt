@@ -76,6 +76,12 @@ expect fun hayConexion(): Boolean
  */
 expect suspend fun postear(url: String, cuerpo: String): String?
 
+/**
+ * Un GET con la misma espera y la misma identificación que [postear]: los bytes de la respuesta, o
+ * null si no fue un 200. Tira si no hubo respuesta. Lo usan las teselas de las zonas (D6 de la 012).
+ */
+expect suspend fun bajar(url: String): ByteArray?
+
 /** De qué sistema sale un respaldo (R2): `android` o `ios`. */
 expect val sistema: String
 

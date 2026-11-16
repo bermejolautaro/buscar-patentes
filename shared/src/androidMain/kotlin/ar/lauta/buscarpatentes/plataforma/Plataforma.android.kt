@@ -139,7 +139,7 @@ actual suspend fun postear(url: String, cuerpo: String): String? = withContext(D
         requestMethod = "POST"
         doOutput = true
         setRequestProperty("Content-Type", "application/json")
-        // Overpass rechaza con 406 un pedido sin identificación propia, y el servidor de Valhalla
+        // Overpass rechazaba con 406 un pedido sin identificación propia, y el servidor de Valhalla
         // pide lo mismo en sus reglas de uso (D1 de la 008).
         setRequestProperty("User-Agent", "buscar-patentes")
     }
@@ -147,6 +147,19 @@ actual suspend fun postear(url: String, cuerpo: String): String? = withContext(D
         conexion.outputStream.bufferedWriter().use { it.write(cuerpo) }
         if (conexion.responseCode != HttpURLConnection.HTTP_OK) null
         else conexion.inputStream.bufferedReader().readText()
+    } finally {
+        conexion.disconnect()
+    }
+}
+
+actual suspend fun bajar(url: String): ByteArray? = withContext(Dispatchers.IO) {
+    val conexion = (URL(url).openConnection() as HttpURLConnection).apply {
+        connectTimeout = ESPERA_MS
+        readTimeout = ESPERA_MS
+        setRequestProperty("User-Agent", "buscar-patentes")
+    }
+    try {
+        if (conexion.responseCode != HttpURLConnection.HTTP_OK) null else conexion.inputStream.use { it.readBytes() }
     } finally {
         conexion.disconnect()
     }

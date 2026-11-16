@@ -23,6 +23,7 @@ corren el mismo código de Kotlin Multiplatform y Compose Multiplatform.
 - Recorrido en curso, los km, las calorías y las estadísticas: [`specs/010-recorrido-en-curso/spec.md`](specs/010-recorrido-en-curso/spec.md),
   y cómo se prueba en [`quickstart.md`](specs/010-recorrido-en-curso/quickstart.md)
 - Zona completa, lo medido que también cuenta y la felicitación: [`specs/011-zona-completa/spec.md`](specs/011-zona-completa/spec.md)
+- Cuadras de las teselas, sin Overpass: [`specs/012-cuadras-de-las-teselas/spec.md`](specs/012-cuadras-de-las-teselas/spec.md)
 - Reglas que no se negocian: [`.specify/memory/constitution.md`](.specify/memory/constitution.md)
 
 ## Estructura
@@ -129,7 +130,8 @@ Las pruebas comunes viven en `shared/src/commonTest` y corren en dos lados: en l
 | `CaminoAjustadoTest` | El camino ajustado sin rectas inventadas: se guardan solo los pedazos de calle, cortados donde el servicio no los unió; y el formato guardado, que distingue lo nuevo de lo que hay que reajustar (contrato A de la 007) |
 | `AjustarACallesTest` | El pedido al servicio de ajuste a calles, sin radio; y la lectura de una respuesta real, sobre la que el camino armado no tiene ninguna recta entre pedazos |
 | `BordeTest` | El borde de una zona: tres esquinas o más, sin cruces, qué queda adentro y qué lado tocó el dedo (FR-001 de la 008) |
-| `CuadrasTest` | De las vías de OpenStreetMap a las cuadras de una zona: se cortan en cada esquina, se descartan las de menos de 30 m, las dos manos de una avenida cuentan como una y una cuadra se reconoce en otra búsqueda; y la lectura de una respuesta real de Overpass (contrato Z2 de la 008) |
+| `CuadrasTest` | De las vías de OpenStreetMap a las cuadras de una zona: se cortan en cada esquina, se descartan las de menos de 30 m, las dos manos de una avenida cuentan como una y una cuadra se reconoce en otra búsqueda; y las cuadras de las teselas reales del centro (contrato Z2 de la 008) |
+| `TeselasTest` | De las teselas del mapa de fondo a las vías: el decodificador, qué calles entran, las esquinas por punto compartido, por cruce y en T, la calle partida en el borde de dos teselas, los nombres y el sentido único (D2 a D5 de la 012) |
 | `CoberturaDeZonaTest` | Qué cuadras están recorridas: con la respuesta real del servicio de ajuste, lo caminado de esquina a esquina cuenta y lo cruzado en la esquina no; las salidas se suman, lo quitado no cuenta, y 99 de 100 no es 100% (contrato Z3 de la 008) |
 | `ZonasTest` | Qué se quita al tocar una cuadra: esa, o toda su calle, siempre con la otra mano de la avenida (FR-012 de la 008) |
 | `MigracionTest` | La base de la 7 a la 8, que suma las zonas, y de la 8 a la 9, que suma el peso del jugador, sin tocar las salidas (D7 de la 008, D3 de la 010) |
@@ -179,11 +181,13 @@ Mientras no termine, la zona se edita: su nombre, desde cuándo cuenta y su bord
 arrastran, se borran apretándolas un rato, y un toque sobre un lado lo parte con una esquina nueva. Con otro borde vuelve a buscar sus cuadras, y lo quitado sigue quitado.
 En la pantalla principal se ve el borde de cada zona y las cuadras que faltan, sin ningún número.
 
-Las cuadras salen de OpenStreetMap, con un pedido a [Overpass](https://overpass-api.de) **una
-sola vez por zona**. Después todo se calcula en el teléfono, sin conexión, contra los caminos
-ajustados de las salidas y lo que midió el teléfono: desde la 011, un pedazo de cuadra cuenta si le
-pasa cerca cualquiera de los dos. Al llegar al 100% llega una notificación de felicitaciones. La URL vive en `BuscarCuadras.SERVICIO`, en
-`shared/src/commonMain/kotlin/ar/lauta/buscarpatentes/ubicacion/BuscarCuadras.kt`.
+Las cuadras salen de las teselas del mapa de fondo, las mismas de OpenFreeMap que dibujan el mapa,
+**una sola vez por zona**: la app las decodifica y detecta las esquinas (012). Hasta la 012 salían de
+Overpass, que dejó de contestar a tiempo. Después todo se calcula en el teléfono, sin conexión,
+contra los caminos ajustados de las salidas y lo que midió el teléfono: desde la 011, un pedazo de
+cuadra cuenta si le pasa cerca cualquiera de los dos. Al llegar al 100% llega una notificación de
+felicitaciones. La URL de las teselas vive en `ConfigMapa.TESELAS`, en
+`shared/src/commonMain/kotlin/ar/lauta/buscarpatentes/mapa/MapaDeFondo.kt`.
 
 ## Mapa
 
