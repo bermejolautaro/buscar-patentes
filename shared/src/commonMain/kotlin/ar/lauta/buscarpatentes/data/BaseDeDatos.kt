@@ -12,7 +12,8 @@ import androidx.room.TypeConverters
  * Cada sistema la arma con su builder: el Android con las migraciones 1→9 (`androidMain`), el
  * iPhone con el driver de SQLite incluido. La 8 suma las zonas de la 008 y es la primera
  * migración que corre en los dos: el SQL vive en común ([SQL_7_8]), y el iPhone la usa al abrir
- * un respaldo de la 7. La 9 suma el peso del jugador de la 010 ([SQL_8_9]).
+ * un respaldo de la 7. La 9 suma el peso del jugador de la 010 ([SQL_8_9]), y la 10 la zona
+ * del mapa principal y desde qué zoom no se agrupan las patentes, de la 013 ([SQL_9_10]).
  */
 @Database(
     entities = [
@@ -24,7 +25,7 @@ import androidx.room.TypeConverters
         Zona::class,
         Cuadra::class,
     ],
-    version = 9,
+    version = 10,
     exportSchema = false,
 )
 @TypeConverters(Convertidores::class)

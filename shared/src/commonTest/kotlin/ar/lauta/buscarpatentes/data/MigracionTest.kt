@@ -73,6 +73,27 @@ class MigracionTest {
         }
     }
 
+    @Test
+    fun `la 10 suma la zona del mapa y el zoom sin grupos en null`() {
+        abrir().use { con ->
+            ESQUEMA_7.forEach(con::execSQL)
+            SQL_7_8.forEach(con::execSQL)
+            SQL_8_9.forEach(con::execSQL)
+            con.execSQL("INSERT INTO estado_del_juego VALUES (1, 316, 1, 'ANTIGUEDAD', 70)")
+            val antes = volcado(con)
+
+            SQL_9_10.forEach(con::execSQL)
+
+            assertEquals(
+                listOf("1, 316, 1, ANTIGUEDAD, 70, null, null"),
+                con.lista("SELECT id, numeroActual, avisosActivos, modoMapa, pesoKg, zonaEnElMapa, zoomSinGrupos FROM estado_del_juego") { s ->
+                    (0 until s.getColumnCount()).joinToString { if (s.isNull(it)) "null" else s.getText(it) }
+                },
+            )
+            assertEquals(antes, volcado(con))
+        }
+    }
+
     private fun volcado(con: SQLiteConnection): List<String> =
         con.lista("SELECT * FROM recorrido") { s -> (0 until s.getColumnCount()).joinToString { s.getText(it) } } +
             con.lista("SELECT * FROM punto_de_trayecto") { s -> (0 until s.getColumnCount()).joinToString { s.getText(it) } }

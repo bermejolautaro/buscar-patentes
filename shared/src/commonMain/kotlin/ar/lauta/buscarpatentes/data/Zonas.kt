@@ -58,6 +58,13 @@ object Zonas {
         revisar()
     }
 
+    /**
+     * La zona del mapa principal (FR-002 de la 013): la que eligió el jugador, y si no eligió o la
+     * borró, la última que creó. Puede estar terminada o buscando sus calles.
+     */
+    fun enElMapa(zonas: List<Zona>, elegida: Long?): Zona? =
+        zonas.firstOrNull { it.id == elegida } ?: zonas.maxByOrNull { it.creadaEn }
+
     /** Corre "desde cuándo cuenta" (FR-003). Nunca después de hoy, y solo con la zona activa. */
     suspend fun cambiarCuentaDesde(id: Long, desde: Long, ahora: Long) {
         contenedor.zonas.cambiarCuentaDesde(id, inicioDelDia(minOf(desde, ahora)))

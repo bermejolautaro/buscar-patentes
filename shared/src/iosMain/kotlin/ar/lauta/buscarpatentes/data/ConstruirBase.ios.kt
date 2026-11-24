@@ -14,13 +14,13 @@ import kotlinx.coroutines.IO
  *
  * Las bases de iPhone nacieron en la 7, así que las migraciones empiezan en la 7→8, la de las
  * zonas de la 008, y siguen con la 8→9, el peso de la 010. Corren también al abrir un respaldo
- * viejo. El SQL es común ([SQL_7_8], [SQL_8_9]).
+ * viejo. El SQL es común ([SQL_7_8], [SQL_8_9], [SQL_9_10]).
  */
 fun construirBase(): BaseDeDatos =
     Room.databaseBuilder<BaseDeDatos>(name = Carpetas.base + "/" + BaseDeDatos.ARCHIVO)
         .setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(Dispatchers.IO)
-        .addMigrations(MIGRACION_7_8, MIGRACION_8_9)
+        .addMigrations(MIGRACION_7_8, MIGRACION_8_9, MIGRACION_9_10)
         .build()
 
 private val MIGRACION_7_8 = object : Migration(7, 8) {
@@ -32,5 +32,11 @@ private val MIGRACION_7_8 = object : Migration(7, 8) {
 private val MIGRACION_8_9 = object : Migration(8, 9) {
     override fun migrate(connection: SQLiteConnection) {
         SQL_8_9.forEach { connection.execSQL(it) }
+    }
+}
+
+private val MIGRACION_9_10 = object : Migration(9, 10) {
+    override fun migrate(connection: SQLiteConnection) {
+        SQL_9_10.forEach { connection.execSQL(it) }
     }
 }

@@ -51,6 +51,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.Alignment
 import ar.lauta.buscarpatentes.contenedor
+import ar.lauta.buscarpatentes.data.Cuadra
+import ar.lauta.buscarpatentes.data.EstadoZona
+import ar.lauta.buscarpatentes.domain.Polilinea
 import ar.lauta.buscarpatentes.data.EstadoDelJuego
 import ar.lauta.buscarpatentes.data.ModoMapa
 import ar.lauta.buscarpatentes.data.RegistroDeCaptura
@@ -174,22 +177,29 @@ fun PantallaPrincipal(
         caminos.map { trazoDe(it.id, it.medidos, it.guardado, it.escalon, puntosReales) }
     }
 
-    // FR-010 de la 008: de cada zona activa, el borde y lo que falta. Ningún número: el
-    // porcentaje vive adentro de la zona, y el FR-020a de la 004 sigue valiendo acá.
-    var zonasActivas by remember { mutableStateOf<List<Pair<Zona, List<CuadraParaContar>>>>(emptyList()) }
+    // FR-002 y FR-003 de la 013: una sola zona, la elegida o la última creada, con su borde y lo
+    // que le falta. Ningún número: el porcentaje vive adentro de la zona (FR-020a de la 004).
+    var zonaDelMapa by remember { mutableStateOf<Pair<Zona, List<Cuadra>>?>(null) }
     var salidasParaContar by remember { mutableStateOf<List<SalidaParaContar>>(emptyList()) }
-    val dibujosDeZonas = remember(zonasActivas, salidasParaContar) {
-        zonasActivas.map { (zona, cuadras) ->
-            val recorridas = Zonas.cuenta(zona, cuadras, salidasParaContar).recorridas
+    val dibujosDeZonas = remember(zonaDelMapa, salidasParaContar) {
+        val (zona, cuadras) = zonaDelMapa ?: return@remember emptyList()
+        // Solo lo que falta: lo recorrido ya lo pinta el trazo, y lo quitado no se busca. Una
+        // terminada muestra lo que le faltaba al terminar; una que busca sus calles, solo el borde.
+        val faltan = when (zona.estado) {
+            EstadoZona.ACTIVA -> {
+                val recorridas = Zonas.cuenta(zona, cuadras.map(Zonas::paraContar), salidasParaContar).recorridas
+                cuadras.filter { !it.quitada && it.id !in recorridas }
+            }
+            EstadoZona.COMPLETADA, EstadoZona.CERRADA -> cuadras.filter { !it.quitada && !it.recorridaAlTerminar }
+            EstadoZona.BUSCANDO -> emptyList()
+        }
+        listOf(
             DibujoDeZona(
                 borde = Borde.leer(zona.borde),
-                // Solo lo que falta: lo recorrido ya lo pinta el trazo, y lo quitado no se busca.
-                cuadras = cuadras
-                    .filter { !it.quitada && it.id !in recorridas }
-                    .map { CuadraDibujada(it.id, it.forma, ClaseDeCuadra.PENDIENTE) },
+                cuadras = faltan.map { CuadraDibujada(it.id, Polilinea.decodificar(it.forma), ClaseDeCuadra.PENDIENTE) },
                 bordeContinuo = false,
-            )
-        }
+            ),
+        )
     }
 
     // FR-002 y FR-003: cuál de las tres preguntas contesta el mapa. Arranca en cobertura y se
@@ -249,6 +259,7 @@ fun PantallaPrincipal(
     var iniciadaEn by remember { mutableStateOf<Long?>(null) }
     var puntosEnCurso by remember { mutableStateOf<List<Pair<Double, Double>>>(emptyList()) }
     var pesoKg by remember { mutableStateOf<Int?>(null) }
+    var zoomSinGrupos by remember { mutableStateOf<Int?>(null) }
     var ahoraDeLaSalida by remember { mutableStateOf(ahora()) }
     var confirmandoFin by remember { mutableStateOf(false) }
 
@@ -354,6 +365,7 @@ fun PantallaPrincipal(
         numeroActual = estado.numeroActual
         modoMapa = estado.modoMapa
         pesoKg = estado.pesoKg
+        zoomSinGrupos = estado.zoomSinGrupos
 
         // FR-035: todos los registros sobre el mapa, distinguidos por si toca. FR-037: y por
         // la probabilidad de que sigan estando, que va en el anillo. Una sola consulta de
@@ -388,10 +400,8 @@ fun PantallaPrincipal(
         // salida reciente queda encima de la vieja donde se pisan, sin calcular una sola
         // intersección de geometría.
         salidasParaContar = Zonas.salidasParaContar(salidas, puntosPorRecorrido)
-        val cuadrasPorZona = contenedor.zonas.cuadrasDeActivas().groupBy { it.zonaId }
-        zonasActivas = contenedor.zonas.activas().map { zona ->
-            zona to cuadrasPorZona[zona.id].orEmpty().map(Zonas::paraContar)
-        }
+        zonaDelMapa = Zonas.enElMapa(contenedor.zonas.todas(), estado.zonaEnElMapa)
+            ?.let { it to contenedor.zonas.cuadrasDe(it.id) }
 
         caminos = salidas.sortedBy { it.iniciadoEn }.map { salida ->
             CaminoDeSalida(
@@ -515,6 +525,7 @@ fun PantallaPrincipal(
                 modo = modoMapa,
                 estado = estadoDelMapa,
                 zonas = if (modoMapa == ModoMapa.APAGADO) emptyList() else dibujosDeZonas,
+                zoomSinGrupos = zoomSinGrupos,
                 onTocarMarcador = { id ->
                     alcance.launch {
                         registroTocado = contenedor.registros.porId(id)

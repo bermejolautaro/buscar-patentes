@@ -176,6 +176,13 @@ private object Migraciones {
             }
         }
 
+        /** La zona del mapa principal y el zoom sin grupos de la 013 ([SQL_9_10]). */
+        private val MIGRACION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                SQL_9_10.forEach { db.execSQL(it) }
+            }
+        }
+
         // Sin instancia guardada: la guarda el contenedor, que la cambia al restaurar un respaldo.
         fun construir(context: Context): BaseDeDatos =
             Room.databaseBuilder(
@@ -192,6 +199,7 @@ private object Migraciones {
                     MIGRACION_6_7,
                     MIGRACION_7_8,
                     MIGRACION_8_9,
+                    MIGRACION_9_10,
                 )
                 .build()
 }

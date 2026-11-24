@@ -43,6 +43,20 @@ class ZonasTest {
         assertEquals(setOf(7L), Zonas.seleccion(7, cuadras, todaLaCalle = true))
     }
 
+    // --- La zona del mapa principal (013) ---
+
+    private fun zona(id: Long, creadaEn: Long) = Zona(id = id, nombre = "Z$id", borde = "", creadaEn = creadaEn, cuentaDesde = creadaEn)
+
+    @Test
+    fun `el mapa muestra la elegida y si no la ultima creada`() {
+        val zonas = listOf(zona(1, 100), zona(2, 300), zona(3, 200))
+        assertEquals(1L, Zonas.enElMapa(zonas, elegida = 1)?.id)
+        assertEquals(2L, Zonas.enElMapa(zonas, elegida = null)?.id)
+        // La elegida se borró: vuelve a la última creada.
+        assertEquals(2L, Zonas.enElMapa(zonas, elegida = 9)?.id)
+        assertEquals(null, Zonas.enElMapa(emptyList(), elegida = 1))
+    }
+
     // --- Lo que cuenta de cada salida (011) ---
 
     private val ajustado = listOf(listOf(-34.6 to -58.38, -34.6 to -58.379))

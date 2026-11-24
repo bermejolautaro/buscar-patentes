@@ -216,10 +216,10 @@ internal fun coleccionAcomodada(marcadores: List<Marcador>, dibujos: List<Dibujo
  * frontera que garantiza el FR-002, y por eso se prueba en `ColeccionTest`: si una que toca se
  * colara en la primera, podría volver a quedar escondida adentro de un grupo.
  */
-internal fun coleccionesPatentes(marcadores: List<Marcador>, zoom: Int): Pair<Coleccion, Coleccion> {
+internal fun coleccionesPatentes(marcadores: List<Marcador>, zoom: Int, zoomSinGrupos: Int? = null): Pair<Coleccion, Coleccion> {
     val (tocan, resto) = marcadores.partition { it.toca }
     val pines = resto.map { Pin(it.id, it.latitud, it.longitud) }
-    val dibujos = Acomodo.para(pines, zoom, PIN_ANCHO_DP.toDouble())
+    val dibujos = Acomodo.para(pines, zoom, PIN_ANCHO_DP.toDouble(), zoomSinGrupos)
     return coleccionAcomodada(resto, dibujos) to coleccion(tocan)
 }
 
