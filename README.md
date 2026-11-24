@@ -22,6 +22,7 @@ corren el mismo código de Kotlin Multiplatform y Compose Multiplatform.
 - Patentes desde la que toca, la vista de arranque del mapa: [`specs/009-patentes-desde-la-que-toca/spec.md`](specs/009-patentes-desde-la-que-toca/spec.md)
 - Recorrido en curso, los km, las calorías y las estadísticas: [`specs/010-recorrido-en-curso/spec.md`](specs/010-recorrido-en-curso/spec.md),
   y cómo se prueba en [`quickstart.md`](specs/010-recorrido-en-curso/quickstart.md)
+- Zona completa, lo medido que también cuenta y la felicitación: [`specs/011-zona-completa/spec.md`](specs/011-zona-completa/spec.md)
 - Reglas que no se negocian: [`.specify/memory/constitution.md`](.specify/memory/constitution.md)
 
 ## Estructura
@@ -180,7 +181,8 @@ En la pantalla principal se ve el borde de cada zona y las cuadras que faltan, s
 
 Las cuadras salen de OpenStreetMap, con un pedido a [Overpass](https://overpass-api.de) **una
 sola vez por zona**. Después todo se calcula en el teléfono, sin conexión, contra los caminos
-ajustados de las salidas. La URL vive en `BuscarCuadras.SERVICIO`, en
+ajustados de las salidas y lo que midió el teléfono: desde la 011, un pedazo de cuadra cuenta si le
+pasa cerca cualquiera de los dos. Al llegar al 100% llega una notificación de felicitaciones. La URL vive en `BuscarCuadras.SERVICIO`, en
 `shared/src/commonMain/kotlin/ar/lauta/buscarpatentes/ubicacion/BuscarCuadras.kt`.
 
 ## Mapa

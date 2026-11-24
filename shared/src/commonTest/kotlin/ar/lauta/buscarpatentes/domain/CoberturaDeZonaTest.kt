@@ -78,6 +78,24 @@ class CoberturaDeZonaTest {
         assertEquals(2L, c.completadaEn)
     }
 
+    /**
+     * El caso que llevó a la 011: un pasaje recto de 35 m pegado a una diagonal. El ajuste pega la
+     * caminata a la diagonal, que pasa por las dos puntas y se aleja 17 m en el medio. Lo medido
+     * va por el pasaje. Con lo ajustado solo no alcanza; con los dos tramos de la salida, sí.
+     */
+    @Test
+    fun `el pasaje que el ajuste pega a la diagonal cuenta con lo medido`() {
+        val pasaje = CuadraParaContar(1, listOf(m(0.0, 0.0), m(35.0, 0.0)), null, false)
+        val ajustado = listOf(m(0.0, 0.0), m(17.5, 17.0), m(35.0, 0.0))
+        val medido = listOf(m(0.0, 1.5), m(12.0, 0.5), m(24.0, 1.0), m(35.0, 1.5))
+
+        val soloAjustado = CoberturaDeZona.calcular(listOf(pasaje), listOf(SalidaParaContar(1, listOf(ajustado))), desde = 0)
+        assertTrue(soloAjustado.recorridas.isEmpty())
+
+        val conMedido = CoberturaDeZona.calcular(listOf(pasaje), listOf(SalidaParaContar(1, listOf(ajustado, medido))), desde = 0)
+        assertEquals(setOf(1L), conMedido.recorridas)
+    }
+
     @Test
     fun `una sola media cuadra no alcanza`() {
         val c = CoberturaDeZona.calcular(listOf(cuadra(1)), listOf(salida(1, 0.0 to 0.0, 55.0 to 0.0)), desde = 0)
