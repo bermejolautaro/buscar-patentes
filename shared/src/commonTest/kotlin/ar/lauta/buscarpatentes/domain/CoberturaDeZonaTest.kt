@@ -1,7 +1,6 @@
 package ar.lauta.buscarpatentes.domain
 
 import ar.lauta.buscarpatentes.ubicacion.AjustarACalles
-import ar.lauta.buscarpatentes.ubicacion.BuscarCuadras
 import ar.lauta.buscarpatentes.ubicacion.RESPUESTA
 import kotlin.math.cos
 import kotlin.test.Test
@@ -16,7 +15,7 @@ class CoberturaDeZonaTest {
     // --- Con los datos reales ---
 
     /**
-     * Las cuadras de la franja de `VIAS` contra el camino que devolvió el servicio de ajuste para
+     * Las cuadras de la franja de `TESELAS` contra el camino que devolvió el servicio de ajuste para
      * la caminata de `RespuestaDeAjuste.kt`. El primer tramo camina cuatro cuadras enteras de la
      * avenida de la franja, entre -58.3880 y -58.3820, y cruza en la esquina las calles que la
      * cortan.
@@ -24,7 +23,7 @@ class CoberturaDeZonaTest {
     @Test
     fun `lo caminado de esquina a esquina cuenta y lo cruzado no`() {
         val franja = listOf(-34.6055 to -58.3905, -34.6055 to -58.3800, -34.6020 to -58.3800, -34.6020 to -58.3905)
-        val armadas = Cuadras.armar(BuscarCuadras.leerVias(VIAS)!!, franja)
+        val armadas = Cuadras.armar(Teselas.vias(TESELAS), franja)
         val cuadras = armadas.mapIndexed { i, c -> CuadraParaContar(i.toLong(), c.forma, c.gemelaDe?.toLong(), quitada = false) }
         val respuesta = AjustarACalles.leerRespuesta(RESPUESTA)!!
         val salida = SalidaParaContar(1_000L, CaminoAjustado.pedazos(respuesta.forma, respuesta.aristas))
@@ -76,6 +75,24 @@ class CoberturaDeZonaTest {
         assertEquals(setOf(1L), c.recorridas)
         assertEquals(100, c.porcentaje)
         assertEquals(2L, c.completadaEn)
+    }
+
+    /**
+     * El caso que llevó a la 011: un pasaje recto de 35 m pegado a una diagonal. El ajuste pega la
+     * caminata a la diagonal, que pasa por las dos puntas y se aleja 17 m en el medio. Lo medido
+     * va por el pasaje. Con lo ajustado solo no alcanza; con los dos tramos de la salida, sí.
+     */
+    @Test
+    fun `el pasaje que el ajuste pega a la diagonal cuenta con lo medido`() {
+        val pasaje = CuadraParaContar(1, listOf(m(0.0, 0.0), m(35.0, 0.0)), null, false)
+        val ajustado = listOf(m(0.0, 0.0), m(17.5, 17.0), m(35.0, 0.0))
+        val medido = listOf(m(0.0, 1.5), m(12.0, 0.5), m(24.0, 1.0), m(35.0, 1.5))
+
+        val soloAjustado = CoberturaDeZona.calcular(listOf(pasaje), listOf(SalidaParaContar(1, listOf(ajustado))), desde = 0)
+        assertTrue(soloAjustado.recorridas.isEmpty())
+
+        val conMedido = CoberturaDeZona.calcular(listOf(pasaje), listOf(SalidaParaContar(1, listOf(ajustado, medido))), desde = 0)
+        assertEquals(setOf(1L), conMedido.recorridas)
     }
 
     @Test

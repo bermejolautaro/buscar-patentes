@@ -6,8 +6,12 @@ import ar.lauta.buscarpatentes.domain.CaminoGuardado
 import ar.lauta.buscarpatentes.domain.CoberturaDeZona
 import ar.lauta.buscarpatentes.domain.CuadraParaContar
 import ar.lauta.buscarpatentes.domain.CuentaDeZona
+import ar.lauta.buscarpatentes.domain.Geo
 import ar.lauta.buscarpatentes.domain.Polilinea
 import ar.lauta.buscarpatentes.domain.SalidaParaContar
+import ar.lauta.buscarpatentes.plataforma.notificar
+import ar.lauta.buscarpatentes.ui.DESDE_HOY
+import ar.lauta.buscarpatentes.ui.duracion
 import ar.lauta.buscarpatentes.ui.fechaCorta
 import ar.lauta.buscarpatentes.ui.inicioDelDia
 
@@ -15,7 +19,8 @@ import ar.lauta.buscarpatentes.ui.inicioDelDia
  * Lo que las pantallas le piden a la base sobre las zonas (008).
  *
  * Las salidas se leen y nunca se escriben (FR-019): la cuenta sale de [CoberturaDeZona], que es una
- * función pura, contra los caminos ajustados que ya guardó la 007.
+ * función pura, contra los caminos ajustados que ya guardó la 007 y, desde la 011, contra lo que
+ * midió el teléfono.
  */
 object Zonas {
 
@@ -59,16 +64,27 @@ object Zonas {
         revisar()
     }
 
-    suspend fun salidasParaContar(): List<SalidaParaContar> = salidasParaContar(contenedor.recorridos.todosUnaVez())
+    suspend fun salidasParaContar(): List<SalidaParaContar> =
+        salidasParaContar(contenedor.recorridos.todosUnaVez(), contenedor.puntos.todos().groupBy { it.recorridoId })
 
-    /** Las salidas que pueden contar para una zona: terminadas y ajustadas a las calles. */
-    fun salidasParaContar(recorridos: List<Recorrido>): List<SalidaParaContar> =
+    /**
+     * Las salidas que cuentan para una zona: las terminadas, con su camino ajustado si lo tienen
+     * **y** lo que midió el teléfono (FR-001 a FR-003 de la 011).
+     *
+     * Lo medido se corta en los mismos huecos que el mapa: la recta de un hueco no cubre nada. Hace
+     * falta porque el ajuste a veces pega la caminata a la calle de al lado: un pasaje de 35 m junto
+     * a una diagonal quedaba al 57% por más que se caminara entero. Una salida sin ajustar todavía
+     * cuenta con lo medido; cuando se ajusta, suma lo ajustado.
+     */
+    fun salidasParaContar(recorridos: List<Recorrido>, puntosPorRecorrido: Map<Long, List<PuntoDeTrayecto>>): List<SalidaParaContar> =
         recorridos
             .filter { it.estado == EstadoRecorrido.TERMINADO }
-            .mapNotNull { r ->
-                (CaminoGuardado.leer(r.caminoAjustado) as? CaminoGuardado.Ajustado)
-                    ?.let { SalidaParaContar(r.iniciadoEn, it.tramos) }
+            .map { r ->
+                val ajustados = (CaminoGuardado.leer(r.caminoAjustado) as? CaminoGuardado.Ajustado)?.tramos.orEmpty()
+                val medidos = Geo.tramos(puntosPorRecorrido[r.id].orEmpty().map { it.latitud to it.longitud })
+                SalidaParaContar(r.iniciadoEn, ajustados + medidos)
             }
+            .filter { it.tramos.isNotEmpty() }
 
     fun paraContar(c: Cuadra) = CuadraParaContar(c.id, Polilinea.decodificar(c.forma), c.gemelaDe, c.quitada)
 
@@ -99,10 +115,12 @@ object Zonas {
     }
 
     /**
-     * Completa las zonas activas que llegaron al 100% (FR-014). Devuelve cuántas.
+     * Completa las zonas activas que llegaron al 100% (FR-014), y felicita cada una (FR-005 de la
+     * 011). Devuelve cuántas.
      *
-     * Corre cada vez que puede haber un camino nuevo o una cuenta distinta: después del ajuste a
-     * calles y de la búsqueda de cuadras, al quitar y al cambiar "desde cuándo cuenta" (D7).
+     * Corre cada vez que puede haber un camino nuevo o una cuenta distinta: al terminar una salida,
+     * después del ajuste a calles y de la búsqueda de cuadras, al quitar y al cambiar "desde cuándo
+     * cuenta" (D7, D3 de la 011).
      */
     suspend fun revisar(): Int {
         val activas = contenedor.zonas.activas()
@@ -112,10 +130,20 @@ object Zonas {
         for (zona in activas) {
             val cuenta = cuenta(zona, contenedor.zonas.cuadrasDe(zona.id).map(::paraContar), salidas)
             val en = cuenta.completadaEn ?: continue
-            contenedor.zonas.terminar(zona.id, EstadoZona.COMPLETADA, en, 100, cuenta.recorridas.toList())
+            if (!contenedor.zonas.terminar(zona.id, EstadoZona.COMPLETADA, en, 100, cuenta.recorridas.toList())) continue
+            felicitar(zona, en)
             completadas++
         }
         return completadas
+    }
+
+    /**
+     * La notificación de una zona que llegó al 100% (FR-005 de la 011). En cuánto se completó cuenta
+     * desde "desde cuándo cuenta", como el resto de la zona. Cerrar a mano no pasa por acá.
+     */
+    private fun felicitar(zona: Zona, en: Long) {
+        val tiempo = duracion(zona.cuentaDesde, en).let { if (it == DESDE_HOY) "en el día" else "en $it" }
+        notificar(zona.id.toInt(), "¡Zona completada!", "Recorriste todas las cuadras de ${zona.nombre} $tiempo.")
     }
 
     /** Cierra el objetivo a mano, con el porcentaje de ese momento (FR-015). */

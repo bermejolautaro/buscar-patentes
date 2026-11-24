@@ -120,6 +120,12 @@ object ConfigMapa {
         else "https://tiles.openfreemap.org/styles/liberty"
 
     /**
+     * El TileJSON de las teselas que dibujan los dos estilos. Dice la plantilla de la versión de la
+     * semana, y de ahí salen las calles de una zona (D2 de la 012).
+     */
+    const val TESELAS = "https://tiles.openfreemap.org/planet"
+
+    /**
      * Techo del caché ambiente de teselas (FR-044). MapLibre guarda solo lo que se muestra y
      * desaloja por uso al llegar al límite.
      * ponytail: 200 MB cubre un barrio entero con holgura. Calibrable.
