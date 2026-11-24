@@ -1,6 +1,9 @@
 package ar.lauta.buscarpatentes.domain
 
-/** Una vía del mapa de calles, como la devuelve Overpass: sus nodos y la posición de cada uno. */
+/**
+ * Una vía del mapa de calles: sus nodos y la posición de cada uno. Hasta la 012 venía de Overpass;
+ * ahora la arma [Teselas] con las teselas del mapa de fondo, y los nodos son las esquinas que detecta.
+ */
 data class Via(
     val nodos: List<Long>,
     val posiciones: List<Pair<Double, Double>>,

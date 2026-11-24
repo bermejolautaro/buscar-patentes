@@ -1,12 +1,10 @@
 package ar.lauta.buscarpatentes.domain
 
-import ar.lauta.buscarpatentes.ubicacion.BuscarCuadras
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -124,28 +122,14 @@ class CuadrasTest {
     }
 
     @Test
-    fun `la respuesta real arma cuadras de 30 m o mas`() {
-        val vias = assertNotNull(BuscarCuadras.leerVias(VIAS))
+    fun `las teselas reales arman cuadras de 30 m o mas`() {
+        val vias = Teselas.vias(TESELAS)
         val franja = listOf(-34.6055 to -58.3905, -34.6055 to -58.3800, -34.6020 to -58.3800, -34.6020 to -58.3905)
 
         val cuadras = Cuadras.armar(vias, franja)
 
         assertTrue(cuadras.size > 20, "salieron ${cuadras.size} cuadras")
         cuadras.forEach { assertTrue(largo(it) >= Cuadras.LARGO_MINIMO_M, "una cuadra de ${largo(it)} m") }
-    }
-
-    @Test
-    fun `lo que no es una respuesta de Overpass no se lee`() {
-        assertNull(BuscarCuadras.leerVias("no soy json"))
-        assertNull(BuscarCuadras.leerVias("""{"otra":"cosa"}"""))
-    }
-
-    @Test
-    fun `la consulta lleva punto decimal y seis decimales`() {
-        val consulta = BuscarCuadras.consulta(Borde.Rectangulo(sur = -34.6055, oeste = -58.3905, norte = -34.602, este = -58.38))
-        assertTrue("(-34.605500,-58.390500,-34.602000,-58.380000)" in consulta, consulta)
-        assertTrue(consulta.startsWith("[out:json]"))
-        assertTrue(consulta.trimEnd().endsWith("out geom;"))
     }
 
     @Test

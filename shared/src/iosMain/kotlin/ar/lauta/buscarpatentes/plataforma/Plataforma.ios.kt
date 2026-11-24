@@ -7,6 +7,10 @@ import androidx.compose.runtime.rememberUpdatedState
 import ar.lauta.buscarpatentes.ui.Ir
 import ar.lauta.buscarpatentes.ui.hora
 import kotlin.coroutines.resume
+import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.usePinned
+import platform.posix.memcpy
 import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.io.buffered
@@ -33,9 +37,14 @@ import platform.UniformTypeIdentifiers.UTTypeData
 import platform.UserNotifications.UNAuthorizationOptionAlert
 import platform.UserNotifications.UNAuthorizationOptionSound
 import platform.UserNotifications.UNMutableNotificationContent
+import platform.UserNotifications.UNNotification
+import platform.UserNotifications.UNNotificationPresentationOptionBanner
+import platform.UserNotifications.UNNotificationPresentationOptionSound
+import platform.UserNotifications.UNNotificationPresentationOptions
 import platform.UserNotifications.UNNotificationRequest
 import platform.UserNotifications.UNTimeIntervalNotificationTrigger
 import platform.UserNotifications.UNUserNotificationCenter
+import platform.UserNotifications.UNUserNotificationCenterDelegateProtocol
 import platform.darwin.NSObject
 
 // La costura del iPhone (contrato P de la 006).
@@ -91,7 +100,7 @@ actual suspend fun postear(url: String, cuerpo: String): String? = suspendCancel
     val pedido = NSMutableURLRequest.requestWithURL(NSURL.URLWithString(url)!!).apply {
         setHTTPMethod("POST")
         setValue("application/json", forHTTPHeaderField = "Content-Type")
-        // Overpass rechaza con 406 un pedido sin identificación propia, y el servidor de Valhalla
+        // Overpass rechazaba con 406 un pedido sin identificación propia, y el servidor de Valhalla
         // pide lo mismo en sus reglas de uso (D1 de la 008).
         setValue("buscar-patentes", forHTTPHeaderField = "User-Agent")
         setHTTPBody((cuerpo as NSString).dataUsingEncoding(NSUTF8StringEncoding))
@@ -102,6 +111,26 @@ actual suspend fun postear(url: String, cuerpo: String): String? = suspendCancel
             error != null -> sigue.resumeWithException(Exception(error.localizedDescription))
             (respuesta as? NSHTTPURLResponse)?.statusCode != 200L -> sigue.resume(null)
             else -> sigue.resume(datos?.let { NSString.create(data = it, encoding = NSUTF8StringEncoding)?.toString() })
+        }
+    }
+    sigue.invokeOnCancellation { tarea.cancel() }
+    tarea.resume()
+}
+
+@OptIn(ExperimentalForeignApi::class)
+actual suspend fun bajar(url: String): ByteArray? = suspendCancellableCoroutine { sigue ->
+    val pedido = NSMutableURLRequest.requestWithURL(NSURL.URLWithString(url)!!).apply {
+        setValue("buscar-patentes", forHTTPHeaderField = "User-Agent")
+        setTimeoutInterval(ESPERA_S)
+    }
+    val tarea = NSURLSession.sharedSession.dataTaskWithRequest(pedido) { datos, respuesta, error ->
+        when {
+            error != null -> sigue.resumeWithException(Exception(error.localizedDescription))
+            (respuesta as? NSHTTPURLResponse)?.statusCode != 200L -> sigue.resume(null)
+            datos == null || datos.length == 0UL -> sigue.resume(ByteArray(0))
+            else -> sigue.resume(
+                ByteArray(datos.length.toInt()).apply { usePinned { memcpy(it.addressOf(0), datos.bytes, datos.length) } },
+            )
         }
     }
     sigue.invokeOnCancellation { tarea.cancel() }
@@ -138,6 +167,37 @@ actual fun programarAvisoDeVencimiento(vence: Long) {
 }
 
 private const val UN_DIA_MS = 24L * 60 * 60 * 1000
+
+/** Sin disparador: se entrega enseguida. Con la app abierta la muestra [ponerDelegadoDeNotificaciones]. */
+actual fun notificar(id: Int, titulo: String, texto: String) {
+    val contenido = UNMutableNotificationContent().apply {
+        setTitle(titulo)
+        setBody(texto)
+    }
+    UNUserNotificationCenter.currentNotificationCenter()
+        .addNotificationRequest(UNNotificationRequest.requestWithIdentifier("zona-$id", contenido, null), null)
+}
+
+/**
+ * Sin esto, iOS no muestra las notificaciones de la app que está abierta, y la felicitación de una
+ * zona llega casi siempre con la app abierta: al terminar la salida que la completa (D2 de la 011).
+ */
+fun ponerDelegadoDeNotificaciones() {
+    UNUserNotificationCenter.currentNotificationCenter().delegate = delegadoDeNotificaciones
+}
+
+/** El centro de notificaciones no retiene a su delegado: lo retiene esta variable. */
+private val delegadoDeNotificaciones = DelegadoDeNotificaciones()
+
+private class DelegadoDeNotificaciones : NSObject(), UNUserNotificationCenterDelegateProtocol {
+    override fun userNotificationCenter(
+        center: UNUserNotificationCenter,
+        willPresentNotification: UNNotification,
+        withCompletionHandler: (UNNotificationPresentationOptions) -> Unit,
+    ) {
+        withCompletionHandler(UNNotificationPresentationOptionBanner or UNNotificationPresentationOptionSound)
+    }
+}
 
 actual fun mandarRespaldo(ruta: String) = mostrarHoja(listOf(NSURL.fileURLWithPath(ruta)))
 

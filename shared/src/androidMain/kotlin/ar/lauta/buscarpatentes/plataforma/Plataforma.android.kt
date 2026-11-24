@@ -1,7 +1,11 @@
 package ar.lauta.buscarpatentes.plataforma
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.os.Build
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.Uri
@@ -12,6 +16,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.FileProvider
 import ar.lauta.buscarpatentes.ubicacion.LectorUbicacion
 import ar.lauta.buscarpatentes.ubicacion.LecturaUbicacion
@@ -133,7 +139,7 @@ actual suspend fun postear(url: String, cuerpo: String): String? = withContext(D
         requestMethod = "POST"
         doOutput = true
         setRequestProperty("Content-Type", "application/json")
-        // Overpass rechaza con 406 un pedido sin identificación propia, y el servidor de Valhalla
+        // Overpass rechazaba con 406 un pedido sin identificación propia, y el servidor de Valhalla
         // pide lo mismo en sus reglas de uso (D1 de la 008).
         setRequestProperty("User-Agent", "buscar-patentes")
     }
@@ -146,6 +152,19 @@ actual suspend fun postear(url: String, cuerpo: String): String? = withContext(D
     }
 }
 
+actual suspend fun bajar(url: String): ByteArray? = withContext(Dispatchers.IO) {
+    val conexion = (URL(url).openConnection() as HttpURLConnection).apply {
+        connectTimeout = ESPERA_MS
+        readTimeout = ESPERA_MS
+        setRequestProperty("User-Agent", "buscar-patentes")
+    }
+    try {
+        if (conexion.responseCode != HttpURLConnection.HTTP_OK) null else conexion.inputStream.use { it.readBytes() }
+    } finally {
+        conexion.disconnect()
+    }
+}
+
 private const val ESPERA_MS = 20_000
 
 actual val sistema: String = "android"
@@ -153,6 +172,45 @@ actual val sistema: String = "android"
 actual fun perfilDeAprovisionamiento(): ByteArray? = null
 
 actual fun programarAvisoDeVencimiento(vence: Long) {}
+
+/** En su canal, "Zonas", aparte del de la salida en curso: el jugador lo puede silenciar solo. */
+actual fun notificar(id: Int, titulo: String, texto: String) {
+    val contexto = contextoDeLaApp
+    val gestor = NotificationManagerCompat.from(contexto)
+    // Desde Android 13 sin el permiso da false, y avisar es un pedido, no una obligación.
+    if (!gestor.areNotificationsEnabled()) return
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        contexto.getSystemService(NotificationManager::class.java)?.createNotificationChannel(
+            NotificationChannel(CANAL_ZONAS, "Zonas", NotificationManager.IMPORTANCE_DEFAULT)
+                .apply { description = "Cuando completás una zona." },
+        )
+    }
+    val abrir = PendingIntent.getActivity(
+        contexto,
+        0,
+        // La actividad de arranque, sin nombrarla: vive en el módulo de la app.
+        contexto.packageManager.getLaunchIntentForPackage(contexto.packageName)!!,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
+    val notificacion = NotificationCompat.Builder(contexto, CANAL_ZONAS)
+        .setSmallIcon(android.R.drawable.star_on)
+        .setContentTitle(titulo)
+        .setContentText(texto)
+        .setStyle(NotificationCompat.BigTextStyle().bigText(texto))
+        .setContentIntent(abrir)
+        .setAutoCancel(true)
+        .build()
+    try {
+        gestor.notify(ETIQUETA_ZONAS, id, notificacion)
+    } catch (e: SecurityException) {
+        // El permiso se sacó entre la pregunta y el aviso: no hay nada que avisar.
+    }
+}
+
+private const val CANAL_ZONAS = "zonas"
+
+/** La etiqueta separa estos ids de los de la salida en curso. */
+private const val ETIQUETA_ZONAS = "zona"
 
 actual fun mandarRespaldo(ruta: String) {
     val intent = Intent(Intent.ACTION_SEND).apply {

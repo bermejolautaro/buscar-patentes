@@ -76,6 +76,12 @@ expect fun hayConexion(): Boolean
  */
 expect suspend fun postear(url: String, cuerpo: String): String?
 
+/**
+ * Un GET con la misma espera y la misma identificación que [postear]: los bytes de la respuesta, o
+ * null si no fue un 200. Tira si no hubo respuesta. Lo usan las teselas de las zonas (D6 de la 012).
+ */
+expect suspend fun bajar(url: String): ByteArray?
+
 /** De qué sistema sale un respaldo (R2): `android` o `ios`. */
 expect val sistema: String
 
@@ -87,6 +93,12 @@ expect fun perfilDeAprovisionamiento(): ByteArray?
  * anterior, y si ese momento ya pasó no programa nada (FR-012). En el Android, nada.
  */
 expect fun programarAvisoDeVencimiento(vence: Long)
+
+/**
+ * Una notificación ahora mismo, que se ve también con la app abierta (D2 de la 011). [id] separa
+ * una de otra: dos con el mismo id, la segunda reemplaza a la primera. Sin permiso, nada.
+ */
+expect fun notificar(id: Int, titulo: String, texto: String)
 
 /** P5: la hoja de compartir del sistema con el archivo de un respaldo, para sacarlo del teléfono. */
 expect fun mandarRespaldo(ruta: String)
