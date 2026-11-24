@@ -437,6 +437,7 @@ private fun DetalleDeSalida(
                         probabilidad = salida.probabilidades[r.id] ?: r.probabilidadInicial,
                     )
                 },
+                queToca = numeroActual,
                 // Solo el camino de **esta** salida. Es lo único dibujado, así que su escalón
                 // de antigüedad no compite con nada; se calcula igual para no inventar un dato.
                 // Cambiar de vista cambia los trazos y nada más: el mapa encuadra una sola vez, así

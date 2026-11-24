@@ -31,6 +31,16 @@ private fun Feature<Geometry, JsonObject>.largo(clave: String) = properties[clav
  */
 class ColeccionTest {
 
+    @Test
+    fun `la que toca va adelante y detras las que vienen de a una`() {
+        assertEquals(1000, ordenDePatente(400, queToca = 400))
+        assertEquals(999, ordenDePatente(401, queToca = 400))
+        assertEquals(998, ordenDePatente(402, queToca = 400))
+        // Las que ya pasaron, detrás de todo.
+        assertEquals(1, ordenDePatente(399, queToca = 400))
+        assertEquals(0, ordenDePatente(399, queToca = null))
+    }
+
     private val muestra = listOf(
         Marcador(id = 1, numero = 313, latitud = -34.6039991, longitud = -58.3811085,
             toca = true, probabilidad = 9),

@@ -113,6 +113,23 @@ internal const val PROP_ESCALON = "escalon"
 /** Cuántas patentes tiene un grupo. Solo los grupos la llevan. */
 internal const val PROP_CUENTA = "cuenta"
 
+/** Qué tan adelante va el pin: más alto, más adelante (013). */
+internal const val PROP_ORDEN = "orden"
+
+/** Qué imagen lleva el pin: su número y el escalón de su probabilidad (013). */
+internal const val PROP_CLAVE = "clave"
+
+/**
+ * El orden de dibujo de una patente (013): la que toca adelante de todo, y detrás cada una según
+ * cuánto falta para llegar a ella. Las que ya pasaron, detrás de todo. Más alto, más adelante.
+ */
+internal fun ordenDePatente(numero: Int, queToca: Int?): Int =
+    if (queToca == null) 0 else 1000 - ((numero - queToca) % 1000 + 1000) % 1000
+
+/** La clave de la imagen de un pin: el número con ceros y el escalón del borde. */
+internal fun claveDePin(numero: Int, probabilidad: Int): String =
+    "${numero.toString().padStart(3, '0')}-${escalonDeProbabilidad(probabilidad)}"
+
 /** El rectángulo de un grupo, para acercarse al tocarlo (FR-009 de la 013). */
 internal const val PROP_SUR = "sur"
 internal const val PROP_OESTE = "oeste"
@@ -176,12 +193,12 @@ internal fun coleccionHuecos(trazos: List<Trazo>): Coleccion = FeatureCollection
     },
 )
 
-internal fun coleccion(marcadores: List<Marcador>): Coleccion = FeatureCollection(
-    marcadores.map { featureDe(it, it.latitud, it.longitud) },
+internal fun coleccion(marcadores: List<Marcador>, queToca: Int? = null): Coleccion = FeatureCollection(
+    marcadores.map { featureDe(it, it.latitud, it.longitud, queToca) },
 )
 
 /** Un marcador dibujado en [latitud], [longitud]: su lugar real, o el corrido por el acomodo. */
-private fun featureDe(m: Marcador, latitud: Double, longitud: Double) =
+private fun featureDe(m: Marcador, latitud: Double, longitud: Double, queToca: Int? = null) =
     Feature<Geometry, JsonObject>(
         punto(latitud, longitud),
         buildJsonObject {
@@ -190,6 +207,8 @@ private fun featureDe(m: Marcador, latitud: Double, longitud: Double) =
             // lo mismo que ya hacen la barra de arriba y la notificación de proximidad.
             put(PROP_NUMERO, m.numero.toString().padStart(3, '0'))
             put(PROP_PROBABILIDAD, m.probabilidad)
+            put(PROP_ORDEN, ordenDePatente(m.numero, queToca))
+            put(PROP_CLAVE, claveDePin(m.numero, m.probabilidad))
         },
     )
 
@@ -200,12 +219,12 @@ private fun featureDe(m: Marcador, latitud: Double, longitud: Double) =
  * que tocarlo abre la ficha del registro real (FR-023b). Un `Grupo` es un punto con su cuenta
  * y nada más: no tiene número ni probabilidad propia, ni id que abrir.
  */
-internal fun coleccionAcomodada(marcadores: List<Marcador>, dibujos: List<Dibujo>): Coleccion {
+internal fun coleccionAcomodada(marcadores: List<Marcador>, dibujos: List<Dibujo>, queToca: Int? = null): Coleccion {
     val porId = marcadores.associateBy { it.id }
     return FeatureCollection(
         dibujos.map { d ->
             when (d) {
-                is Dibujo.Suelto -> featureDe(porId.getValue(d.id), d.latitud, d.longitud)
+                is Dibujo.Suelto -> featureDe(porId.getValue(d.id), d.latitud, d.longitud, queToca)
                 is Dibujo.Grupo -> Feature<Geometry, JsonObject>(
                     punto(d.latitud, d.longitud),
                     buildJsonObject {
@@ -233,11 +252,13 @@ internal fun coleccionesPatentes(
     zoom: Int,
     zoomSinGrupos: Int? = null,
     limiteM: Double = Acomodo.LIMITE_ACOMODO_M,
+    queToca: Int? = null,
 ): Pair<Coleccion, Coleccion> {
     val (tocan, resto) = marcadores.partition { it.toca }
     val pines = resto.map { Pin(it.id, it.latitud, it.longitud) }
-    val dibujos = Acomodo.para(pines, zoom, PIN_ANCHO_DP.toDouble(), zoomSinGrupos, limiteM)
-    return coleccionAcomodada(resto, dibujos) to coleccion(tocan)
+    // El acomodo mide el pin del tamaño en que se dibuja en este zoom (013).
+    val dibujos = Acomodo.para(pines, zoom, PIN_ANCHO_DP.toDouble() * tamanoPin(zoom), zoomSinGrupos, limiteM)
+    return coleccionAcomodada(resto, dibujos, queToca) to coleccion(tocan, queToca)
 }
 
 // --- Zonas (008) ---

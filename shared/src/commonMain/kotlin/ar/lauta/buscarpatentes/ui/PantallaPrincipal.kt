@@ -538,6 +538,7 @@ fun PantallaPrincipal(
                 zonas = if (modoMapa == ModoMapa.APAGADO) emptyList() else dibujosDeZonas,
                 zoomSinGrupos = zoomSinGrupos,
                 distanciaAgrupadoM = distanciaAgrupadoM?.toDouble(),
+                queToca = numeroActual,
                 onTocarMarcador = { id ->
                     alcance.launch {
                         registroTocado = contenedor.registros.porId(id)
