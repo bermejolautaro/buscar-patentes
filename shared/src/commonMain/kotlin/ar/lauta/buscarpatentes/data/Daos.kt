@@ -107,6 +107,10 @@ interface EstadoDelJuegoDao {
      */
     @Query("UPDATE estado_del_juego SET modoMapa = :modo WHERE id = :id")
     suspend fun fijarModoMapa(modo: ModoMapa, id: Int = EstadoDelJuego.ID_UNICO)
+
+    /** FR-009 de la 010: el peso, o null para borrarlo. Acotado a su columna como los de arriba. */
+    @Query("UPDATE estado_del_juego SET pesoKg = :pesoKg WHERE id = :id")
+    suspend fun fijarPeso(pesoKg: Int?, id: Int = EstadoDelJuego.ID_UNICO)
 }
 
 /**

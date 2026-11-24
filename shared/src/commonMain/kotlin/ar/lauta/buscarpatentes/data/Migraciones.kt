@@ -20,3 +20,11 @@ val SQL_7_8: List<String> = listOf(
         "`recorridaAlTerminar` INTEGER NOT NULL)",
     "CREATE INDEX IF NOT EXISTS `index_cuadra_zonaId` ON `cuadra` (`zonaId`)",
 )
+
+/**
+ * De la base 8 a la 9: el peso del jugador de la 010 (D3). Una columna que puede ir vacía, con la
+ * definición copiada **textual** del `createAllTables` de Room, igual que [SQL_7_8].
+ */
+val SQL_8_9: List<String> = listOf(
+    "ALTER TABLE `estado_del_juego` ADD COLUMN `pesoKg` INTEGER",
+)

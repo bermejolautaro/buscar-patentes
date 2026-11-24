@@ -20,6 +20,8 @@ corren el mismo código de Kotlin Multiplatform y Compose Multiplatform.
 - Zona a recorrer: [`specs/008-zona-a-recorrer/spec.md`](specs/008-zona-a-recorrer/spec.md), y cómo se
   prueba en [`quickstart.md`](specs/008-zona-a-recorrer/quickstart.md)
 - Patentes desde la que toca, la vista de arranque del mapa: [`specs/009-patentes-desde-la-que-toca/spec.md`](specs/009-patentes-desde-la-que-toca/spec.md)
+- Recorrido en curso, los km, las calorías y las estadísticas: [`specs/010-recorrido-en-curso/spec.md`](specs/010-recorrido-en-curso/spec.md),
+  y cómo se prueba en [`quickstart.md`](specs/010-recorrido-en-curso/quickstart.md)
 - Reglas que no se negocian: [`.specify/memory/constitution.md`](.specify/memory/constitution.md)
 
 ## Estructura
@@ -129,14 +131,16 @@ Las pruebas comunes viven en `shared/src/commonTest` y corren en dos lados: en l
 | `CuadrasTest` | De las vías de OpenStreetMap a las cuadras de una zona: se cortan en cada esquina, se descartan las de menos de 30 m, las dos manos de una avenida cuentan como una y una cuadra se reconoce en otra búsqueda; y la lectura de una respuesta real de Overpass (contrato Z2 de la 008) |
 | `CoberturaDeZonaTest` | Qué cuadras están recorridas: con la respuesta real del servicio de ajuste, lo caminado de esquina a esquina cuenta y lo cruzado en la esquina no; las salidas se suman, lo quitado no cuenta, y 99 de 100 no es 100% (contrato Z3 de la 008) |
 | `ZonasTest` | Qué se quita al tocar una cuadra: esa, o toda su calle, siempre con la otra mano de la avenida (FR-012 de la 008) |
-| `MigracionTest` | La base de la 7 a la 8: suma las zonas sin tocar las salidas (D7 de la 008) |
+| `MigracionTest` | La base de la 7 a la 8, que suma las zonas, y de la 8 a la 9, que suma el peso del jugador, sin tocar las salidas (D7 de la 008, D3 de la 010) |
+| `CaminataTest` | Los km de una salida, sin contar los huecos, y las calorías activas de caminar redondeadas a 5 (contrato C1 y C2 de la 010) |
+| `EstadisticasTest` | Los días, las semanas de lunes a domingo y los meses; qué salidas y patentes caen en cada uno, sus sumas y las barras (contrato C4 de la 010) |
 | `VistaDePatentesTest` | Qué patentes muestra el mapa en cada vista del botón: desde la que toca, todas o ninguna, y la lupa que gana con un número menor (FR-002 y FR-006 de la 009) |
 | `ProbabilidadTest` | La cuenta de los votos sobre si una patente sigue estando (FR-037), y qué patentes conservan sus votos al migrar a la v7 |
 | `PrioridadTest` | El orden de la lista de la barra y el orden de caminar las paradas de un recorrido (FR-012, FR-015 de la 005) |
 | `IrTest` | Qué hace "Abrir en Google Maps" según cuántas paradas quedaron, y la URL con punto decimal (FR-019 de la 005) |
 | `AcomodoTest` | Los pines que se hacen lugar antes de agruparse (FR-023 de la 005) |
 | `AntiguedadTest` | Los escalones de hace cuánto se caminó una calle, con los bordes en 3 y 14 días (FR-014, FR-019) |
-| `FormatosTest` | Fechas y números iguales en los dos teléfonos, sin depender de cómo cada sistema los escribe (D16 de la 006); y cuánto lleva una zona, en días y en meses (D10 de la 008) |
+| `FormatosTest` | Fechas y números iguales en los dos teléfonos, sin depender de cómo cada sistema los escribe (D16 de la 006); cuánto lleva una zona, en días y en meses (D10 de la 008); y el tiempo, los km y las calorías de una salida (contrato C3 de la 010) |
 | `AlmacenFotosTest` | Que la foto se busque por su nombre, así una ruta del Android sirve en el iPhone (D7 de la 006) |
 | `RespaldoTest` | El respaldo: sale con sus cuentas sin tocar la base, vuelve idéntico bit por bit, rechaza lo que no es un respaldo con su motivo y deshace un cambio que falla a mitad (contrato R de la 006) |
 | `VencimientoTest` | La fecha de vencimiento del perfil del iPhone, y el aviso con 48 horas o menos (D15 de la 006) |
@@ -153,8 +157,17 @@ cada feature: [`001`](specs/001-captura-patentes/quickstart.md),
 [`005`](specs/005-buscar-la-que-toca/quickstart.md),
 [`006`](specs/006-jugar-en-iphone/quickstart.md),
 [`007`](specs/007-caminos-sin-diagonales/quickstart.md),
-[`008`](specs/008-zona-a-recorrer/quickstart.md) y
-[`009`](specs/009-patentes-desde-la-que-toca/quickstart.md).
+[`008`](specs/008-zona-a-recorrer/quickstart.md),
+[`009`](specs/009-patentes-desde-la-que-toca/quickstart.md) y
+[`010`](specs/010-recorrido-en-curso/quickstart.md).
+
+## Salidas
+
+Una salida se graba desde el botón de recorrido. Mientras graba, la barra de arriba dice cuánto
+lleva —"0:42 · 2,1 km · ~75 kcal"— y terminarla pregunta. En el iPhone, si la app se cierra con la
+salida grabando, una notificación lo avisa en menos de 2 minutos. En Salidas, cada salida dice sus
+km y sus calorías, y **Estadísticas** suma por día, semana y mes. Las calorías son las activas de
+caminar y salen del peso que se carga en Ajustes; sin peso no se muestran.
 
 ## Zonas
 

@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -29,6 +30,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -55,6 +57,7 @@ import ar.lauta.buscarpatentes.data.RegistroDeCaptura
 import ar.lauta.buscarpatentes.data.Zona
 import ar.lauta.buscarpatentes.data.Zonas
 import ar.lauta.buscarpatentes.domain.Borde
+import ar.lauta.buscarpatentes.domain.Caminata
 import ar.lauta.buscarpatentes.domain.CuadraParaContar
 import ar.lauta.buscarpatentes.domain.SalidaParaContar
 import ar.lauta.buscarpatentes.mapa.ClaseDeCuadra
@@ -102,6 +105,7 @@ import ar.lauta.buscarpatentes.ubicacion.AjustarACalles
 import ar.lauta.buscarpatentes.ubicacion.LecturaUbicacion
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 
@@ -239,6 +243,14 @@ fun PantallaPrincipal(
     // estaba al arrancar —vacío— mientras el jugador caminaba mirando el mapa.
     val puntosGrabados by Grabacion.puntosGuardados.collectAsState()
 
+    // 010: lo que la barra y la confirmación de terminar dicen de la salida en curso. Cuándo
+    // empezó, sus puntos y el peso; el tiempo sube con [ahoraDeLaSalida].
+    var iniciadaEn by remember { mutableStateOf<Long?>(null) }
+    var puntosEnCurso by remember { mutableStateOf<List<Pair<Double, Double>>>(emptyList()) }
+    var pesoKg by remember { mutableStateOf<Int?>(null) }
+    var ahoraDeLaSalida by remember { mutableStateOf(ahora()) }
+    var confirmandoFin by remember { mutableStateOf(false) }
+
     // FR-006 y FR-007: la pantalla necesita saber si el mapa sigue al jugador, y poder
     // pedirle que vuelva.
     val estadoDelMapa = remember { EstadoDelMapa() }
@@ -340,6 +352,7 @@ fun PantallaPrincipal(
             ?: EstadoDelJuego().also { contenedor.estadoDelJuego.guardar(it) }
         numeroActual = estado.numeroActual
         modoMapa = estado.modoMapa
+        pesoKg = estado.pesoKg
 
         // FR-035: todos los registros sobre el mapa, distinguidos por si toca. FR-037: y por
         // la probabilidad de que sigan estando, que va en el anillo. Una sola consulta de
@@ -408,9 +421,28 @@ fun PantallaPrincipal(
     // El trazo en curso nunca viene ajustado: el ajuste corre sobre salidas terminadas
     // (FR-032), así que acá siempre se reemplazan los puntos crudos.
     LaunchedEffect(puntosGrabados, recorrido) {
-        val id = recorrido ?: return@LaunchedEffect
+        val id = recorrido ?: run {
+            iniciadaEn = null
+            puntosEnCurso = emptyList()
+            return@LaunchedEffect
+        }
         val puntos = contenedor.puntos.deRecorrido(id).map { it.latitud to it.longitud }
         caminos = caminos.map { if (it.id == id) it.copy(medidos = puntos) else it }
+        // 010: los mismos puntos son los km de la barra. Cuándo empezó se lee una vez por salida.
+        if (iniciadaEn == null) iniciadaEn = contenedor.recorridos.enCurso()?.iniciadoEn
+        puntosEnCurso = puntos
+    }
+
+    // FR-005 de la 010: el tiempo de la barra sube solo mientras hay salida.
+    LaunchedEffect(recorrido) {
+        while (recorrido != null) {
+            ahoraDeLaSalida = ahora()
+            delay(CADA_CUANTO_SUBE_EL_TIEMPO_MS)
+        }
+    }
+
+    val resumenEnCurso = remember(iniciadaEn, puntosEnCurso, pesoKg, ahoraDeLaSalida) {
+        iniciadaEn?.let { Caminata.resumen(it, finalizadoEn = null, puntosEnCurso, pesoKg, ahoraDeLaSalida) }
     }
 
     // FR-032 y FR-035: el standby del ajuste a calles, **en su propio efecto**.
@@ -523,6 +555,8 @@ fun PantallaPrincipal(
                     },
                     sinPosicion = posicionActual == null,
                     listaAbierta = listaAbierta,
+                    // US3 de la 010: "0:42 · 2,1 km · ~75 kcal" mientras hay salida.
+                    salidaEnCurso = resumenEnCurso?.let { "${horasYMinutos(it.duracionMs)} · ${caminata(it)}" },
                     onTocarBarra = {
                         // Con ninguna no hay lista que desplegar: la cuenta ya lo dijo.
                         if (delNumero.isEmpty()) return@BarraDelJuego
@@ -782,7 +816,11 @@ fun PantallaPrincipal(
                             recorridoEnCurso = recorrido != null,
                             onRecorrido = {
                                 when {
-                                    recorrido != null -> Grabacion.terminar()
+                                    // FR-001 de la 010: terminar pregunta, con cuánto lleva.
+                                    recorrido != null -> {
+                                        ahoraDeLaSalida = ahora()
+                                        confirmandoFin = true
+                                    }
 
                                     !tienePermiso -> alcance.launch {
                                         snackbar.mostrar(
@@ -893,7 +931,32 @@ fun PantallaPrincipal(
             }
         }
     }
+
+    // FR-001 y FR-002 de la 010: mientras pregunta, la salida sigue grabando. Seguir o tocar
+    // afuera no tocan nada.
+    if (confirmandoFin) {
+        AlertDialog(
+            onDismissRequest = { confirmandoFin = false },
+            title = { Text("¿Terminar la salida?") },
+            text = {
+                Text(
+                    resumenEnCurso?.let { "Lleva ${horasYMinutos(it.duracionMs)} · ${caminata(it)}." }
+                        ?: "La salida está grabando.",
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmandoFin = false
+                    Grabacion.terminar()
+                }) { Text("Terminar") }
+            },
+            dismissButton = { TextButton(onClick = { confirmandoFin = false }) { Text("Seguir") } },
+        )
+    }
 }
+
+/** Cada cuánto sube el tiempo de la barra. Muestra minutos: más seguido no cambia nada. */
+private const val CADA_CUANTO_SUBE_EL_TIEMPO_MS = 20_000L
 
 private suspend fun SnackbarHostState.mostrar(texto: String) {
     currentSnackbarData?.dismiss()
