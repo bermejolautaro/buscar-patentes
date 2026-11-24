@@ -82,6 +82,7 @@ import org.maplibre.compose.layers.FeaturesClickHandler
 import org.maplibre.compose.layers.LineLayer
 import org.maplibre.compose.layers.LocationIndicatorLayer
 import org.maplibre.compose.layers.SymbolLayer
+import org.maplibre.compose.location.LocationState
 import org.maplibre.compose.location.LocationTrackingEffect
 import org.maplibre.compose.location.rememberLocationState
 import org.maplibre.compose.map.CameraConstraints
@@ -184,8 +185,17 @@ class EstadoDelMapa {
     internal var mapa: MapState? = null
     internal var alcance: CoroutineScope? = null
 
-    /** La última posición del jugador, o null sin permiso o antes de la primera lectura. */
-    internal var jugador: Position? = null
+    /** La ubicación de la librería del mapa: la misma que dibuja el punto azul. */
+    internal var ubicacion: LocationState? = null
+
+    /**
+     * La última posición del jugador, o null sin permiso o antes de la primera lectura.
+     *
+     * Hasta la 013 era una copia que se anotaba adentro del seguimiento, y dejaba de anotarse al
+     * arrastrar el mapa: el botón de recentrar llevaba adonde estaba el jugador al arrastrar
+     * (FR-001 de la 013). Ahora se lee de la misma fuente que el punto azul.
+     */
+    internal val jugador: Position? get() = ubicacion?.lastLocation?.position
 
     /** False desde que el jugador arrastra el mapa, hasta que toca recentrar. */
     var siguiendo by mutableStateOf(true)
@@ -282,6 +292,8 @@ fun MapaDeFondo(
     onTocarMarcador: (Long) -> Unit = {},
     /** El borde y las cuadras de cada zona, ya decididos por quien llama (contrato Z4 de la 008). */
     zonas: List<DibujoDeZona> = emptyList(),
+    /** Desde este zoom las patentes no se agrupan (FR-005 de la 013). Null es nunca. */
+    zoomSinGrupos: Int? = null,
     /** Un toque que no cayó sobre nada: marca una esquina de una zona nueva (D9 de la 008). */
     onTocarMapa: ((latitud: Double, longitud: Double) -> Unit)? = null,
     /** Un toque sobre una cuadra, con su id (FR-012 de la 008). */
@@ -305,7 +317,9 @@ fun MapaDeFondo(
     // FR-023c de la 005: el acomodo es por zoom entero, y se recalcula recién cuando la cámara
     // quedó quieta. Desplazar no cambia el zoom, así que no mueve ningún pin.
     var zoomAcomodado by remember { mutableIntStateOf(ZOOM_CALLE.toInt()) }
-    val (resto, tocan) = remember(marcadores, zoomAcomodado) { coleccionesPatentes(marcadores, zoomAcomodado) }
+    val (resto, tocan) = remember(marcadores, zoomAcomodado, zoomSinGrupos) {
+        coleccionesPatentes(marcadores, zoomAcomodado, zoomSinGrupos)
+    }
     val coleccionTrazos = remember(trazos) { coleccionTrazos(trazos) }
     val coleccionHuecos = remember(trazos) { coleccionHuecos(trazos) }
     val coleccionBordes = remember(zonas) { coleccionBordes(zonas) }
@@ -370,6 +384,7 @@ fun MapaDeFondo(
     LaunchedEffect(mapa, estado) {
         estado?.mapa = mapa
         estado?.alcance = alcance
+        estado?.ubicacion = ubicacion
     }
 
     // FR-023c de la 005: el zoom entero de la cámara quieta.
@@ -392,7 +407,6 @@ fun MapaDeFondo(
     // salta sin animar y fija el zoom de calle; las siguientes solo mueven el objetivo.
     LocationTrackingEffect(locationState = ubicacion, enabled = conPermiso && seguirAlJugador, trackBearing = false) {
         val posicion = currentLocation.position
-        estado?.jugador = posicion
         if (estado?.siguiendo == false) return@LocationTrackingEffect
         if (previousLocation == null) {
             mapa.setCameraPosition(mapa.cameraPosition.copy(target = posicion, zoom = ZOOM_CALLE))

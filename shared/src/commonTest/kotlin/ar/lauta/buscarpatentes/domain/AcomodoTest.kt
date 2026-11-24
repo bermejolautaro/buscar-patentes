@@ -89,6 +89,14 @@ class AcomodoTest {
     }
 
     @Test
+    fun `desde el zoom sin grupos todas sueltas en su lugar y antes como siempre`() {
+        val veinte = (1L..20L).map { pin(it) }
+        val sueltas = Acomodo.para(veinte, 16, ancho, zoomSinGrupos = 16)
+        assertEquals(veinte.map { Dibujo.Suelto(it.id, it.latitud, it.longitud) }, sueltas)
+        assertEquals(Acomodo.para(veinte, 15, ancho), Acomodo.para(veinte, 15, ancho, zoomSinGrupos = 16))
+    }
+
+    @Test
     fun `nadie se pierde`() {
         val pines = (1L..12L).map { pin(it, (it % 4) * 8.0) }
         for (zoom in 12..19) {

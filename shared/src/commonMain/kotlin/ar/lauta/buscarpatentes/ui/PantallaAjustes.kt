@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -16,6 +17,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.OutlinedTextField
@@ -62,6 +64,7 @@ fun PantallaAjustes(onVolver: () -> Unit) {
 
     var numero by remember { mutableStateOf("") }
     var peso by remember { mutableStateOf("") }
+    var zoomSinGrupos by remember { mutableStateOf<Int?>(null) }
     var espacioMapa by remember { mutableStateOf<Long?>(null) }
     var espacioFotos by remember { mutableStateOf(0L) }
     var fotosPasadasDeTecho by remember { mutableStateOf(false) }
@@ -126,6 +129,7 @@ fun PantallaAjustes(onVolver: () -> Unit) {
             ?: EstadoDelJuego().also { contenedor.estadoDelJuego.guardar(it) }
         numero = estado.numeroActual.toString()
         peso = estado.pesoKg?.toString() ?: ""
+        zoomSinGrupos = estado.zoomSinGrupos
         espacioMapa = CacheDeMapa.espacioOcupado()
         espacioFotos = contenedor.fotos.espacioOcupado()
         fotosPasadasDeTecho = contenedor.fotos.superoElTecho()
@@ -198,6 +202,27 @@ fun PantallaAjustes(onVolver: () -> Unit) {
                 },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             )
+
+            // FR-005 de la 013: desde qué acercamiento las patentes se ven todas sueltas.
+            Text("Patentes sueltas desde", fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 20.dp))
+            Text(
+                "De ese acercamiento para adentro ninguna se agrupa: cada una en su lugar, aunque se encimen.",
+                fontSize = 13.sp,
+            )
+            ACERCAMIENTOS.forEach { (zoom, nombre) ->
+                Row(
+                    Modifier
+                        .selectable(selected = zoomSinGrupos == zoom) {
+                            zoomSinGrupos = zoom
+                            alcance.launch { contenedor.estadoDelJuego.fijarZoomSinGrupos(zoom) }
+                        }
+                        .padding(vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    RadioButton(selected = zoomSinGrupos == zoom, onClick = null)
+                    Text(nombre, modifier = Modifier.padding(start = 8.dp))
+                }
+            }
 
             HorizontalDivider(Modifier.padding(vertical = 20.dp))
 
@@ -355,3 +380,12 @@ private fun ConfigMapaMb(): Long = ConfigMapa.CACHE_MAXIMO_BYTES / 1024 / 1024
 
 private const val PESO_MINIMO = 1
 private const val PESO_MAXIMO = 300
+
+/** Las opciones de "Patentes sueltas desde": el zoom y cómo se dice. El mapa llega hasta 19. */
+private val ACERCAMIENTOS: List<Pair<Int?, String>> = listOf(
+    null to "Nunca: se agrupan como siempre",
+    15 to "Barrio",
+    16 to "Calle",
+    17 to "Cuadra",
+    18 to "Muy cerca",
+)

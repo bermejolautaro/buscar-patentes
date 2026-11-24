@@ -28,3 +28,9 @@ val SQL_7_8: List<String> = listOf(
 val SQL_8_9: List<String> = listOf(
     "ALTER TABLE `estado_del_juego` ADD COLUMN `pesoKg` INTEGER",
 )
+
+/** De la base 9 a la 10: la zona del mapa principal y el zoom sin grupos de la 013. */
+val SQL_9_10: List<String> = listOf(
+    "ALTER TABLE `estado_del_juego` ADD COLUMN `zonaEnElMapa` INTEGER",
+    "ALTER TABLE `estado_del_juego` ADD COLUMN `zoomSinGrupos` INTEGER",
+)

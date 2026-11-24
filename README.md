@@ -24,6 +24,7 @@ corren el mismo código de Kotlin Multiplatform y Compose Multiplatform.
   y cómo se prueba en [`quickstart.md`](specs/010-recorrido-en-curso/quickstart.md)
 - Zona completa, lo medido que también cuenta y la felicitación: [`specs/011-zona-completa/spec.md`](specs/011-zona-completa/spec.md)
 - Cuadras de las teselas, sin Overpass: [`specs/012-cuadras-de-las-teselas/spec.md`](specs/012-cuadras-de-las-teselas/spec.md)
+- Mapa a medida: la zona que se sigue, las patentes sin grupos y el botón de ubicación: [`specs/013-mapa-a-medida/spec.md`](specs/013-mapa-a-medida/spec.md)
 - Reglas que no se negocian: [`.specify/memory/constitution.md`](.specify/memory/constitution.md)
 
 ## Estructura

@@ -111,6 +111,14 @@ interface EstadoDelJuegoDao {
     /** FR-009 de la 010: el peso, o null para borrarlo. Acotado a su columna como los de arriba. */
     @Query("UPDATE estado_del_juego SET pesoKg = :pesoKg WHERE id = :id")
     suspend fun fijarPeso(pesoKg: Int?, id: Int = EstadoDelJuego.ID_UNICO)
+
+    /** FR-004 de la 013: la zona del mapa principal. */
+    @Query("UPDATE estado_del_juego SET zonaEnElMapa = :zonaId WHERE id = :id")
+    suspend fun fijarZonaEnElMapa(zonaId: Long?, id: Int = EstadoDelJuego.ID_UNICO)
+
+    /** FR-005 de la 013: desde qué zoom las patentes no se agrupan, o null para nunca. */
+    @Query("UPDATE estado_del_juego SET zoomSinGrupos = :zoom WHERE id = :id")
+    suspend fun fijarZoomSinGrupos(zoom: Int?, id: Int = EstadoDelJuego.ID_UNICO)
 }
 
 /**
@@ -290,9 +298,6 @@ abstract class ZonaDao {
 
     @Query("SELECT * FROM cuadra WHERE zonaId = :zonaId")
     abstract suspend fun cuadrasDe(zonaId: Long): List<Cuadra>
-
-    @Query("SELECT * FROM cuadra WHERE zonaId IN (SELECT id FROM zona WHERE estado = 'ACTIVA')")
-    abstract suspend fun cuadrasDeActivas(): List<Cuadra>
 
     @Query("UPDATE zona SET problema = :problema WHERE id = :id")
     abstract suspend fun marcarProblema(id: Long, problema: String)

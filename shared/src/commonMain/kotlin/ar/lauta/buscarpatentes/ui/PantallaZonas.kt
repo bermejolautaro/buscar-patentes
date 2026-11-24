@@ -90,10 +90,15 @@ fun PantallaZonas(onVolver: () -> Unit) {
         }
     }
 
+    // FR-004 de la 013: cuál se ve en el mapa principal.
+    var enElMapa by remember { mutableStateOf<Long?>(null) }
+
     LaunchedEffect(recarga) {
         // Las salidas se leen una vez para todas las zonas.
         val salidas = Zonas.salidasParaContar()
-        zonas = contenedor.zonas.todas().map { zona ->
+        val todas = contenedor.zonas.todas()
+        enElMapa = Zonas.enElMapa(todas, contenedor.estadoDelJuego.leer()?.zonaEnElMapa)?.id
+        zonas = todas.map { zona ->
             val cuadras = contenedor.zonas.cuadrasDe(zona.id)
             val paraContar = cuadras.map(Zonas::paraContar)
             ZonaConCuenta(
@@ -141,6 +146,13 @@ fun PantallaZonas(onVolver: () -> Unit) {
                 BarraSuperior(zonaAbierta.zona.nombre, onVolver = { abierta = null })
                 DetalleDeZona(
                     z = zonaAbierta,
+                    seVeEnElMapa = zonaAbierta.zona.id == enElMapa,
+                    onSeguirEnElMapa = {
+                        alcance.launch {
+                            contenedor.estadoDelJuego.fijarZonaEnElMapa(zonaAbierta.zona.id)
+                            recarga++
+                        }
+                    },
                     onEditar = {
                         editando = zonaAbierta.zona
                         dibujando = true
@@ -253,7 +265,14 @@ private fun enCuanto(desde: Long, hasta: Long) = duracion(desde, hasta).let { if
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DetalleDeZona(z: ZonaConCuenta, onEditar: () -> Unit, onCambio: () -> Unit, onBorrada: () -> Unit) {
+private fun DetalleDeZona(
+    z: ZonaConCuenta,
+    seVeEnElMapa: Boolean,
+    onSeguirEnElMapa: () -> Unit,
+    onEditar: () -> Unit,
+    onCambio: () -> Unit,
+    onBorrada: () -> Unit,
+) {
     val alcance = rememberCoroutineScope()
     val zona = z.zona
     val activa = zona.estado == EstadoZona.ACTIVA
@@ -283,6 +302,18 @@ private fun DetalleDeZona(z: ZonaConCuenta, onEditar: () -> Unit, onCambio: () -
             )
         } else {
             Text(resumen(z), modifier = Modifier.padding(vertical = 8.dp))
+        }
+
+        // FR-004 de la 013: cualquier zona, también una terminada, se puede seguir en el mapa.
+        if (seVeEnElMapa) {
+            Text(
+                "Se ve en el mapa principal",
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(vertical = 6.dp),
+            )
+        } else {
+            TextButton(onClick = onSeguirEnElMapa) { Text("Seguir en el mapa principal") }
         }
 
         val borde = remember(zona.borde) { Borde.leer(zona.borde) }

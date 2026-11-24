@@ -62,7 +62,14 @@ object Acomodo {
     /** Media dp de tolerancia: dos pines a 33,6 dp no se ven encimados. */
     private const val TOLERANCIA_DP = 0.5
 
-    fun para(pines: List<Pin>, zoom: Int, anchoPinDp: Double): List<Dibujo> {
+    /**
+     * Con [zoomSinGrupos], desde ese zoom cada pin va suelto y en su lugar, sin correrse ni
+     * agruparse: lo elige el jugador en Ajustes (FR-005 de la 013). Null es nunca.
+     */
+    fun para(pines: List<Pin>, zoom: Int, anchoPinDp: Double, zoomSinGrupos: Int? = null): List<Dibujo> {
+        if (zoomSinGrupos != null && zoom >= zoomSinGrupos) {
+            return pines.sortedBy { it.id }.map { Dibujo.Suelto(it.id, it.latitud, it.longitud) }
+        }
         val mundo = TESELA_DP * 2.0.pow(zoom)
         val ordenados = pines.sortedBy { it.id }
         val xy = ordenados.map { proyectar(it.latitud, it.longitud, mundo) }

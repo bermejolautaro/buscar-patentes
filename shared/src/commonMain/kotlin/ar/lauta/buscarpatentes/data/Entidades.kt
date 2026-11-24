@@ -168,6 +168,12 @@ data class EstadoDelJuego(
      * 010). Null mientras no lo carga: sin peso la app no muestra ninguna caloría.
      */
     val pesoKg: Int? = null,
+
+    /** La zona que se ve en el mapa principal, o null para la última creada (FR-002 de la 013). */
+    val zonaEnElMapa: Long? = null,
+
+    /** Desde este zoom las patentes no se agrupan; null es nunca, como hasta la 013 (FR-005). */
+    val zoomSinGrupos: Int? = null,
 ) {
     companion object {
         const val ID_UNICO = 1
