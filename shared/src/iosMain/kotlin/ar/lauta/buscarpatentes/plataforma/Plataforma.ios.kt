@@ -7,6 +7,10 @@ import androidx.compose.runtime.rememberUpdatedState
 import ar.lauta.buscarpatentes.ui.Ir
 import ar.lauta.buscarpatentes.ui.hora
 import kotlin.coroutines.resume
+import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.usePinned
+import platform.posix.memcpy
 import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.io.buffered
@@ -96,7 +100,7 @@ actual suspend fun postear(url: String, cuerpo: String): String? = suspendCancel
     val pedido = NSMutableURLRequest.requestWithURL(NSURL.URLWithString(url)!!).apply {
         setHTTPMethod("POST")
         setValue("application/json", forHTTPHeaderField = "Content-Type")
-        // Overpass rechaza con 406 un pedido sin identificación propia, y el servidor de Valhalla
+        // Overpass rechazaba con 406 un pedido sin identificación propia, y el servidor de Valhalla
         // pide lo mismo en sus reglas de uso (D1 de la 008).
         setValue("buscar-patentes", forHTTPHeaderField = "User-Agent")
         setHTTPBody((cuerpo as NSString).dataUsingEncoding(NSUTF8StringEncoding))
@@ -107,6 +111,26 @@ actual suspend fun postear(url: String, cuerpo: String): String? = suspendCancel
             error != null -> sigue.resumeWithException(Exception(error.localizedDescription))
             (respuesta as? NSHTTPURLResponse)?.statusCode != 200L -> sigue.resume(null)
             else -> sigue.resume(datos?.let { NSString.create(data = it, encoding = NSUTF8StringEncoding)?.toString() })
+        }
+    }
+    sigue.invokeOnCancellation { tarea.cancel() }
+    tarea.resume()
+}
+
+@OptIn(ExperimentalForeignApi::class)
+actual suspend fun bajar(url: String): ByteArray? = suspendCancellableCoroutine { sigue ->
+    val pedido = NSMutableURLRequest.requestWithURL(NSURL.URLWithString(url)!!).apply {
+        setValue("buscar-patentes", forHTTPHeaderField = "User-Agent")
+        setTimeoutInterval(ESPERA_S)
+    }
+    val tarea = NSURLSession.sharedSession.dataTaskWithRequest(pedido) { datos, respuesta, error ->
+        when {
+            error != null -> sigue.resumeWithException(Exception(error.localizedDescription))
+            (respuesta as? NSHTTPURLResponse)?.statusCode != 200L -> sigue.resume(null)
+            datos == null || datos.length == 0UL -> sigue.resume(ByteArray(0))
+            else -> sigue.resume(
+                ByteArray(datos.length.toInt()).apply { usePinned { memcpy(it.addressOf(0), datos.bytes, datos.length) } },
+            )
         }
     }
     sigue.invokeOnCancellation { tarea.cancel() }

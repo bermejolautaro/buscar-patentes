@@ -6,6 +6,9 @@ Obelisco, y con la respuesta real del servicio de ajuste que ya usan las pruebas
 
 ## D1 — De dónde salen las cuadras
 
+*La 012 lo reemplaza: Overpass dejó de contestar a tiempo, y las cuadras salen de las teselas del
+mapa de fondo. El contrato Z2 sigue igual.*
+
 **Decisión**: de OpenStreetMap, con un pedido a **Overpass** (`overpass-api.de`, libre y sin
 clave), una sola vez por zona. Se piden las vías del rectángulo que envuelve el borde de la zona
 más un margen de 200 m, con su geometría completa (`out geom`). Qué vías y con qué filtro está en

@@ -7,20 +7,23 @@ import ar.lauta.buscarpatentes.domain.Borde
 import ar.lauta.buscarpatentes.domain.CuadraArmada
 import ar.lauta.buscarpatentes.domain.Cuadras
 import ar.lauta.buscarpatentes.domain.Polilinea
-import ar.lauta.buscarpatentes.domain.Via
+import ar.lauta.buscarpatentes.domain.Tesela
+import ar.lauta.buscarpatentes.domain.Teselas
+import ar.lauta.buscarpatentes.mapa.ConfigMapa
+import ar.lauta.buscarpatentes.plataforma.bajar
 import ar.lauta.buscarpatentes.plataforma.hayConexion
-import ar.lauta.buscarpatentes.plataforma.postear
-import ar.lauta.buscarpatentes.ui.decimales
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.double
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.long
 
 /**
- * Las cuadras de una zona, pedidas una sola vez a OpenStreetMap (D1 y D8 de la 008).
+ * Las cuadras de una zona, armadas una sola vez con las teselas del mapa de fondo (D8 de la 008,
+ * D1 de la 012).
+ *
+ * Hasta la 012 salían de Overpass, la consulta pública de OpenStreetMap. En noviembre de 2026
+ * tardaba más de 20 s o daba error, y una zona quedó meses buscando sus calles. Las teselas son las
+ * mismas que dibuja el mapa, de OpenFreeMap, y contestan en una fracción de segundo.
  *
  * ## Por qué es aceptable que use red
  *
@@ -34,14 +37,6 @@ import kotlinx.serialization.json.long
  * de zonas con conexión.
  */
 object BuscarCuadras {
-
-    /**
-     * Overpass, la consulta pública de OpenStreetMap: libre y sin clave.
-     *
-     * ponytail: si el servicio desaparece se cambia esta constante. Hay otras instancias con la
-     * misma consulta.
-     */
-    private const val SERVICIO = "https://overpass-api.de/api/interpreter"
 
     /** Más que esto no se arma: acota la cuenta en el teléfono (FR-004). */
     const val MAXIMO = 2_000
@@ -78,12 +73,18 @@ object BuscarCuadras {
         return cambiaron
     }
 
-    /** Las cuadras armadas de la zona, o null si no hubo una respuesta que se entienda. */
+    /**
+     * Las cuadras armadas de la zona, o null si falta alguna tesela. Las teselas son las que toca el
+     * rectángulo del borde con su margen de 200 m, como el que se le pedía a Overpass.
+     */
     private suspend fun buscar(zona: Zona): List<CuadraArmada>? {
         val esquinas = Borde.leer(zona.borde)
-        val texto = postear(SERVICIO, consulta(Borde.rectangulo(esquinas))) ?: return null
-        val vias = leerVias(texto) ?: return null
-        return Cuadras.armar(vias, esquinas)
+        val plantilla = bajar(ConfigMapa.TESELAS)?.let { plantilla(it.decodeToString()) } ?: return null
+        val teselas = Teselas.cubren(Borde.rectangulo(esquinas)).map { (x, y) ->
+            val url = plantilla.replace("{z}", "${Teselas.ZOOM}").replace("{x}", "$x").replace("{y}", "$y")
+            Tesela(Teselas.ZOOM, x, y, bajar(url) ?: return null)
+        }
+        return Cuadras.armar(Teselas.vias(teselas), esquinas)
     }
 
     /**
@@ -111,39 +112,9 @@ object BuscarCuadras {
         contenedor.zonas.activar(zonaId, principales, gemelas)
     }
 
-    /**
-     * La consulta del contrato Z1. Las coordenadas van con punto y seis decimales, sin depender
-     * del idioma del teléfono.
-     */
-    internal fun consulta(r: Borde.Rectangulo): String {
-        fun g(v: Double) = decimales(v, 6, '.')
-        return "[out:json][timeout:25];" +
-            "way[\"highway\"~\"^(trunk|primary|secondary|tertiary|unclassified|residential|living_street|pedestrian|road)$\"]" +
-            "[\"area\"!=\"yes\"][\"access\"!~\"^(private|no)$\"][\"foot\"!=\"no\"]" +
-            "(${g(r.sur)},${g(r.oeste)},${g(r.norte)},${g(r.este)});" +
-            "out geom;"
-    }
-
-    /** Las vías de una respuesta de Overpass, o null si no se entiende (contrato Z1). */
-    internal fun leerVias(texto: String): List<Via>? = try {
-        Json.parseToJsonElement(texto).jsonObject.getValue("elements").jsonArray
-            .map { it.jsonObject }
-            .filter { it["type"]?.jsonPrimitive?.contentOrNull == "way" }
-            .map { via ->
-                val nodos = via.getValue("nodes").jsonArray.map { it.jsonPrimitive.long }
-                val posiciones = via.getValue("geometry").jsonArray.map {
-                    val p = it.jsonObject
-                    p.getValue("lat").jsonPrimitive.double to p.getValue("lon").jsonPrimitive.double
-                }
-                require(nodos.size == posiciones.size)
-                val etiquetas = via["tags"]?.jsonObject
-                Via(
-                    nodos = nodos,
-                    posiciones = posiciones,
-                    nombre = etiquetas?.get("name")?.jsonPrimitive?.contentOrNull,
-                    unaMano = etiquetas?.get("oneway")?.jsonPrimitive?.contentOrNull == "yes",
-                )
-            }
+    /** La plantilla de las teselas de la semana, del TileJSON de OpenFreeMap, o null (D2 de la 012). */
+    internal fun plantilla(tileJson: String): String? = try {
+        Json.parseToJsonElement(tileJson).jsonObject.getValue("tiles").jsonArray.first().jsonPrimitive.content
     } catch (e: Exception) {
         null
     }
