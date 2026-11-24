@@ -19,6 +19,15 @@
 - Q: ¿Dónde y cómo falla la ubicación? → A: En el iPhone. El punto azul está bien; el botón de volver a
   la ubicación lleva a un lugar donde el jugador estuvo antes.
 
+### Session 2026-11-24 (después de probarla)
+
+- Q: ¿Qué se pinta de azul en el mapa principal? → A: Se puede cambiar entre "todos los tiempos" y
+  "la zona elegida", que muestra solo lo caminado desde que cuenta esa zona. El total se sigue
+  guardando. Puede haber varias zonas a la vez; en el mapa se ve una.
+- Q: ¿Qué se ajusta del agrupado? → A: Dos números, para ir probando: la distancia que se corre una
+  patente antes de agruparse (hoy 50 m) y el zoom desde el que no se agrupa ninguna. Las cuatro
+  opciones con nombre no servían. Y tocar un grupo lo expande.
+
 ## Contexto
 
 - **Las zonas en el mapa principal** son hoy todas las activas, y ninguna terminada (FR-010 de la
@@ -115,12 +124,18 @@ ahora), barrio, calle, cuadra o muy cerca.
   activa, las que faltaban al terminar si terminó, ninguna si busca sus calles.
 - **FR-004**: El detalle de una zona MUST dejar elegirla para el mapa principal, y decir cuándo es la
   que se ve.
-- **FR-005**: Ajustes MUST dejar elegir desde qué acercamiento las patentes no se agrupan: nunca,
-  barrio, calle, cuadra o muy cerca. Desde ese acercamiento, cada patente MUST dibujarse suelta y en su
-  lugar.
+- **FR-005**: Ajustes MUST dejar escribir dos números: la distancia que se puede correr una patente
+  antes de agruparse (vacío, 50 m) y el zoom desde el que no se agrupa ninguna (vacío, nunca). Desde
+  ese zoom, cada patente MUST dibujarse suelta y en su lugar.
 - **FR-006**: La zona elegida y el acercamiento MUST recordarse entre aperturas y viajar en el
   respaldo.
 - **FR-007**: Todo esto MUST funcionar igual en el Android y en el iPhone (regla de la 006).
+- **FR-008**: Con una zona elegida, el azul del mapa principal MUST poder cambiarse, tocando la
+  leyenda, entre lo caminado en todos los tiempos y lo de esa zona: las salidas desde su "desde cuándo
+  cuenta" y, si terminó, hasta que terminó. Arranca en la zona, y se recuerda.
+- **FR-009**: Tocar un grupo de patentes MUST acercar el mapa hasta las patentes del grupo. Si están
+  todas en el mismo lugar, lo más cerca que se puede.
+- **FR-010**: La leyenda del mapa MUST mostrar el zoom, para elegir el del FR-005.
 
 ## Success Criteria *(mandatory)*
 

@@ -94,6 +94,26 @@ class MigracionTest {
         }
     }
 
+    @Test
+    fun `la 11 suma la distancia de agrupado y el recorrido de la zona en null`() {
+        abrir().use { con ->
+            ESQUEMA_7.forEach(con::execSQL)
+            (SQL_7_8 + SQL_8_9 + SQL_9_10).forEach(con::execSQL)
+            con.execSQL("INSERT INTO estado_del_juego VALUES (1, 316, 1, 'ANTIGUEDAD', 70, 4, 16)")
+            val antes = volcado(con)
+
+            SQL_10_11.forEach(con::execSQL)
+
+            assertEquals(
+                listOf("1, 316, 1, ANTIGUEDAD, 70, 4, 16, null, null"),
+                con.lista("SELECT * FROM estado_del_juego") { s ->
+                    (0 until s.getColumnCount()).joinToString { if (s.isNull(it)) "null" else s.getText(it) }
+                },
+            )
+            assertEquals(antes, volcado(con))
+        }
+    }
+
     private fun volcado(con: SQLiteConnection): List<String> =
         con.lista("SELECT * FROM recorrido") { s -> (0 until s.getColumnCount()).joinToString { s.getText(it) } } +
             con.lista("SELECT * FROM punto_de_trayecto") { s -> (0 until s.getColumnCount()).joinToString { s.getText(it) } }

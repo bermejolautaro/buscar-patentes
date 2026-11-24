@@ -66,7 +66,14 @@ object Acomodo {
      * Con [zoomSinGrupos], desde ese zoom cada pin va suelto y en su lugar, sin correrse ni
      * agruparse: lo elige el jugador en Ajustes (FR-005 de la 013). Null es nunca.
      */
-    fun para(pines: List<Pin>, zoom: Int, anchoPinDp: Double, zoomSinGrupos: Int? = null): List<Dibujo> {
+    fun para(
+        pines: List<Pin>,
+        zoom: Int,
+        anchoPinDp: Double,
+        zoomSinGrupos: Int? = null,
+        /** Cuánto se puede correr un pin antes de agruparse. Lo ajusta el jugador (FR-005 de la 013). */
+        limiteM: Double = LIMITE_ACOMODO_M,
+    ): List<Dibujo> {
         if (zoomSinGrupos != null && zoom >= zoomSinGrupos) {
             return pines.sortedBy { it.id }.map { Dibujo.Suelto(it.id, it.latitud, it.longitud) }
         }
@@ -79,7 +86,7 @@ object Acomodo {
                 val p = ordenados[indices.first()]
                 listOf(Dibujo.Suelto(p.id, p.latitud, p.longitud))
             } else {
-                separar(indices, ordenados, xy, mundo, anchoPinDp)
+                separar(indices, ordenados, xy, mundo, anchoPinDp, limiteM)
                     ?: agrupar(indices, ordenados, xy, anchoPinDp)
             }
         }
@@ -99,6 +106,7 @@ object Acomodo {
         xy: List<Pair<Double, Double>>,
         mundo: Double,
         ancho: Double,
+        limiteM: Double,
     ): List<Dibujo>? {
         val x = DoubleArray(indices.size) { xy[indices[it]].first }
         val y = DoubleArray(indices.size) { xy[indices[it]].second }
@@ -127,7 +135,7 @@ object Acomodo {
                 val dibujos = indices.mapIndexed { k, idx ->
                     val p = pines[idx]
                     val corrido = hypot(x[k] - xy[idx].first, y[k] - xy[idx].second)
-                    if (corrido * metrosPorDp(p.latitud, mundo) > LIMITE_ACOMODO_M) return null
+                    if (corrido * metrosPorDp(p.latitud, mundo) > limiteM) return null
                     val (lat, lon) = desproyectar(x[k], y[k], mundo)
                     Dibujo.Suelto(p.id, lat, lon)
                 }
@@ -165,6 +173,10 @@ object Acomodo {
                     latitud = juntos.map { pines[it].latitud }.average(),
                     longitud = juntos.map { pines[it].longitud }.average(),
                     cuenta = juntos.size,
+                    sur = juntos.minOf { pines[it].latitud },
+                    oeste = juntos.minOf { pines[it].longitud },
+                    norte = juntos.maxOf { pines[it].latitud },
+                    este = juntos.maxOf { pines[it].longitud },
                 )
             }
         }
@@ -212,6 +224,17 @@ sealed interface Dibujo {
     /** Una patente, en su posición **de dibujo**: la real, o corrida hasta media cuadra. */
     data class Suelto(val id: Long, val latitud: Double, val longitud: Double) : Dibujo
 
-    /** Varias que no entran sueltas. En el centro de sus posiciones reales. */
-    data class Grupo(val latitud: Double, val longitud: Double, val cuenta: Int) : Dibujo
+    /**
+     * Varias que no entran sueltas. En el centro de sus posiciones reales, con el rectángulo que las
+     * envuelve: tocar el grupo acerca el mapa hasta él (FR-009 de la 013).
+     */
+    data class Grupo(
+        val latitud: Double,
+        val longitud: Double,
+        val cuenta: Int,
+        val sur: Double = latitud,
+        val oeste: Double = longitud,
+        val norte: Double = latitud,
+        val este: Double = longitud,
+    ) : Dibujo
 }

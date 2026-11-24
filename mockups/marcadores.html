@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Marcadores: mockup</title>
+<style>
+  /*
+   * Cómo se ven muchas patentes encimadas, para iterar en la PC. Las posiciones son inventadas:
+   * manchones densos y algunas sueltas, como en el mapa real a zoom 13. Cambiá las variables y los
+   * controles, y recargá.
+   */
+  :root {
+    --fondo-mapa: #2b2f36;
+    --calle: #4d5568;
+    --baja: #e03131;   /* 0 a 3 */
+    --media: #f2c94c;  /* 4 a 7 */
+    --alta: #2fb344;   /* 8 a 10 */
+    --toca: #2fb344;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #e9eaee; font: 14px -apple-system, "Segoe UI", Roboto, sans-serif; color: #222; }
+  header { padding: 12px 20px; display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+  .telefonos { display: flex; gap: 28px; padding: 0 20px 40px; flex-wrap: wrap; align-items: flex-start; }
+  .titulo { font-weight: 600; margin: 8px 0; }
+  .telefono { width: 390px; height: 640px; border-radius: 36px; overflow: hidden; box-shadow: 0 0 0 10px #111, 0 12px 40px rgba(0,0,0,.35); }
+  canvas { display: block; }
+  .nota { font-size: 13px; max-width: 390px; margin-top: 10px; line-height: 1.4; }
+</style>
+</head>
+<body>
+<header>
+  <strong>Marcadores encimados</strong>
+  <label>Zoom <input id="zoom" type="range" min="12" max="19" step="0.5" value="13"> <span id="zoomV">13</span></label>
+  <label>Patentes <input id="cuantas" type="number" value="260" min="10" max="800" style="width:64px"></label>
+  <label>Números desde el zoom <input id="numerosDesde" type="number" value="16" min="12" max="19" style="width:52px"></label>
+  <label>Tamaño a zoom 13 <input id="tam13" type="number" value="0.6" step="0.05" min="0.2" max="1.5" style="width:60px"></label>
+  <label>Tamaño a zoom 17 <input id="tam17" type="number" value="1" step="0.05" min="0.2" max="2" style="width:60px"></label>
+</header>
+<div class="telefonos" id="telefonos"></div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const W = 390, H = 640;
+
+  // Patentes inventadas, en metros desde el centro: tres manchones densos y unas sueltas.
+  function patentes(n) {
+    let semilla = 7;
+    const azar = () => (semilla = (semilla * 16807) % 2147483647) / 2147483647;
+    const manchones = [[-250, -350, 160], [80, 120, 220], [260, 420, 120]];
+    return Array.from({ length: n }, (_, i) => {
+      const m = manchones[i % 4 === 3 ? Math.floor(azar() * 3) : i % 3];
+      const suelta = azar() < 0.12;
+      const r = suelta ? 700 : m[2];
+      const a = azar() * Math.PI * 2, d = Math.sqrt(azar()) * r;
+      return {
+        id: i, numero: 320 + Math.floor(azar() * 160), toca: i === 5,
+        prob: Math.floor(azar() * 11),
+        x: (suelta ? 0 : m[0]) + Math.cos(a) * d, y: (suelta ? 0 : m[1]) + Math.sin(a) * d,
+      };
+    });
+  }
+
+  // De metros a pantalla: a zoom 13 una cuadra (100 m) mide unos 10 px; cada zoom duplica.
+  function aPantalla(p, zoom) {
+    const k = 0.1 * Math.pow(2, zoom - 13);
+    return [W / 2 + p.x * k, H / 2 + p.y * k];
+  }
+  const colorDe = (prob) => prob <= 3 ? css('--baja') : prob <= 7 ? css('--media') : css('--alta');
+
+  function mapa(g) {
+    g.fillStyle = css('--fondo-mapa'); g.fillRect(0, 0, W, H);
+    g.strokeStyle = css('--calle'); g.lineWidth = 1.5;
+    g.save(); g.translate(W / 2, H / 2); g.rotate(-0.7);
+    for (let i = -800; i <= 800; i += 28) { g.beginPath(); g.moveTo(i, -800); g.lineTo(i, 800); g.stroke(); g.beginPath(); g.moveTo(-800, i); g.lineTo(800, i); g.stroke(); }
+    g.restore();
+  }
+
+  // El pin de la app: gota blanca con borde del color de la probabilidad y el número adentro.
+  function pin(g, x, y, color, numero, escala = 1) {
+    const r = 15 * escala;
+    g.save(); g.translate(x, y - r * 1.9);
+    g.beginPath(); g.arc(0, 0, r, Math.PI * 0.8, Math.PI * 0.2); g.lineTo(0, r * 1.9); g.closePath();
+    g.fillStyle = '#fff'; g.fill(); g.lineWidth = 3 * escala; g.strokeStyle = color; g.stroke();
+    if (numero != null) { g.fillStyle = '#111'; g.font = `${13 * escala}px sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(numero, 0, 0); }
+    g.restore();
+  }
+
+  // Ubica etiquetas sin pisarse, de la más importante a la menos: lo que hace MapLibre con
+  // las colisiones de texto. Devuelve las que entran.
+  function sinChoques(items, ancho, alto) {
+    const puestas = [];
+    return items.filter((it) => {
+      const caja = [it.sx - ancho / 2, it.sy - alto, it.sx + ancho / 2, it.sy];
+      if (puestas.some((c) => caja[0] < c[2] && caja[2] > c[0] && caja[1] < c[3] && caja[3] > c[1])) return false;
+      puestas.push(caja); return true;
+    });
+  }
+
+  /** El tamaño del pin según el zoom: lineal entre lo que dicen los dos controles, a 13 y a 17. */
+  function tamano(zoom) {
+    const a = parseFloat($('tam13').value), b = parseFloat($('tam17').value);
+    return a + (b - a) * Math.max(0, Math.min(1, (zoom - 13) / 4));
+  }
+
+  const VARIANTES = {
+    'Hoy en la app: los números van encima de todo': {
+      nota: 'Lo que hace el mapa hoy: primero todos los pines y después, en otra pasada, todos los números. Los números de los de atrás quedan sobre los pines de adelante: parece que se atraviesan.',
+      dibujar(g, ps) {
+        ps.forEach((p) => pin(g, p.sx, p.sy, p.toca ? css('--toca') : colorDe(p.prob), null));
+        g.fillStyle = '#111'; g.font = '13px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        ps.forEach((p) => g.fillText(p.numero, p.sx, p.sy - 28));
+      },
+    },
+    'Propuesta: pin y número juntos, en orden y escalando': {
+      nota: 'El número va adentro de la imagen del pin, así se tapan entre sí en orden: el de más abajo en la pantalla queda adelante. Y el pin con su número crece con el zoom, entre los dos tamaños de arriba. La que toca va siempre encima.',
+      dibujar(g, ps, zoom) {
+        const t = tamano(zoom);
+        [...ps].sort((a, b) => (a.toca - b.toca) || (a.sy - b.sy))
+          .forEach((p) => pin(g, p.sx, p.sy, p.toca ? css('--toca') : colorDe(p.prob), p.numero, p.toca ? Math.max(t, 1) : t));
+      },
+    },
+    'A · puntos de lejos, pines de cerca': {
+      nota: 'Por debajo de "números desde el zoom", cada patente es un punto chico del color de su probabilidad, sin número: se ve dónde hay y cuántas sin ruido. De cerca vuelve el pin con el número. La que toca siempre es pin.',
+      dibujar(g, ps, zoom, desde) {
+        if (zoom >= desde) return VARIANTES['B · el número solo si entra'].dibujar(g, ps);
+        ps.forEach((p) => { if (p.toca) return; g.beginPath(); g.arc(p.sx, p.sy, 5, 0, Math.PI * 2); g.fillStyle = colorDe(p.prob); g.fill(); g.lineWidth = 1.5; g.strokeStyle = '#fff'; g.stroke(); });
+        ps.filter((p) => p.toca).forEach((p) => pin(g, p.sx, p.sy, css('--toca'), p.numero, 1.2));
+      },
+    },
+    'B · el número solo si entra': {
+      nota: 'Todos los pines se dibujan, pero el número aparece solo si no pisa a otro: primero la que toca, después las más probables. Los demás pines quedan vacíos, encimados pero prolijos.',
+      dibujar(g, ps) {
+        const orden = [...ps].sort((a, b) => (b.toca - a.toca) || (b.prob - a.prob));
+        const conNumero = new Set(sinChoques(orden, 30, 30).map((p) => p.id));
+        [...ps].reverse().forEach((p) => pin(g, p.sx, p.sy, p.toca ? css('--toca') : colorDe(p.prob), conNumero.has(p.id) ? p.numero : null));
+      },
+    },
+    'C · pines que achican con el zoom': {
+      nota: 'El pin se achica al alejarse (a zoom 13, la mitad) y el número aparece desde "números desde el zoom". Se sigue viendo cada patente con su color, ocupando un cuarto del lugar.',
+      dibujar(g, ps, zoom, desde) {
+        const escala = Math.max(0.45, Math.min(1, 0.45 + (zoom - 13) * 0.14));
+        const orden = [...ps].sort((a, b) => b.prob - a.prob);
+        const conNumero = zoom >= desde ? new Set(sinChoques(orden, 30 * escala, 30 * escala).map((p) => p.id)) : new Set();
+        [...ps].reverse().forEach((p) => pin(g, p.sx, p.sy, p.toca ? css('--toca') : colorDe(p.prob), conNumero.has(p.id) || p.toca ? p.numero : null, p.toca ? 1 : escala));
+      },
+    },
+  };
+
+  function dibujar() {
+    const zoom = parseFloat($('zoom').value), desde = parseFloat($('numerosDesde').value);
+    $('zoomV').textContent = zoom;
+    const ps = patentes(parseInt($('cuantas').value, 10)).map((p) => { const [sx, sy] = aPantalla(p, zoom); return { ...p, sx, sy }; });
+    $('telefonos').innerHTML = Object.keys(VARIANTES).map((n, i) => `
+      <div><div class="titulo">${n}</div><div class="telefono"><canvas id="c${i}" width="${W}" height="${H}"></canvas></div><div class="nota">${VARIANTES[n].nota}</div></div>`).join('');
+    Object.values(VARIANTES).forEach((v, i) => { const g = $('c' + i).getContext('2d'); mapa(g); v.dibujar(g, ps, zoom, desde); });
+  }
+  document.querySelectorAll('header input').forEach((i) => i.addEventListener('input', dibujar));
+  dibujar();
+</script>
+</body>
+</html>

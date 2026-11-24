@@ -119,6 +119,14 @@ interface EstadoDelJuegoDao {
     /** FR-005 de la 013: desde qué zoom las patentes no se agrupan, o null para nunca. */
     @Query("UPDATE estado_del_juego SET zoomSinGrupos = :zoom WHERE id = :id")
     suspend fun fijarZoomSinGrupos(zoom: Int?, id: Int = EstadoDelJuego.ID_UNICO)
+
+    /** FR-005 de la 013: hasta cuántos metros se corre una patente antes de agruparse. */
+    @Query("UPDATE estado_del_juego SET distanciaAgrupadoM = :metros WHERE id = :id")
+    suspend fun fijarDistanciaAgrupado(metros: Int?, id: Int = EstadoDelJuego.ID_UNICO)
+
+    /** FR-008 de la 013: el azul del mapa, de la zona elegida o de todos los tiempos. */
+    @Query("UPDATE estado_del_juego SET recorridoDeLaZona = :deLaZona WHERE id = :id")
+    suspend fun fijarRecorridoDeLaZona(deLaZona: Boolean, id: Int = EstadoDelJuego.ID_UNICO)
 }
 
 /**

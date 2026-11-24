@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pantalla principal: mockup</title>
+<style>
+  /*
+   * Mockup de la pantalla principal para iterar la distribución en la PC.
+   * Copia la pantalla real (iPhone, modo oscuro) con un mapa inventado: ni calles ni nombres reales.
+   * Las medidas están en pt del iPhone (= px acá). Cambiá las variables y recargá.
+   */
+  :root {
+    --fondo-mapa: #2b2f36;
+    --calle: #5c6478;
+    --avenida: #6f654c;
+    --tarjeta: #0b0c0e;
+    --boton: #1c1e22;
+    --texto: #f2f2f2;
+    --texto-suave: #b8bcc4;
+    --azul: #3b6fe0;
+    --naranja: #f76707;
+    --radio-tarjeta: 16px;
+    --leyenda-letra: 15px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #e9eaee; color: var(--texto);
+    font: 15px -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  header { color: #222; padding: 12px 20px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  header label { font-size: 13px; }
+  .telefonos { display: flex; gap: 28px; padding: 0 20px 40px; flex-wrap: wrap; align-items: flex-start; }
+  .titulo { color: #222; font-weight: 600; margin: 8px 0; }
+  .telefono {
+    width: 390px; height: 844px; border-radius: 44px; overflow: hidden; position: relative;
+    background: var(--fondo-mapa); box-shadow: 0 0 0 10px #111, 0 12px 40px rgba(0,0,0,.35);
+  }
+  .mapa { position: absolute; inset: 0; }
+  .estado { position: absolute; top: 14px; left: 40px; right: 30px; display: flex; justify-content: space-between; font-weight: 600; font-size: 17px; }
+
+  /* La barra de arriba: número y cuenta. */
+  .barra {
+    position: absolute; top: 60px; left: 12px; right: 12px; background: var(--tarjeta);
+    border-radius: var(--radio-tarjeta); padding: 12px 16px; display: flex; align-items: center;
+  }
+  .barra .numero { font-size: 20px; font-weight: 700; }
+  .barra .cuenta { font-size: 13px; color: var(--texto); }
+  .barra .lupa { margin-left: auto; font-size: 22px; }
+  .barra .salida { font-size: 13px; color: #8fb0ff; }
+
+  /* Lo de abajo: leyenda, fila de botones y panel de carga, apilados. */
+  .abajo { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; }
+  .leyenda {
+    margin: 0 12px 8px 16px; background: var(--tarjeta); border-radius: 12px;
+    padding: 10px 14px; font-size: var(--leyenda-letra); display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center;
+    align-self: flex-start; max-width: calc(100% - 28px);
+  }
+  .fila { display: flex; gap: 8px; padding: 6px 16px 10px; align-items: center; }
+  .fila .b {
+    width: 44px; height: 44px; border-radius: 50%; background: var(--boton);
+    display: grid; place-items: center; font-size: 18px; flex: none;
+  }
+  .fila .espacio { flex: 1; }
+  .panel { background: #121316; border-radius: 22px 22px 0 0; padding: 14px 14px 34px; display: flex; gap: 10px; align-items: center; }
+  .panel .redondo { width: 60px; height: 60px; border-radius: 50%; background: #26282d; display: grid; place-items: center; font-size: 24px; flex: none; }
+  .panel .campo { flex: 1; height: 60px; border: 1px solid #3a3d44; border-radius: 12px; display: grid; place-items: center; color: #aaa; letter-spacing: 3px; }
+
+  /* Propuesta A: la leyenda en una sola línea de chips chicos. */
+  .chips { display: flex; gap: 6px; padding: 0 12px 6px 16px; align-items: center; }
+  .chip {
+    background: var(--tarjeta); border-radius: 999px; padding: 6px 10px; font-size: 12.5px;
+    white-space: nowrap; display: flex; gap: 6px; align-items: center; color: var(--texto);
+  }
+  .chip.elegible { border: 1px solid #3a3d44; }
+  .chip .nombre { max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+  .chip.suave { color: var(--texto-suave); }
+
+  /* Propuesta B: la leyenda pasa a la barra de arriba, en una segunda línea. */
+  .barra .linea2 { display: flex; gap: 10px; font-size: 12.5px; color: var(--texto-suave); margin-top: 4px; flex-wrap: wrap; }
+  .barra .linea2 .toque { color: var(--texto); }
+
+  .nota { color: #333; font-size: 13px; max-width: 390px; margin-top: 10px; line-height: 1.4; }
+</style>
+</head>
+<body>
+<header>
+  <strong>Pantalla principal</strong>
+  <label>Nombre de la zona <input id="zona" value="Mi zona del barrio"></label>
+  <label>Zoom <input id="zoom" type="number" value="13" min="1" max="19" style="width:56px"></label>
+  <label><input id="deLaZona" type="checkbox" checked> Recorrido de la zona</label>
+  <label><input id="ocultas" type="checkbox" checked> Patentes ocultas</label>
+  <label><input id="enCurso" type="checkbox"> Salida en curso</label>
+</header>
+
+<div class="telefonos" id="telefonos"></div>
+
+<template id="mapa">
+  <svg class="mapa" viewBox="0 0 390 844" preserveAspectRatio="none">
+    <defs>
+      <pattern id="grilla" width="34" height="34" patternUnits="userSpaceOnUse" patternTransform="rotate(-40)">
+        <path d="M0 0H34M0 0V34" stroke="var(--calle)" stroke-width="2"/>
+      </pattern>
+    </defs>
+    <rect width="390" height="844" fill="var(--fondo-mapa)"/>
+    <rect width="390" height="844" fill="url(#grilla)"/>
+    <path d="M-20 300 L420 690" stroke="var(--avenida)" stroke-width="6"/>
+    <path d="M60 -20 L330 860" stroke="var(--avenida)" stroke-width="6"/>
+    <!-- La zona: borde punteado y cuadras que faltan. -->
+    <g transform="rotate(-40 230 470)">
+      <rect x="100" y="330" width="260" height="280" fill="none" stroke="var(--naranja)" stroke-width="2" stroke-dasharray="7 5"/>
+      <g stroke="var(--naranja)" stroke-width="6" opacity=".85">
+        <path d="M110 340H350M110 380H350M110 420H350M110 460H350M110 500H350M110 540H350M110 580H350"/>
+        <path d="M110 340V600M150 340V600M190 340V600M230 340V600M270 340V600M310 340V600M350 340V600"/>
+      </g>
+    </g>
+    <!-- Lo caminado. -->
+    <path class="recorrido" d="M0 260 L250 520 L265 505 L300 545" stroke="var(--azul)" stroke-width="6" fill="none"/>
+    <path class="recorrido-todo" d="M30 100 L30 220 L60 240 M0 360 L180 560" stroke="var(--azul)" stroke-width="6" fill="none"/>
+    <circle cx="258" cy="522" r="11" fill="#1d23d6" stroke="#fff" stroke-width="3"/>
+  </svg>
+</template>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const ICONOS = ['⟆', '⦸', '⌐', '▥', '⌂', '☰'];
+
+  function estado() {
+    return {
+      zona: $('zona').value, zoom: $('zoom').value, deLaZona: $('deLaZona').checked,
+      ocultas: $('ocultas').checked, enCurso: $('enCurso').checked,
+    };
+  }
+
+  function barra(e, conLeyenda) {
+    const salida = e.enCurso ? '<div class="salida">0:42 · 2,1 km · ~75 kcal</div>' : '';
+    const leyenda = conLeyenda ? `
+      <div class="linea2">
+        <span class="toque">⇄ ${e.deLaZona ? e.zona : 'Todos los tiempos'}</span>
+        <span>z${e.zoom}</span>
+        ${e.ocultas ? '<span>Patentes ocultas</span>' : ''}
+      </div>` : '';
+    return `<div class="barra"><div><div class="numero">414</div><div class="cuenta">Ninguna descubierta</div>${salida}${leyenda}</div><div class="lupa">⌕</div></div>`;
+  }
+
+  function fila(conCentrar = true) {
+    return `<div class="fila">${ICONOS.map(i => `<div class="b">${i}</div>`).join('')}<div class="espacio"></div>${conCentrar ? '<div class="b">◎</div>' : ''}</div>`;
+  }
+
+  const panel = '<div class="panel"><div class="redondo">＋</div><div class="redondo">📷</div><div class="redondo">▶</div><div class="campo">•••</div></div>';
+
+  const VARIANTES = {
+    'Actual': (e) => `
+      ${barra(e, false)}
+      <div class="abajo">
+        <div class="leyenda">
+          <span>${e.deLaZona ? 'Recorrido de ' + e.zona : 'Recorrido de todos los tiempos'}</span>
+          <span>⇄</span><span>· zoom ${e.zoom}</span>${e.ocultas ? '<span>· Patentes ocultas</span>' : ''}
+        </div>
+        ${fila()}${panel}
+      </div>`,
+    'A · chips chicos en una línea': (e) => `
+      ${barra(e, false)}
+      <div class="abajo">
+        <div class="chips">
+          <div class="chip elegible">⇄ <span class="nombre">${e.deLaZona ? e.zona : 'Todos los tiempos'}</span></div>
+          <div class="chip suave">z${e.zoom}</div>
+          ${e.ocultas ? '<div class="chip suave">⦸ ocultas</div>' : ''}
+        </div>
+        ${fila()}${panel}
+      </div>`,
+    'B · leyenda en la barra de arriba': (e) => `
+      ${barra(e, true)}
+      <div class="abajo">${fila()}${panel}</div>`,
+  };
+
+  const NOTAS = {
+    'Actual': 'Lo que hay hoy: la leyenda envuelve en dos líneas y tapa casi un quinto del mapa.',
+    'A · chips chicos en una línea': 'La leyenda pasa a chips de una línea. El de la zona se toca para cambiar el recorrido; el nombre largo se corta con "…".',
+    'B · leyenda en la barra de arriba': 'La leyenda se suma a la barra de arriba, en una línea chica. Abajo quedan solo los botones y el panel de carga.',
+  };
+
+  function dibujar() {
+    const e = estado();
+    $('telefonos').innerHTML = Object.entries(VARIANTES).map(([nombre, f]) => `
+      <div>
+        <div class="titulo">${nombre}</div>
+        <div class="telefono">${$('mapa').innerHTML}<div class="estado"><span>13:20</span><span>▮▮▮ ◠ 55</span></div>${f(e)}</div>
+        <div class="nota">${NOTAS[nombre]}</div>
+      </div>`).join('');
+    document.querySelectorAll('.recorrido-todo').forEach(p => p.style.display = e.deLaZona ? 'none' : '');
+  }
+  document.querySelectorAll('header input').forEach(i => i.addEventListener('input', dibujar));
+  dibujar();
+</script>
+</body>
+</html>

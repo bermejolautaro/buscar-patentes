@@ -173,9 +173,6 @@ fun PantallaPrincipal(
     // FR-009 de la 007: los puntos que midió el teléfono en lugar de las calles pintadas. No se
     // recuerda: al volver a abrir, el mapa pinta calles otra vez.
     var puntosReales by remember { mutableStateOf(false) }
-    val trazos = remember(caminos, puntosReales) {
-        caminos.map { trazoDe(it.id, it.medidos, it.guardado, it.escalon, puntosReales) }
-    }
 
     // FR-002 y FR-003 de la 013: una sola zona, la elegida o la última creada, con su borde y lo
     // que le falta. Ningún número: el porcentaje vive adentro de la zona (FR-020a de la 004).
@@ -260,6 +257,17 @@ fun PantallaPrincipal(
     var puntosEnCurso by remember { mutableStateOf<List<Pair<Double, Double>>>(emptyList()) }
     var pesoKg by remember { mutableStateOf<Int?>(null) }
     var zoomSinGrupos by remember { mutableStateOf<Int?>(null) }
+    var distanciaAgrupadoM by remember { mutableStateOf<Int?>(null) }
+    // FR-008 de la 013: el azul es lo de la zona elegida, o todo lo caminado. Arranca en la zona.
+    var recorridoDeLaZona by remember { mutableStateOf(true) }
+
+    val trazos = remember(caminos, puntosReales, recorridoDeLaZona, zonaDelMapa) {
+        // FR-008 de la 013: con la zona elegida, solo lo que cuenta para ella. El total se guarda
+        // igual: es lo que se ve con "todos los tiempos".
+        val zona = zonaDelMapa?.first?.takeIf { recorridoDeLaZona }
+        caminos.filter { zona == null || Zonas.esDeLaZona(zona, it.iniciadoEn) }
+            .map { trazoDe(it.id, it.medidos, it.guardado, it.escalon, puntosReales) }
+    }
     var ahoraDeLaSalida by remember { mutableStateOf(ahora()) }
     var confirmandoFin by remember { mutableStateOf(false) }
 
@@ -366,6 +374,8 @@ fun PantallaPrincipal(
         modoMapa = estado.modoMapa
         pesoKg = estado.pesoKg
         zoomSinGrupos = estado.zoomSinGrupos
+        distanciaAgrupadoM = estado.distanciaAgrupadoM
+        recorridoDeLaZona = estado.recorridoDeLaZona ?: true
 
         // FR-035: todos los registros sobre el mapa, distinguidos por si toca. FR-037: y por
         // la probabilidad de que sigan estando, que va en el anillo. Una sola consulta de
@@ -406,6 +416,7 @@ fun PantallaPrincipal(
         caminos = salidas.sortedBy { it.iniciadoEn }.map { salida ->
             CaminoDeSalida(
                 id = salida.id,
+                iniciadoEn = salida.iniciadoEn,
                 medidos = puntosPorRecorrido[salida.id].orEmpty().map { it.latitud to it.longitud },
                 guardado = CaminoGuardado.leer(salida.caminoAjustado),
                 escalon = Antiguedad.escalon(salida.finalizadoEn, salida.iniciadoEn, ahora),
@@ -526,6 +537,8 @@ fun PantallaPrincipal(
                 estado = estadoDelMapa,
                 zonas = if (modoMapa == ModoMapa.APAGADO) emptyList() else dibujosDeZonas,
                 zoomSinGrupos = zoomSinGrupos,
+                distanciaAgrupadoM = distanciaAgrupadoM?.toDouble(),
+                queToca = numeroActual,
                 onTocarMarcador = { id ->
                     alcance.launch {
                         registroTocado = contenedor.registros.porId(id)
@@ -692,6 +705,15 @@ fun PantallaPrincipal(
                     vista = vistaDePatentes,
                     queToca = numeroActual,
                     filtro = filtro,
+                    zonaDelRecorrido = zonaDelMapa?.first?.nombre?.takeIf { recorridoDeLaZona },
+                    onCambiarRecorrido = if (zonaDelMapa == null) null else {
+                        {
+                            val nuevo = !recorridoDeLaZona
+                            recorridoDeLaZona = nuevo
+                            alcance.launch { contenedor.estadoDelJuego.fijarRecorridoDeLaZona(nuevo) }
+                        }
+                    },
+                    zoom = estadoDelMapa.zoom,
                     modifier = Modifier.padding(start = 16.dp, bottom = 4.dp),
                 )
 
@@ -1001,6 +1023,7 @@ private suspend fun SnackbarHostState.mostrar(texto: String) {
 /** Una salida del mapa principal, con lo necesario para dibujarla en las dos vistas. */
 private data class CaminoDeSalida(
     val id: Long,
+    val iniciadoEn: Long,
     val medidos: List<Pair<Double, Double>>,
     val guardado: CaminoGuardado,
     val escalon: Escalon,

@@ -57,6 +57,16 @@ class ZonasTest {
         assertEquals(null, Zonas.enElMapa(emptyList(), elegida = 1))
     }
 
+    @Test
+    fun `una salida es de la zona desde que cuenta y hasta que termino`() {
+        val activa = zona(1, 100)
+        assertEquals(false, Zonas.esDeLaZona(activa, 99))
+        assertEquals(true, Zonas.esDeLaZona(activa, 100))
+        val terminada = activa.copy(estado = EstadoZona.COMPLETADA, terminadaEn = 500)
+        assertEquals(true, Zonas.esDeLaZona(terminada, 500))
+        assertEquals(false, Zonas.esDeLaZona(terminada, 501))
+    }
+
     // --- Lo que cuenta de cada salida (011) ---
 
     private val ajustado = listOf(listOf(-34.6 to -58.38, -34.6 to -58.379))
