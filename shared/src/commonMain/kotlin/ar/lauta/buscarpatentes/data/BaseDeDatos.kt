@@ -13,7 +13,8 @@ import androidx.room.TypeConverters
  * iPhone con el driver de SQLite incluido. La 8 suma las zonas de la 008 y es la primera
  * migración que corre en los dos: el SQL vive en común ([SQL_7_8]), y el iPhone la usa al abrir
  * un respaldo de la 7. La 9 suma el peso del jugador de la 010 ([SQL_8_9]), y la 10 la zona
- * del mapa principal y desde qué zoom no se agrupan las patentes, de la 013 ([SQL_9_10]).
+ * del mapa principal y desde qué zoom no se agrupan las patentes, de la 013 ([SQL_9_10]). La 11
+ * suma la distancia de agrupado y el recorrido de la zona, también de la 013 ([SQL_10_11]).
  */
 @Database(
     entities = [
@@ -25,7 +26,7 @@ import androidx.room.TypeConverters
         Zona::class,
         Cuadra::class,
     ],
-    version = 10,
+    version = 11,
     exportSchema = false,
 )
 @TypeConverters(Convertidores::class)

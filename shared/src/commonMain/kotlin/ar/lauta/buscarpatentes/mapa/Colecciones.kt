@@ -113,6 +113,12 @@ internal const val PROP_ESCALON = "escalon"
 /** Cuántas patentes tiene un grupo. Solo los grupos la llevan. */
 internal const val PROP_CUENTA = "cuenta"
 
+/** El rectángulo de un grupo, para acercarse al tocarlo (FR-009 de la 013). */
+internal const val PROP_SUR = "sur"
+internal const val PROP_OESTE = "oeste"
+internal const val PROP_NORTE = "norte"
+internal const val PROP_ESTE = "este"
+
 /**
  * El ancho del pin en dp. Lo usa el dibujo del pin y también el acomodo, que separa los pines
  * de a un ancho (D13 de la 005).
@@ -202,7 +208,13 @@ internal fun coleccionAcomodada(marcadores: List<Marcador>, dibujos: List<Dibujo
                 is Dibujo.Suelto -> featureDe(porId.getValue(d.id), d.latitud, d.longitud)
                 is Dibujo.Grupo -> Feature<Geometry, JsonObject>(
                     punto(d.latitud, d.longitud),
-                    buildJsonObject { put(PROP_CUENTA, d.cuenta) },
+                    buildJsonObject {
+                        put(PROP_CUENTA, d.cuenta)
+                        put(PROP_SUR, d.sur)
+                        put(PROP_OESTE, d.oeste)
+                        put(PROP_NORTE, d.norte)
+                        put(PROP_ESTE, d.este)
+                    },
                 )
             }
         },
@@ -216,10 +228,15 @@ internal fun coleccionAcomodada(marcadores: List<Marcador>, dibujos: List<Dibujo
  * frontera que garantiza el FR-002, y por eso se prueba en `ColeccionTest`: si una que toca se
  * colara en la primera, podría volver a quedar escondida adentro de un grupo.
  */
-internal fun coleccionesPatentes(marcadores: List<Marcador>, zoom: Int, zoomSinGrupos: Int? = null): Pair<Coleccion, Coleccion> {
+internal fun coleccionesPatentes(
+    marcadores: List<Marcador>,
+    zoom: Int,
+    zoomSinGrupos: Int? = null,
+    limiteM: Double = Acomodo.LIMITE_ACOMODO_M,
+): Pair<Coleccion, Coleccion> {
     val (tocan, resto) = marcadores.partition { it.toca }
     val pines = resto.map { Pin(it.id, it.latitud, it.longitud) }
-    val dibujos = Acomodo.para(pines, zoom, PIN_ANCHO_DP.toDouble(), zoomSinGrupos)
+    val dibujos = Acomodo.para(pines, zoom, PIN_ANCHO_DP.toDouble(), zoomSinGrupos, limiteM)
     return coleccionAcomodada(resto, dibujos) to coleccion(tocan)
 }
 

@@ -97,6 +97,21 @@ class AcomodoTest {
     }
 
     @Test
+    fun `con mas distancia de agrupado se separan los que antes se agrupaban`() {
+        val dos = listOf(pin(1), pin(2, 10.0))
+        assertTrue(Acomodo.para(dos, 13, ancho).any { it is Dibujo.Grupo })
+        assertTrue(Acomodo.para(dos, 13, ancho, limiteM = 1_000.0).none { it is Dibujo.Grupo })
+    }
+
+    @Test
+    fun `un grupo lleva el rectangulo de sus patentes`() {
+        val veinte = (1L..20L).map { pin(it, it * 1.0) }
+        val grupo = Acomodo.para(veinte, 13, ancho).filterIsInstance<Dibujo.Grupo>().single()
+        assertEquals(veinte.minOf { it.latitud }, grupo.sur)
+        assertEquals(veinte.maxOf { it.latitud }, grupo.norte)
+    }
+
+    @Test
     fun `nadie se pierde`() {
         val pines = (1L..12L).map { pin(it, (it % 4) * 8.0) }
         for (zoom in 12..19) {

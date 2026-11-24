@@ -174,6 +174,12 @@ data class EstadoDelJuego(
 
     /** Desde este zoom las patentes no se agrupan; null es nunca, como hasta la 013 (FR-005). */
     val zoomSinGrupos: Int? = null,
+
+    /** Hasta cuántos metros se corre una patente antes de agruparse; null es el de siempre (FR-005). */
+    val distanciaAgrupadoM: Int? = null,
+
+    /** El azul del mapa: lo de la zona elegida, o todo lo caminado. Null es la zona (FR-008 de la 013). */
+    val recorridoDeLaZona: Boolean? = null,
 ) {
     companion object {
         const val ID_UNICO = 1

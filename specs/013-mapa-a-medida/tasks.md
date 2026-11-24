@@ -28,6 +28,12 @@
 
 - [X] T011 `./gradlew :shared:testAndroidHostTest :app:assembleDebug`, sin warnings nuevos.
 - [X] T012 [P] `README.md` con la 013.
+- [X] T016 Después de la prueba (FR-005, FR-008 a FR-010):
+  - la base 11: `distanciaAgrupadoM` y `recorridoDeLaZona`, con `SQL_10_11` y su prueba;
+  - `Acomodo` recibe el límite en metros, y cada grupo su rectángulo; tocar un grupo acerca el mapa hasta él;
+  - Ajustes: los dos números con su explicación, en vez de las cuatro opciones;
+  - la leyenda muestra el zoom, y con una zona elegida se toca para cambiar el recorrido;
+  - `Zonas.esDeLaZona` decide qué salidas se pintan, con su prueba.
 - [ ] T013 El `.ipa` a `Downloads\buscar-patentes-ios\mapa-a-medida`. La base pasa a la 10: respaldo antes de instalar.
 - [ ] T014 El jugador lo prueba: el botón después de arrastrar y caminar, elegir zona, y "Calle".
 - [ ] T015 Antes de cada push, revisar el diff: nada de la zona de juego ni respaldos.

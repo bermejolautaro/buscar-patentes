@@ -34,3 +34,9 @@ val SQL_9_10: List<String> = listOf(
     "ALTER TABLE `estado_del_juego` ADD COLUMN `zonaEnElMapa` INTEGER",
     "ALTER TABLE `estado_del_juego` ADD COLUMN `zoomSinGrupos` INTEGER",
 )
+
+/** De la base 10 a la 11: la distancia de agrupado y el recorrido de la zona, de la 013. */
+val SQL_10_11: List<String> = listOf(
+    "ALTER TABLE `estado_del_juego` ADD COLUMN `distanciaAgrupadoM` INTEGER",
+    "ALTER TABLE `estado_del_juego` ADD COLUMN `recorridoDeLaZona` INTEGER",
+)

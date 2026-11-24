@@ -65,6 +65,13 @@ object Zonas {
     fun enElMapa(zonas: List<Zona>, elegida: Long?): Zona? =
         zonas.firstOrNull { it.id == elegida } ?: zonas.maxByOrNull { it.creadaEn }
 
+    /**
+     * Si una salida que empezó en [iniciadoEn] es del recorrido de [zona]: desde "desde cuándo cuenta"
+     * y, si terminó, hasta que terminó (FR-008 de la 013).
+     */
+    fun esDeLaZona(zona: Zona, iniciadoEn: Long): Boolean =
+        iniciadoEn >= zona.cuentaDesde && (zona.terminadaEn == null || iniciadoEn <= zona.terminadaEn)
+
     /** Corre "desde cuándo cuenta" (FR-003). Nunca después de hoy, y solo con la zona activa. */
     suspend fun cambiarCuentaDesde(id: Long, desde: Long, ahora: Long) {
         contenedor.zonas.cambiarCuentaDesde(id, inicioDelDia(minOf(desde, ahora)))

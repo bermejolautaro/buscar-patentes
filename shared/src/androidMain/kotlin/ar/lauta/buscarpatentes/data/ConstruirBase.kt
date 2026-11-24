@@ -183,6 +183,13 @@ private object Migraciones {
             }
         }
 
+        /** La distancia de agrupado y el recorrido de la zona de la 013 ([SQL_10_11]). */
+        private val MIGRACION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                SQL_10_11.forEach { db.execSQL(it) }
+            }
+        }
+
         // Sin instancia guardada: la guarda el contenedor, que la cambia al restaurar un respaldo.
         fun construir(context: Context): BaseDeDatos =
             Room.databaseBuilder(
@@ -200,6 +207,7 @@ private object Migraciones {
                     MIGRACION_7_8,
                     MIGRACION_8_9,
                     MIGRACION_9_10,
+                    MIGRACION_10_11,
                 )
                 .build()
 }

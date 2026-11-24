@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import ar.lauta.buscarpatentes.data.ModoMapa
 import ar.lauta.buscarpatentes.domain.Borde
+import ar.lauta.buscarpatentes.domain.Acomodo
 import ar.lauta.buscarpatentes.domain.Escalon
 import ar.lauta.buscarpatentes.domain.Punto
 import ar.lauta.buscarpatentes.plataforma.Carpetas
@@ -45,6 +46,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
+import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 import org.maplibre.compose.camera.CameraMoveReason
@@ -169,6 +171,12 @@ private const val ZOOM_MAXIMO = 19.0
  */
 private val MARGENES_PANTALLA_PRINCIPAL = DpPadding(left = 40.dp, top = 140.dp, right = 40.dp, bottom = 220.dp)
 
+/** Al acercarse a un grupo: aire alrededor para que las patentes del borde no queden en el canto. */
+private val RELLENO_GRUPO = DpPadding(80.dp, 80.dp, 80.dp, 80.dp)
+
+/** Menos que esto de alto y de ancho, en grados, es el mismo lugar: unos 10 m. */
+private const val MISMO_LUGAR_GRADOS = 0.0001
+
 /** Margen para que los marcadores del borde no queden pegados al canto. */
 private val RELLENO_ENCUADRE = DpPadding(48.dp, 48.dp, 48.dp, 48.dp)
 
@@ -196,6 +204,10 @@ class EstadoDelMapa {
      * (FR-001 de la 013). Ahora se lee de la misma fuente que el punto azul.
      */
     internal val jugador: Position? get() = ubicacion?.lastLocation?.position
+
+    /** El zoom entero de la cámara quieta, el del acomodo: para ajustar el agrupado (FR-010 de la 013). */
+    var zoom by mutableIntStateOf(ZOOM_CALLE.toInt())
+        internal set
 
     /** False desde que el jugador arrastra el mapa, hasta que toca recentrar. */
     var siguiendo by mutableStateOf(true)
@@ -294,6 +306,8 @@ fun MapaDeFondo(
     zonas: List<DibujoDeZona> = emptyList(),
     /** Desde este zoom las patentes no se agrupan (FR-005 de la 013). Null es nunca. */
     zoomSinGrupos: Int? = null,
+    /** Hasta cuántos metros se corre una patente antes de agruparse (FR-005 de la 013). Null, el de siempre. */
+    distanciaAgrupadoM: Double? = null,
     /** Un toque que no cayó sobre nada: marca una esquina de una zona nueva (D9 de la 008). */
     onTocarMapa: ((latitud: Double, longitud: Double) -> Unit)? = null,
     /** Un toque sobre una cuadra, con su id (FR-012 de la 008). */
@@ -317,8 +331,8 @@ fun MapaDeFondo(
     // FR-023c de la 005: el acomodo es por zoom entero, y se recalcula recién cuando la cámara
     // quedó quieta. Desplazar no cambia el zoom, así que no mueve ningún pin.
     var zoomAcomodado by remember { mutableIntStateOf(ZOOM_CALLE.toInt()) }
-    val (resto, tocan) = remember(marcadores, zoomAcomodado, zoomSinGrupos) {
-        coleccionesPatentes(marcadores, zoomAcomodado, zoomSinGrupos)
+    val (resto, tocan) = remember(marcadores, zoomAcomodado, zoomSinGrupos, distanciaAgrupadoM) {
+        coleccionesPatentes(marcadores, zoomAcomodado, zoomSinGrupos, distanciaAgrupadoM ?: Acomodo.LIMITE_ACOMODO_M)
     }
     val coleccionTrazos = remember(trazos) { coleccionTrazos(trazos) }
     val coleccionHuecos = remember(trazos) { coleccionHuecos(trazos) }
@@ -340,6 +354,9 @@ fun MapaDeFondo(
     }
 
     val ubicacion = rememberLocationState(enabled = conPermiso)
+
+    // El estilo se arma antes de que exista el mapa: lo que se toca ahí lo lee de acá.
+    var mapaListo by remember { mutableStateOf<MapState?>(null) }
 
     val mapa = rememberMapState(
         baseStyle = BaseStyle.Uri(ConfigMapa.estiloUrl(oscuro)),
@@ -376,12 +393,25 @@ fun MapaDeFondo(
                 tocan = rememberGeoJsonSource(GeoJsonData.Features(tocan)),
                 pines = pines,
                 onTocar = onTocarMarcador,
+                // FR-009 de la 013: tocar un grupo acerca el mapa hasta sus patentes, que así se
+                // separan. Si están todas en el mismo lugar, se acerca lo más que se puede.
+                onTocarGrupo = { sur, oeste, norte, este ->
+                    val mapa = mapaListo ?: return@CapasDePatentes
+                    alcance.launch {
+                        if (norte - sur < MISMO_LUGAR_GRADOS && este - oeste < MISMO_LUGAR_GRADOS) {
+                            mapa.animateCamera(CameraUpdate(target = Position(oeste, sur), zoom = ZOOM_MAXIMO))
+                        } else {
+                            mapa.animateCameraToBounds(BoundingBox(west = oeste, south = sur, east = este, north = norte), fitPadding = RELLENO_GRUPO)
+                        }
+                    }
+                },
             )
             if (conPermiso) LocationIndicatorLayer(id = "jugador", locationState = ubicacion)
         }
     }
 
     LaunchedEffect(mapa, estado) {
+        mapaListo = mapa
         estado?.mapa = mapa
         estado?.alcance = alcance
         estado?.ubicacion = ubicacion
@@ -391,7 +421,12 @@ fun MapaDeFondo(
     LaunchedEffect(mapa) {
         snapshotFlow { if (mapa.isCameraMoving) null else mapa.cameraPosition.zoom.toInt() }
             .distinctUntilChanged()
-            .collect { zoom -> if (zoom != null) zoomAcomodado = zoom }
+            .collect { zoom ->
+                if (zoom != null) {
+                    zoomAcomodado = zoom
+                    estado?.zoom = zoom
+                }
+            }
     }
 
     // FR-006: el arrastre del jugador apaga el seguimiento. Los movimientos que dispara el propio
@@ -734,7 +769,23 @@ private fun CapasDePatentes(
     tocan: GeoJsonSource,
     pines: Pines,
     onTocar: (Long) -> Unit,
+    onTocarGrupo: (sur: Double, oeste: Double, norte: Double, este: Double) -> Unit,
 ) {
+    val alTocarGrupo: FeaturesClickHandler = { tocadas ->
+        val p = tocadas.firstNotNullOfOrNull { it.properties?.takeIf { props -> props.containsKey(PROP_SUR) } }
+        fun d(clave: String) = p?.get(clave)?.jsonPrimitive?.doubleOrNull
+        val sur = d(PROP_SUR)
+        val oeste = d(PROP_OESTE)
+        val norte = d(PROP_NORTE)
+        val este = d(PROP_ESTE)
+        if (sur != null && oeste != null && norte != null && este != null) {
+            onTocarGrupo(sur, oeste, norte, este)
+            ClickResult.Consume
+        } else {
+            ClickResult.Pass
+        }
+    }
+
     // T024 / FR-012: se consulta qué hay **dibujado** donde tocó el dedo, no cuál queda más cerca.
     val alTocar: FeaturesClickHandler =
         { tocadas ->
@@ -770,6 +821,7 @@ private fun CapasDePatentes(
         strokeWidth = const(2.dp),
         strokeColor = const(Color.White),
         color = const(colorDe(ColoresDeMapa.GRUPO)),
+        onClick = alTocarGrupo,
     )
 
     SymbolLayer(

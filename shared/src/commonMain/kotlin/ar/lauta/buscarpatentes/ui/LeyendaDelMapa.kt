@@ -1,6 +1,7 @@
 package ar.lauta.buscarpatentes.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -47,13 +48,19 @@ fun LeyendaDelMapa(
     /** El número que toca, o null mientras la base no contestó. */
     queToca: Int? = null,
     filtro: Int? = null,
+    /** El nombre de la zona si el azul es solo lo de ella, o null si es todo lo caminado (FR-008 de la 013). */
+    zonaDelRecorrido: String? = null,
+    /** Con una zona elegida, tocar la leyenda cambia entre su recorrido y el de todos los tiempos. */
+    onCambiarRecorrido: (() -> Unit)? = null,
+    /** El zoom del mapa, para ajustar el agrupado (FR-010 de la 013). */
+    zoom: Int? = null,
     modifier: Modifier = Modifier,
 ) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(12.dp),
         tonalElevation = 3.dp,
-        modifier = modifier,
+        modifier = if (onCambiarRecorrido != null) modifier.clickable(onClick = onCambiarRecorrido) else modifier,
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
@@ -61,7 +68,9 @@ fun LeyendaDelMapa(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             when (modo) {
-                ModoMapa.COBERTURA -> Texto("Recorridos: todo lo caminado")
+                ModoMapa.COBERTURA -> Texto(
+                    if (zonaDelRecorrido != null) "Recorrido de $zonaDelRecorrido" else "Recorrido de todos los tiempos",
+                )
                 ModoMapa.APAGADO -> Texto("Recorridos ocultos")
                 ModoMapa.ANTIGUEDAD -> {
                     // FR-014a: los tres escalones con su color y su plazo. Los plazos van
@@ -77,6 +86,9 @@ fun LeyendaDelMapa(
             // apagados: un mapa sin pines y un mapa sin nada guardado se ven idénticos, y
             // esa confusión es exactamente la que hace peligroso al interruptor. Con la lupa
             // se ve un solo número, en cualquiera de las vistas que muestran (FR-006 de la 009).
+            // Se puede cambiar tocando: lo dice la flecha, como un desplegable.
+            if (onCambiarRecorrido != null && modo != ModoMapa.APAGADO) Texto("⇄")
+            if (zoom != null) Texto("· zoom $zoom")
             when {
                 vista == VistaDePatentes.NINGUNA -> Texto("· Patentes ocultas")
                 filtro != null -> Texto("· Solo la ${tresCifras(filtro)}")
