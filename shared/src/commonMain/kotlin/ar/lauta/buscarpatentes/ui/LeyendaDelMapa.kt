@@ -1,5 +1,6 @@
 package ar.lauta.buscarpatentes.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -7,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -15,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ar.lauta.buscarpatentes.data.ModoMapa
@@ -56,45 +59,73 @@ fun LeyendaDelMapa(
     zoom: Int? = null,
     modifier: Modifier = Modifier,
 ) {
+    // Variante A del mockup de la 013: chips chicos en una sola línea, que tapan menos mapa que
+    // la tarjeta de antes. El de la zona se toca para cambiar el recorrido.
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        when (modo) {
+            ModoMapa.APAGADO -> Chip { Texto("Recorridos ocultos") }
+            else -> {
+                if (onCambiarRecorrido != null) {
+                    Chip(onTocar = onCambiarRecorrido) {
+                        Texto("⇄")
+                        Text(
+                            zonaDelRecorrido ?: "Todos los tiempos",
+                            fontSize = 12.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.widthIn(max = 150.dp),
+                        )
+                    }
+                } else if (modo == ModoMapa.COBERTURA) {
+                    Chip { Texto("Todo lo caminado") }
+                }
+                if (modo == ModoMapa.ANTIGUEDAD) {
+                    // FR-014a: los tres escalones con su color y su plazo. Los plazos van
+                    // escritos y no insinuados: "hace poco" no es un dato, "3 días" sí.
+                    Chip {
+                        ChipDeEscalon(ColoresDeMapa.ANTIGUEDAD_RECIENTE, "≤3 d")
+                        ChipDeEscalon(ColoresDeMapa.ANTIGUEDAD_MEDIA, "4-14 d")
+                        ChipDeEscalon(ColoresDeMapa.ANTIGUEDAD_VIEJA, "+14 d")
+                    }
+                }
+            }
+        }
+
+        if (zoom != null) Chip(suave = true) { Texto("z$zoom") }
+
+        // Las patentes escondidas se dicen acá por la misma razón que los recorridos
+        // apagados: un mapa sin pines y un mapa sin nada guardado se ven idénticos, y
+        // esa confusión es exactamente la que hace peligroso al interruptor. Con la lupa
+        // se ve un solo número, en cualquiera de las vistas que muestran (FR-006 de la 009).
+        when {
+            vista == VistaDePatentes.NINGUNA -> Chip(suave = true) { Texto("⦸ ocultas") }
+            filtro != null -> Chip(suave = true) { Texto("Solo la ${tresCifras(filtro)}") }
+            vista == VistaDePatentes.DESDE_LA_QUE_TOCA && queToca != null ->
+                Chip(suave = true) { Texto("Desde la ${tresCifras(queToca)}") }
+        }
+    }
+}
+
+/** Una pastilla de la leyenda. Con [onTocar] lleva borde, para que se note que se toca. */
+@Composable
+private fun Chip(suave: Boolean = false, onTocar: (() -> Unit)? = null, contenido: @Composable () -> Unit) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(12.dp),
+        contentColor = if (suave) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+        shape = RoundedCornerShape(50),
         tonalElevation = 3.dp,
-        modifier = if (onCambiarRecorrido != null) modifier.clickable(onClick = onCambiarRecorrido) else modifier,
+        border = if (onTocar != null) BorderStroke(1.dp, MaterialTheme.colorScheme.outline) else null,
+        modifier = if (onTocar != null) Modifier.clickable(onClick = onTocar) else Modifier,
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
-        ) {
-            when (modo) {
-                ModoMapa.COBERTURA -> Texto(
-                    if (zonaDelRecorrido != null) "Recorrido de $zonaDelRecorrido" else "Recorrido de todos los tiempos",
-                )
-                ModoMapa.APAGADO -> Texto("Recorridos ocultos")
-                ModoMapa.ANTIGUEDAD -> {
-                    // FR-014a: los tres escalones con su color y su plazo. Los plazos van
-                    // escritos y no insinuados: "hace poco" no es un dato, "3 días" sí.
-                    Texto("Hace")
-                    ChipDeEscalon(ColoresDeMapa.ANTIGUEDAD_RECIENTE, "≤3 d")
-                    ChipDeEscalon(ColoresDeMapa.ANTIGUEDAD_MEDIA, "4-14 d")
-                    ChipDeEscalon(ColoresDeMapa.ANTIGUEDAD_VIEJA, "+14 d")
-                }
-            }
-
-            // Las patentes escondidas se dicen acá por la misma razón que los recorridos
-            // apagados: un mapa sin pines y un mapa sin nada guardado se ven idénticos, y
-            // esa confusión es exactamente la que hace peligroso al interruptor. Con la lupa
-            // se ve un solo número, en cualquiera de las vistas que muestran (FR-006 de la 009).
-            // Se puede cambiar tocando: lo dice la flecha, como un desplegable.
-            if (onCambiarRecorrido != null && modo != ModoMapa.APAGADO) Texto("⇄")
-            if (zoom != null) Texto("· zoom $zoom")
-            when {
-                vista == VistaDePatentes.NINGUNA -> Texto("· Patentes ocultas")
-                filtro != null -> Texto("· Solo la ${tresCifras(filtro)}")
-                vista == VistaDePatentes.DESDE_LA_QUE_TOCA && queToca != null -> Texto("· Desde la ${tresCifras(queToca)}")
-            }
-        }
+        ) { contenido() }
     }
 }
 
